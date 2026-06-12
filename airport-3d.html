@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Airport Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+        #info h2 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        #info p {
+            font-size: 12px;
+            color: #aaa;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>Airport 3D Simulation</h2>
+        <p>South Runway - Landing (west to east)</p>
+        <p>North Runway - Takeoff (west to east)</p>
+        <p>Drag to rotate | Scroll to zoom | Click plane for takeoff</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer;
+        let airplanes = [];
+        const gates = [];
+        const airplaneColors = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6];
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.Fog(0x87ceeb, 500, 2000);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 3000);
+            camera.position.set(-400, 250, 400);
+            camera.lookAt(0, 0, -100);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(-200, 500, 300);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.left = -500;
+            directionalLight.shadow.camera.right = 500;
+            directionalLight.shadow.camera.top = 500;
+            directionalLight.shadow.camera.bottom = -500;
+            scene.add(directionalLight);
+
+            createGround();
+            createRunways();
+            createTaxiways();
+            createTerminal();
+            createGates();
+
+            // Spawn planes with longer delays between them so they don't crowd the runway
+            for (let i = 0; i < 6; i++) {
+                setTimeout(() => spawnAirplane(), i * 12000 + Math.random() * 3000);
+            }
+
+            window.addEventListener('resize', onWindowResize);
+            
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let orbitAngle = Math.PI / 4;
+            let orbitRadius = 565;
+            let orbitHeight = 250;
+            let selectedPlane = null;
+            let lastTakeoffTime = 0; // Track when last plane started takeoff
+
+            // Raycaster for clicking on planes
+            const raycaster = new THREE.Raycaster();
+            const mouseVector = new THREE.Vector2();
+
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            renderer.domElement.addEventListener('mouseup', () => isDragging = false);
+            renderer.domElement.addEventListener('mouseleave', () => isDragging = false);
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaMove = { x: e.clientX - previousMousePosition.x, y: e.clientY - previousMousePosition.y };
+                orbitAngle -= deltaMove.x * 0.005;
+                orbitHeight += deltaMove.y * 2;
+                orbitHeight = Math.max(100, Math.min(400, orbitHeight));
+                updateCamera();
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            renderer.domElement.addEventListener('wheel', (e) => {
+                orbitRadius += e.deltaY * 0.5;
+                orbitRadius = Math.max(300, Math.min(800, orbitRadius));
+                updateCamera();
+            });
+            
+            // Click handler for selecting planes to start takeoff
+            renderer.domElement.addEventListener('click', (e) => {
+                // Don't trigger click if we were dragging
+                if (isDragging) return;
+                
+                mouseVector.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseVector.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouseVector, camera);
+                
+                // Check intersections with all airplane groups directly
+                const allPlaneGroups = airplanes.map(p => p.mesh);
+                const intersects = raycaster.intersectObjects(allPlaneGroups, true); // recursive
+                
+                if (intersects.length > 0) {
+                    // Find the root group of the clicked object
+                    let clickedObject = intersects[0].object;
+                    while (clickedObject.parent && clickedObject.parent.type !== 'Scene') {
+                        clickedObject = clickedObject.parent;
+                    }
+                    
+                    // Find the airplane object for this mesh group
+                    const planeObj = airplanes.find(p => p.mesh === clickedObject);
+                    
+                    // Check if plane is parked (can take off immediately after parking)
+                    const now = Date.now();
+                    if (planeObj && planeObj.state === 'parked') {
+                        // Enforce 3 second cooldown between takeoffs to prevent crowding
+                        if (now - lastTakeoffTime > 3000) {
+                            gates[planeObj.gateIndex].occupied = false;
+                            planeObj.state = 'pushback';
+                            planeObj.progress = 0;
+                            lastTakeoffTime = now;
+                            
+                            // Visual feedback - flash green briefly
+                            planeObj.mesh.children.forEach(child => {
+                                if (child.material && child.material.emissive) {
+                                    child.material.emissive.setHex(0x00ff00);
+                                    setTimeout(() => {
+                                        child.material.emissive.setHex(0x000000);
+                                    }, 300);
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+
+            function updateCamera() {
+                camera.position.x = Math.sin(orbitAngle) * orbitRadius;
+                camera.position.z = Math.cos(orbitAngle) * orbitRadius + 100;
+                camera.position.y = orbitHeight;
+                camera.lookAt(0, 0, -100);
+            }
+
+            animate();
+        }
+
+        function createGround() {
+            const groundGeometry = new THREE.PlaneGeometry(2000, 2000);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x3a7d44 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        function createRunways() {
+            const runwayMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            
+            // Landing Runway (south) - runs along X axis from west to east (parallel to terminal)
+            const landingRunwayGeo = new THREE.PlaneGeometry(800, 50);
+            const landingRunway = new THREE.Mesh(landingRunwayGeo, runwayMaterial);
+            landingRunway.rotation.x = -Math.PI / 2;
+            landingRunway.position.set(0, 0.1, -150);
+            landingRunway.receiveShadow = true;
+            scene.add(landingRunway);
+
+            // Center line markings (dashed white line along runway length)
+            const dashGeo = new THREE.PlaneGeometry(30, 2);
+            const dashMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            for (let x = -350; x <= 350; x += 60) {
+                const dash = new THREE.Mesh(dashGeo, dashMat);
+                dash.rotation.x = -Math.PI / 2;
+                dash.position.set(x, 0.15, -150);
+                scene.add(dash);
+            }
+
+            // Edge lines (solid white)
+            const edgeLineGeo = new THREE.PlaneGeometry(800, 1);
+            const edgeLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            
+            const southEdgeNorth = new THREE.Mesh(edgeLineGeo, edgeLineMat);
+            southEdgeNorth.rotation.x = -Math.PI / 2;
+            southEdgeNorth.position.set(0, 0.16, -150 + 24);
+            scene.add(southEdgeNorth);
+
+            const southEdgeSouth = new THREE.Mesh(edgeLineGeo, edgeLineMat);
+            southEdgeSouth.rotation.x = -Math.PI / 2;
+            southEdgeSouth.position.set(0, 0.16, -150 - 24);
+            scene.add(southEdgeSouth);
+
+            // Touchdown zone markings (pairs of stripes at west threshold)
+            const tdStripeGeo = new THREE.PlaneGeometry(20, 3);
+            const tdStripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            for (let x = -380; x <= -300; x += 40) {
+                const leftStripe = new THREE.Mesh(tdStripeGeo, tdStripeMat);
+                leftStripe.rotation.x = -Math.PI / 2;
+                leftStripe.position.set(x, 0.16, -150 - 10);
+                scene.add(leftStripe);
+
+                const rightStripe = new THREE.Mesh(tdStripeGeo, tdStripeMat);
+                rightStripe.rotation.x = -Math.PI / 2;
+                rightStripe.position.set(x, 0.16, -150 + 10);
+                scene.add(rightStripe);
+            }
+
+            // Takeoff Runway (north) - runs along X axis parallel to landing runway
+            const takeoffRunwayGeo = new THREE.PlaneGeometry(800, 50);
+            const takeoffRunway = new THREE.Mesh(takeoffRunwayGeo, runwayMaterial);
+            takeoffRunway.rotation.x = -Math.PI / 2;
+            takeoffRunway.position.set(0, 0.1, 150);
+            takeoffRunway.receiveShadow = true;
+            scene.add(takeoffRunway);
+
+            // Takeoff center line dashes
+            for (let x = -350; x <= 350; x += 60) {
+                const dash = new THREE.Mesh(dashGeo, dashMat);
+                dash.rotation.x = -Math.PI / 2;
+                dash.position.set(x, 0.15, 150);
+                scene.add(dash);
+            }
+
+            // Takeoff edge lines
+            const northEdgeNorth = new THREE.Mesh(edgeLineGeo, edgeLineMat);
+            northEdgeNorth.rotation.x = -Math.PI / 2;
+            northEdgeNorth.position.set(0, 0.16, 150 + 24);
+            scene.add(northEdgeNorth);
+
+            const northEdgeSouth = new THREE.Mesh(edgeLineGeo, edgeLineMat);
+            northEdgeSouth.rotation.x = -Math.PI / 2;
+            northEdgeSouth.position.set(0, 0.16, 150 - 24);
+            scene.add(northEdgeSouth);
+
+            // Takeoff touchdown zone (at west end)
+            for (let x = -380; x <= -300; x += 40) {
+                const leftStripe = new THREE.Mesh(tdStripeGeo, tdStripeMat);
+                leftStripe.rotation.x = -Math.PI / 2;
+                leftStripe.position.set(x, 0.16, 150 - 10);
+                scene.add(leftStripe);
+
+                const rightStripe = new THREE.Mesh(tdStripeGeo, tdStripeMat);
+                rightStripe.rotation.x = -Math.PI / 2;
+                rightStripe.position.set(x, 0.16, 150 + 10);
+                scene.add(rightStripe);
+            }
+        }
+
+        function createTaxiways() {
+            const taxiwayMaterial = new THREE.MeshLambertMaterial({ color: 0x555555 });
+            
+            // Main parallel taxiway (runs along X axis, north of both runways, near terminal)
+            const mainTaxiGeo = new THREE.PlaneGeometry(900, 25);
+            const mainTaxiway = new THREE.Mesh(mainTaxiGeo, taxiwayMaterial);
+            mainTaxiway.rotation.x = -Math.PI / 2;
+            mainTaxiway.position.set(0, 0.15, 280);
+            scene.add(mainTaxiway);
+
+            // Connector from landing runway (south) to main taxiway - at east end after planes land
+            const connectorLandingGeo = new THREE.PlaneGeometry(25, 430);
+            const connectorLanding = new THREE.Mesh(connectorLandingGeo, taxiwayMaterial);
+            connectorLanding.rotation.x = -Math.PI / 2;
+            connectorLanding.position.set(380, 0.15, 65); // from z=-150 (landing runway) to z=280 (main taxiway)
+            scene.add(connectorLanding);
+
+            // Connector from takeoff runway (north) to main taxiway - at west end for planes to enter
+            const connectorTakeoffGeo = new THREE.PlaneGeometry(25, 130);
+            const connectorTakeoff = new THREE.Mesh(connectorTakeoffGeo, taxiwayMaterial);
+            connectorTakeoff.rotation.x = -Math.PI / 2;
+            connectorTakeoff.position.set(-380, 0.15, 85); // from z=150 (takeoff runway) to z=280 (main taxiway)
+            scene.add(connectorTakeoff);
+
+            // Taxiways to each gate from main taxiway (going north toward terminal)
+            for (let i = 0; i < 5; i++) {
+                const x = -120 + i * 60;
+                const gateTaxiGeo = new THREE.PlaneGeometry(20, 80);
+                const gateTaxiway = new THREE.Mesh(gateTaxiGeo, taxiwayMaterial);
+                gateTaxiway.rotation.x = -Math.PI / 2;
+                gateTaxiway.position.set(x, 0.15, 240);
+                scene.add(gateTaxiway);
+            }
+
+            // Taxiway markings (dashed yellow center line along main taxiway)
+            const lineGeo = new THREE.PlaneGeometry(8, 1);
+            const lineMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            
+            for (let x = -430; x <= 430; x += 20) {
+                const line = new THREE.Mesh(lineGeo, lineMat);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(x, 0.2, 280);
+                scene.add(line);
+            }
+
+            // Edge lines (white)
+            const edgeLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const mainEdgeGeo = new THREE.PlaneGeometry(900, 0.5);
+            
+            const mainNorthEdge = new THREE.Mesh(mainEdgeGeo, edgeLineMat);
+            mainNorthEdge.rotation.x = -Math.PI / 2;
+            mainNorthEdge.position.set(0, 0.21, 280 + 12);
+            scene.add(mainNorthEdge);
+
+            const mainSouthEdge = new THREE.Mesh(mainEdgeGeo, edgeLineMat);
+            mainSouthEdge.rotation.x = -Math.PI / 2;
+            mainSouthEdge.position.set(0, 0.21, 280 - 12);
+            scene.add(mainSouthEdge);
+        }
+
+        function createTerminal() {
+            // Terminal building (behind gates, north of everything)
+            const terminalGeo = new THREE.BoxGeometry(450, 50, 60);
+            const terminalMat = new THREE.MeshLambertMaterial({ color: 0x88ccff });
+            const terminal = new THREE.Mesh(terminalGeo, terminalMat);
+            terminal.position.set(0, 25, 380);
+            terminal.castShadow = true;
+            scene.add(terminal);
+
+            // Terminal windows (facing south toward the apron/gates)
+            const windowGeo = new THREE.PlaneGeometry(15, 12);
+            const windowMat = new THREE.MeshBasicMaterial({ color: 0x446688, transparent: true, opacity: 0.8 });
+            for (let i = -190; i <= 190; i += 40) {
+                const win = new THREE.Mesh(windowGeo, windowMat);
+                win.position.set(i, 32, 350);
+                scene.add(win);
+            }
+
+            // Terminal roof overhang
+            const roofGeo = new THREE.BoxGeometry(470, 5, 70);
+            const roofMat = new THREE.MeshLambertMaterial({ color: 0x557799 });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.set(0, 52, 365);
+            scene.add(roof);
+
+            // Control tower (on west side of terminal)
+            const towerBaseGeo = new THREE.CylinderGeometry(12, 16, 90, 8);
+            const towerMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
+            const towerBase = new THREE.Mesh(towerBaseGeo, towerMat);
+            towerBase.position.set(-280, 45, 360);
+            scene.add(towerBase);
+
+            const towerTopGeo = new THREE.CylinderGeometry(18, 14, 30, 8);
+            const towerTop = new THREE.Mesh(towerTopGeo, towerMat);
+            towerTop.position.set(-280, 105, 360);
+            scene.add(towerTop);
+
+            // Control cab with windows
+            const cabGeo = new THREE.CylinderGeometry(20, 18, 25, 16);
+            const cabMat = new THREE.MeshLambertMaterial({ color: 0x445577 });
+            const cab = new THREE.Mesh(cabGeo, cabMat);
+            cab.position.set(-280, 130, 360);
+            scene.add(cab);
+
+            // Antenna on tower
+            const antennaGeo = new THREE.CylinderGeometry(0.5, 0.5, 35, 8);
+            const antennaMat = new THREE.MeshLambertMaterial({ color: 0xff4444 });
+            const antenna = new THREE.Mesh(antennaGeo, antennaMat);
+            antenna.position.set(-280, 155, 360);
+            scene.add(antenna);
+
+            // Apron area (where planes park at gates - between main taxiway and terminal)
+            const apronGeo = new THREE.PlaneGeometry(500, 100);
+            const apronMat = new THREE.MeshLambertMaterial({ color: 0x6a6a6a });
+            const apron = new THREE.Mesh(apronGeo, apronMat);
+            apron.rotation.x = -Math.PI / 2;
+            apron.position.set(0, 0.2, 315);
+            scene.add(apron);
+
+            // Gate hold short lines (yellow)
+            const holdShortGeo = new THREE.PlaneGeometry(30, 0.5);
+            const holdShortMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            for (let i = 0; i < 5; i++) {
+                const x = -120 + i * 60;
+                const holdShort = new THREE.Mesh(holdShortGeo, holdShortMat);
+                holdShort.rotation.x = -Math.PI / 2;
+                holdShort.position.set(x, 0.25, 270);
+                scene.add(holdShort);
+            }
+        }
+
+        function createGates() {
+            const gateColors = [0xff6b6b, 0x4ecdc4, 0x45b7d1, 0xf7b731, 0x5f27cd];
+            
+            for (let i = 0; i < 5; i++) {
+                const x = -120 + i * 60;
+                
+                // Gate building
+                const gateGeo = new THREE.BoxGeometry(45, 18, 35);
+                const gateMat = new THREE.MeshLambertMaterial({ color: gateColors[i] });
+                const gate = new THREE.Mesh(gateGeo, gateMat);
+                gate.position.set(x, 9, 370);
+                scene.add(gate);
+
+                // Jet bridge (extends south from terminal toward planes)
+                const bridgeGeo = new THREE.BoxGeometry(10, 12, 50);
+                const bridgeMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+                const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+                bridge.position.set(x, 6, 340);
+                scene.add(bridge);
+
+                gates.push({ position: { x: x, z: 270 }, occupied: false });
+            }
+        }
+
+        function createAirplane(color) {
+            const airplane = new THREE.Group();
+
+            // Fuselage (cylinder along Z axis - nose pointing positive Z)
+            const fuselageGeo = new THREE.CylinderGeometry(3, 4, 50, 16);
+            const fuselageMat = new THREE.MeshLambertMaterial({ color: color });
+            const fuselage = new THREE.Mesh(fuselageGeo, fuselageMat);
+            // Cylinder defaults to Y-axis aligned, rotate to point along Z (negative rotation flips direction)
+            fuselage.rotation.x = -Math.PI / 2;
+            airplane.add(fuselage);
+
+            // Nose cone (points in positive Z direction)
+            const noseConeGeo = new THREE.ConeGeometry(3, 10, 16);
+            const noseConeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const noseCone = new THREE.Mesh(noseConeGeo, noseConeMat);
+            noseCone.rotation.x = Math.PI / 2;
+            noseCone.position.set(0, 0, 30);
+            airplane.add(noseCone);
+
+            // Cockpit windows (on top front of fuselage)
+            const cockpitGeo = new THREE.SphereGeometry(3.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const cockpitMat = new THREE.MeshLambertMaterial({ color: 0x334455 });
+            const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
+            cockpit.rotation.x = -Math.PI / 2;
+            cockpit.position.set(0, 2.5, 22);
+            airplane.add(cockpit);
+
+            // Tail section
+            const tailConeGeo = new THREE.CylinderGeometry(1.5, 3, 12, 16);
+            const tailCone = new THREE.Mesh(tailConeGeo, fuselageMat);
+            tailCone.rotation.x = -Math.PI / 2;
+            tailCone.position.set(0, 0, -30);
+            airplane.add(tailCone);
+
+            // Wings (span along X axis) - positioned slightly behind center like real airliners
+            const wingGeo = new THREE.BoxGeometry(50, 1.5, 12);
+            const wingMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
+            const wings = new THREE.Mesh(wingGeo, wingMat);
+            wings.position.set(0, 1, -5);
+            airplane.add(wings);
+
+            // Wing tips (winglets) - left is negative X, right is positive X from pilot perspective facing +Z
+            const wingletGeo = new THREE.BoxGeometry(3, 5, 4);
+            const wingletLeft = new THREE.Mesh(wingletGeo, wingMat);
+            wingletLeft.position.set(-25, 4, -5);
+            airplane.add(wingletLeft);
+
+            const wingletRight = new THREE.Mesh(wingletGeo, wingMat);
+            wingletRight.position.set(25, 4, -5);
+            airplane.add(wingletRight);
+
+            // Tail fin (vertical stabilizer)
+            const tailFinGeo = new THREE.BoxGeometry(4, 18, 10);
+            const tailFin = new THREE.Mesh(tailFinGeo, wingMat);
+            tailFin.position.set(0, 12, -25);
+            airplane.add(tailFin);
+
+            // Horizontal stabilizers
+            const hStabGeo = new THREE.BoxGeometry(20, 1, 8);
+            const hStab = new THREE.Mesh(hStabGeo, wingMat);
+            hStab.position.set(0, 10, -25);
+            airplane.add(hStab);
+
+            // Engines (under wings) - left engine on pilot's left (-X), right on pilot's right (+X)
+            const engineGeo = new THREE.CylinderGeometry(3, 3, 10, 16);
+            const engineMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
+            
+            const leftEngine = new THREE.Mesh(engineGeo, engineMat);
+            leftEngine.rotation.x = -Math.PI / 2;
+            leftEngine.position.set(-18, -2.5, 0);
+            airplane.add(leftEngine);
+
+            const rightEngine = new THREE.Mesh(engineGeo, engineMat);
+            rightEngine.rotation.x = -Math.PI / 2;
+            rightEngine.position.set(18, -2.5, 0);
+            airplane.add(rightEngine);
+
+            // Landing gear struts
+            const strutGeo = new THREE.CylinderGeometry(0.8, 0.8, 4, 8);
+            const strutMat = new THREE.MeshLambertMaterial({ color: 0x666666 });
+            
+            const frontStrut = new THREE.Mesh(strutGeo, strutMat);
+            frontStrut.position.set(0, -2.5, 15);
+            airplane.add(frontStrut);
+
+            const rearStrutLeft = new THREE.Mesh(strutGeo, strutMat);
+            rearStrutLeft.position.set(-8, -2.5, -8);
+            airplane.add(rearStrutLeft);
+
+            const rearStrutRight = new THREE.Mesh(strutGeo, strutMat);
+            rearStrutRight.position.set(8, -2.5, -8);
+            airplane.add(rearStrutRight);
+
+            // Wheels
+            const wheelGeo = new THREE.CylinderGeometry(2, 2, 1.5, 16);
+            const wheelMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            
+            const frontWheelLeft = new THREE.Mesh(wheelGeo, wheelMat);
+            frontWheelLeft.rotation.x = -Math.PI / 2;
+            frontWheelLeft.position.set(2, -4.5, 15);
+            airplane.add(frontWheelLeft);
+
+            const frontWheelRight = new THREE.Mesh(wheelGeo, wheelMat);
+            frontWheelRight.rotation.x = -Math.PI / 2;
+            frontWheelRight.position.set(-2, -4.5, 15);
+            airplane.add(frontWheelRight);
+
+            const rearWheelLeftOuter = new THREE.Mesh(wheelGeo, wheelMat);
+            rearWheelLeftOuter.rotation.x = -Math.PI / 2;
+            rearWheelLeftOuter.position.set(-11, -4.5, -8);
+            airplane.add(rearWheelLeftOuter);
+
+            const rearWheelLeftInner = new THREE.Mesh(wheelGeo, wheelMat);
+            rearWheelLeftInner.rotation.x = -Math.PI / 2;
+            rearWheelLeftInner.position.set(-6, -4.5, -8);
+            airplane.add(rearWheelLeftInner);
+
+            const rearWheelRightOuter = new THREE.Mesh(wheelGeo, wheelMat);
+            rearWheelRightOuter.rotation.x = -Math.PI / 2;
+            rearWheelRightOuter.position.set(11, -4.5, -8);
+            airplane.add(rearWheelRightOuter);
+
+            const rearWheelRightInner = new THREE.Mesh(wheelGeo, wheelMat);
+            rearWheelRightInner.rotation.x = -Math.PI / 2;
+            rearWheelRightInner.position.set(6, -4.5, -8);
+            airplane.add(rearWheelRightInner);
+
+            // Airline stripe along fuselage (on top side)
+            const stripeGeo = new THREE.CylinderGeometry(3.1, 3.1, 40, 16, 1, false, Math.PI, Math.PI);
+            const stripeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+            stripe.rotation.x = -Math.PI / 2;
+            stripe.position.set(0, 3.1, -5);
+            airplane.add(stripe);
+
+            airplane.castShadow = true;
+            return airplane;
+        }
+
+        function spawnAirplane() {
+            const color = airplaneColors[Math.floor(Math.random() * airplaneColors.length)];
+            const airplane = createAirplane(color);
+            
+            // All planes start by landing first - approach from west heading east
+            airplane.position.set(-600, 250, -150);
+            airplane.rotation.y = Math.PI / 2; // Nose pointing positive X (east, along runway)
+            
+            scene.add(airplane);
+            
+            airplanes.push({
+                mesh: airplane,
+                state: 'approach',
+                progress: 0,
+                gateIndex: -1
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            for (let i = airplanes.length - 1; i >= 0; i--) {
+                const plane = airplanes[i];
+                
+                // Rotation reference (nose direction):
+                // 0 = +Z (north), PI/2 = +X (east), PI = -Z (south), 3PI/2 = -X (west)
+                
+                if (plane.state === 'approach') {
+                    plane.progress += 0.007; // Match takeoff speed
+                    plane.mesh.position.x = -600 + plane.progress * 450; // moving east
+                    plane.mesh.position.y = 250 - plane.progress * 230;
+                    plane.mesh.rotation.y = Math.PI / 2; // facing east
+                    plane.mesh.position.z = -150; // aligned with landing runway
+                    
+                    if (plane.progress >= 1) {
+                        plane.state = 'landing';
+                        plane.progress = 0;
+                    }
+                } else if (plane.state === 'landing') {
+                    plane.progress += 0.006;
+                    plane.mesh.position.x = -200 + plane.progress * 580; // eastward along runway
+                    plane.mesh.position.y = Math.max(0, (1 - Math.min(plane.progress, 0.1)) * 6);
+                    plane.mesh.rotation.y = Math.PI / 2; // facing east
+                    plane.mesh.position.z = -150;
+                    
+                    if (plane.progress >= 1) {
+                        plane.state = 'exitRunway';
+                        plane.progress = 0;
+                    }
+                } else if (plane.state === 'exitRunway') {
+                    const t = Math.min(plane.progress, 1);
+                    plane.progress += 0.007; // ~half speed
+                    
+                    // Turn LEFT from east (PI/2) to north (0) - counterclockwise rotation
+                    if (t < 0.3) {
+                        const turnT = t / 0.3;
+                        plane.mesh.rotation.y = Math.PI / 2 * (1 - turnT); // PI/2 -> 0
+                        plane.mesh.position.x = 380;
+                        plane.mesh.position.z = -150;
+                    } else {
+                        const taxiT = (t - 0.3) / 0.7;
+                        plane.mesh.position.x = 380;
+                        plane.mesh.position.z = -150 + taxiT * 430; // north to z=280
+                        plane.mesh.rotation.y = 0; // facing north (+Z direction)
+                    }
+                    
+                    if (plane.progress >= 1) {
+                        // Find first available gate and claim it immediately
+                        const emptyGate = gates.findIndex(g => !g.occupied);
+                        if (emptyGate !== -1) {
+                            gates[emptyGate].occupied = true; // Claim it NOW before taxiing
+                            plane.gateIndex = emptyGate;
+                            plane.state = 'taxiToGate';
+                            plane.progress = 0;
+                        } else {
+                            plane.state = 'waitingForGate';
+                            plane.progress = 0;
+                        }
+                    }
+                } else if (plane.state === 'waitingForGate') {
+                    // Wait for a gate to become available, hover near main taxiway
+                    plane.mesh.rotation.y = -Math.PI / 2; // facing west
+                    const emptyGate = gates.findIndex(g => !g.occupied);
+                    if (emptyGate !== -1) {
+                        gates[emptyGate].occupied = true; // Claim immediately
+                        plane.gateIndex = emptyGate;
+                        plane.state = 'taxiToGate';
+                        plane.progress = 0;
+                    }
+                } else if (plane.state === 'taxiToGate') {
+                    const gate = gates[plane.gateIndex];
+                    const t = Math.min(plane.progress, 1);
+                    plane.progress += 0.007; // ~half speed
+                    
+                    // Turn LEFT from north (0) to west (3PI/2), taxi west, then turn RIGHT into gate facing south
+                    if (t < 0.2) {
+                        const turnT = t / 0.2;
+                        plane.mesh.rotation.y = -turnT * Math.PI / 2; // 0 -> -PI/2 (= 3PI/2, west)
+                        plane.mesh.position.x = 380;
+                        plane.mesh.position.z = 280;
+                    } else if (t < 0.75) {
+                        const taxiT = (t - 0.2) / 0.55;
+                        plane.mesh.position.x = 380 - taxiT * (380 - gate.position.x);
+                        plane.mesh.position.z = 280;
+                        plane.mesh.rotation.y = -Math.PI / 2; // west
+                    } else {
+                        const turnT = (t - 0.75) / 0.25;
+                        // Turn RIGHT from west (-PI/2) to south (PI) 
+                        plane.mesh.position.x = gate.position.x + Math.sin(turnT * Math.PI / 2) * 15;
+                        plane.mesh.position.z = 280 - turnT * 30;
+                        plane.mesh.rotation.y = -Math.PI / 2 - turnT * Math.PI / 2; // -PI/2 -> -PI (= PI, south)
+                    }
+
+                    if (plane.progress >= 1) {
+                        plane.state = 'parked';
+                        plane.progress = 0;
+                        plane.mesh.rotation.y = Math.PI; // facing south (-Z direction) into gate
+                        plane.mesh.userData.readyForTakeoff = true; // Ready immediately!
+                        // Gate already marked occupied when assigned in exitRunway
+                    }
+                } else if (plane.state === 'parked') {
+                    // Planes are ready for takeoff immediately upon parking
+                    // They will auto-depart after waiting ~15-25 seconds if not clicked
+                    
+                    // Auto-takeoff logic - only if no other plane is currently in takeoff sequence
+                    const now = Date.now();
+                    const anyPlaneTakingOff = airplanes.some(p => 
+                        p.state === 'pushback' || p.state === 'taxiToRunway' || p.state === 'lineUp' || p.state === 'takeoffRoll'
+                    );
+                    
+                    // After 15 seconds, start checking for auto-departure
+                    if (!plane.mesh.userData.departureTimer) {
+                        plane.mesh.userData.departureTimer = now;
+                    }
+                    const timeAtGate = (now - plane.mesh.userData.departureTimer) / 1000;
+                    
+                    if (timeAtGate > 15 && !anyPlaneTakingOff && Math.random() > 0.98) {
+                        gates[plane.gateIndex].occupied = false;
+                        plane.state = 'pushback';
+                        plane.progress = 0;
+                        lastTakeoffTime = now;
+                    }
+                } else if (plane.state === 'pushback') {
+                    const gate = gates[plane.gateIndex];
+                    const t = Math.min(plane.progress, 1);
+                    plane.progress += 0.012; // ~half speed
+                    
+                    // Push back NORTH (reverse while facing south), then turn RIGHT to face west
+                    if (t < 0.35) {
+                        const pushT = t / 0.35;
+                        plane.mesh.position.x = gate.position.x;
+                        plane.mesh.position.z = gate.position.z + pushT * 25; // moving north (+Z), backing up
+                        plane.mesh.rotation.y = Math.PI; // facing south
+                    } else if (t < 0.65) {
+                        const turnT = (t - 0.35) / 0.3;
+                        // Turn RIGHT (clockwise) from south (PI) to west (-PI/2 or 3PI/2)
+                        plane.mesh.rotation.y = Math.PI + turnT * Math.PI / 2; // PI -> 3PI/2
+                        plane.mesh.position.z = gate.position.z + 25;
+                    } else {
+                        const moveT = (t - 0.65) / 0.35;
+                        plane.mesh.position.x = gate.position.x - moveT * 15; // slight west
+                        plane.mesh.position.z = gate.position.z + 25;
+                        plane.mesh.rotation.y = Math.PI * 1.5; // facing west (-X direction)
+                    }
+
+                    if (plane.progress >= 1) {
+                        plane.state = 'taxiToRunway';
+                        plane.progress = 0;
+                    }
+                } else if (plane.state === 'taxiToRunway') {
+                    const gate = gates[plane.gateIndex];
+                    const t = Math.min(plane.progress, 1);
+                    plane.progress += 0.006; // ~half speed
+                    
+                    // Taxi WEST to x=-400, turn LEFT onto connector going south, line up on runway facing east
+                    if (t < 0.5) {
+                        const subT = t / 0.5;
+                        plane.mesh.position.x = gate.position.x - 15 - subT * (gate.position.x + 15 + 400);
+                        plane.mesh.position.z = gate.position.z + 25; // main taxiway at z=280+25=~300
+                        plane.mesh.rotation.y = Math.PI * 1.5; // west (-X)
+                    } else if (t < 0.75) {
+                        const turnT = (t - 0.5) / 0.25;
+                        // Turn LEFT from west to south, move onto connector going south
+                        plane.mesh.position.x = -400 + turnT * 60;
+                        plane.mesh.position.z = gate.position.z + 25 - turnT * 150;
+                        plane.mesh.rotation.y = Math.PI * 1.5 - turnT * Math.PI / 2; // west -> south (3PI/2 -> PI)
+                    } else {
+                        const taxiT = (t - 0.75) / 0.25;
+                        // Continue south to runway at z=150, then turn LEFT to face east
+                        plane.mesh.position.x = -340 + taxiT * 20;
+                        plane.mesh.position.z = gate.position.z - 125 - taxiT * (gate.position.z - 125 - 150);
+                        if (taxiT < 0.5) {
+                            plane.mesh.rotation.y = Math.PI - taxiT * 2 * Math.PI / 2; // PI -> PI/2 (south to east)
+                        } else {
+                            plane.mesh.rotation.y = Math.PI / 2; // facing east (+X direction)
+                        }
+                    }
+
+                    if (plane.progress >= 1) {
+                        plane.state = 'takeoffRoll';
+                        plane.progress = 0;
+                        plane.mesh.rotation.y = Math.PI / 2; // facing east for takeoff
+                    }
+                } else if (plane.state === 'takeoffRoll') {
+                    plane.progress += 0.007;
+                    
+                    plane.mesh.position.x = -350 + plane.progress * 800; // eastward
+                    plane.mesh.position.z = 150;
+                    plane.mesh.rotation.y = Math.PI / 2; // facing east
+                    
+                    if (plane.progress > 0.6) {
+                        const t = (plane.progress - 0.6) / 0.4;
+                        plane.mesh.position.y = Math.pow(t, 2) * 120;
+                        plane.mesh.rotation.x = -Math.pow(t, 1.5) * 0.12;
+                    }
+
+                    if (plane.progress >= 1 || plane.mesh.position.x > 500) {
+                        scene.remove(plane.mesh);
+                        airplanes.splice(i, 1);
+                        
+                        setTimeout(() => spawnAirplane(), Math.random() * 4000 + 2000);
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init();
+    </script>
+</body>
+</html>
