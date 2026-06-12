@@ -221,7 +221,7 @@
 
         const taxiMat = new THREE.MeshStandardMaterial({ map: taxiwayTexture, roughness: 0.7 });
 
-        // Horizontal taxiway
+        // Horizontal taxiway (behind terminal)
         const taxiGeoH = new THREE.BoxGeometry(80, 0.2, 8);
         const taxiH = new THREE.Mesh(taxiGeoH, taxiMat);
         taxiH.position.set(0, 0, -48);
@@ -235,21 +235,21 @@
         taxiV.receiveShadow = true;
         scene.add(taxiV);
 
-        // Apron
+        // Apron (behind terminal)
         const apronGeo = new THREE.BoxGeometry(50, 0.2, 18);
         const apronMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.8 });
         const apron = new THREE.Mesh(apronGeo, apronMat);
-        apron.position.set(0, 0, -14);
+        apron.position.set(0, 0, -26);
         apron.receiveShadow = true;
         scene.add(apron);
 
         // Hold short lines
         const holdMat = new THREE.MeshStandardMaterial({ color: 0xffff00 });
         const hold1 = new THREE.Mesh(new THREE.BoxGeometry(14, 0.05, 0.5), holdMat);
-        hold1.position.set(-35, 0.1, -44);
+        hold1.position.set(-35, 0.15, -48);
         scene.add(hold1);
         const hold2 = new THREE.Mesh(new THREE.BoxGeometry(14, 0.05, 0.5), holdMat);
-        hold2.position.set(35, 0.1, -44);
+        hold2.position.set(35, 0.15, -48);
         scene.add(hold2);
 
         // --- Terminal ---
@@ -311,14 +311,14 @@
         const gatePositions = [-15, -7.5, 0, 7.5, 15];
         gatePositions.forEach(x => {
             const jetway = createJetway();
-            jetway.position.set(x, 1.8, -14);
+            jetway.position.set(x, 1.8, -26);
             jetway.rotation.y = Math.PI / 2;
             scene.add(jetway);
 
             // Gate markings
             const markMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
             const mark = new THREE.Mesh(new THREE.BoxGeometry(3, 0.05, 5), markMat);
-            mark.position.set(x, 0.1, -14);
+            mark.position.set(x, 0.1, -26);
             scene.add(mark);
         });
 
@@ -524,39 +524,39 @@
                         this.waypoints = [
                             new THREE.Vector3(-35, 3, 60),
                             new THREE.Vector3(-35, 1.5, 55),
-                            new THREE.Vector3(-35, 0.5, 50),
-                            new THREE.Vector3(-35, 0, 45)
+                            new THREE.Vector3(-35, 0.8, 50),
+                            new THREE.Vector3(-35, 0.5, 45)
                         ];
                         this.speed = 1.2;
                         break;
                     case aircraftStates.LANDING:
                         this.waypoints = [
-                            new THREE.Vector3(-35, 0, 45),
-                            new THREE.Vector3(-35, 0, -40)
+                            new THREE.Vector3(-35, 0.5, 45),
+                            new THREE.Vector3(-35, 0.5, -40)
                         ];
                         this.speed = 0.4;
                         break;
                     case aircraftStates.TAXI_TO_GATE:
                         this.waypoints = [
-                            new THREE.Vector3(-35, 0, -40),
-                            new THREE.Vector3(-25, 0, -48),
-                            new THREE.Vector3(0, 0, -48),
-                            new THREE.Vector3(gateX, 0, -14)
+                            new THREE.Vector3(-35, 0.5, -40),
+                            new THREE.Vector3(-25, 0.5, -48),
+                            new THREE.Vector3(0, 0.5, -48),
+                            new THREE.Vector3(gateX, 0.5, -26)
                         ];
                         this.speed = 0.6;
                         break;
                     case aircraftStates.TAXI_TO_RUNWAY:
                         this.waypoints = [
-                            new THREE.Vector3(gateX, 0, -14),
-                            new THREE.Vector3(0, 0, -48),
-                            new THREE.Vector3(35, 0, -48)
+                            new THREE.Vector3(gateX, 0.5, -26),
+                            new THREE.Vector3(0, 0.5, -48),
+                            new THREE.Vector3(35, 0.5, -40)
                         ];
                         this.speed = 0.6;
                         break;
                     case aircraftStates.TAKEOFF:
                         this.waypoints = [
-                            new THREE.Vector3(35, 0, -48),
-                            new THREE.Vector3(35, 0, 45),
+                            new THREE.Vector3(35, 0.5, -40),
+                            new THREE.Vector3(35, 0.5, 45),
                             new THREE.Vector3(35, 0.5, 50),
                             new THREE.Vector3(35, 1.5, 55),
                             new THREE.Vector3(35, 3, 60)
@@ -644,7 +644,7 @@
                     case aircraftStates.TAKEOFF:
                         this.state = aircraftStates.DEPARTED;
                         setTimeout(() => {
-                            this.mesh.position.set(-35, 3, 60 + Math.random() * 20);
+                            this.mesh.position.set(-35, 3.5, 60 + Math.random() * 20);
                             this.mesh.rotation.set(0, 0, 0);
                             this.state = aircraftStates.APPROACHING;
                             this.setupPath();
@@ -662,7 +662,7 @@
 
         for (let i = 0; i < numAircraft; i++) {
             const mesh = createAircraft(fuselageColors[i % fuselageColors.length], tailColors[i % tailColors.length]);
-            mesh.position.set(-35, 3, 60 + i * 18);
+            mesh.position.set(-35, 3.5, 60 + i * 18);
             mesh.scale.set(1, 1, 1);
             scene.add(mesh);
 
