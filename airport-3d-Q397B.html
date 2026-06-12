@@ -1,3 +1,4 @@
+// coded by Qwen 3.5 397B MTP Q5 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,6 +33,15 @@
             font-size: 12px;
             color: #aaa;
         }
+        #timeSlider {
+            width: 100%;
+            margin-top: 8px;
+        }
+        #sliderValue {
+            font-size: 11px;
+            color: #fff;
+            margin-top: 4px;
+        }
         canvas {
             display: block;
         }
@@ -43,6 +53,8 @@
         <p>South Runway - Landing (west to east)</p>
         <p>North Runway - Takeoff (west to east)</p>
         <p id="timeDisplay">Time: --:--</p>
+        <input type="range" id="timeSlider" min="0" max="24" step="0.1" value="12">
+        <p id="sliderValue">Manual time control</p>
         <p>Drag to rotate | Scroll to zoom | Click plane for takeoff</p>
     </div>
 
@@ -62,6 +74,10 @@
         let taxiwayLights = [];
         let lampPosts = []; // Actual illuminating lights
         let lastTakeoffTime = 0; // Track when last plane started takeoff
+        
+        // Manual time control variables
+        let manualTimeControl = false;
+        let autoCycleEnabled = true;
 
         function init() {
             scene = new THREE.Scene();
@@ -143,6 +159,31 @@
                 orbitRadius += e.deltaY * 0.5;
                 orbitRadius = Math.max(300, Math.min(800, orbitRadius));
                 updateCamera();
+            });
+            
+            // Time slider controls
+            const timeSlider = document.getElementById('timeSlider');
+            const sliderValue = document.getElementById('sliderValue');
+            
+            timeSlider.addEventListener('input', (e) => {
+                manualTimeControl = true;
+                autoCycleEnabled = false;
+                timeOfDay = parseFloat(e.target.value);
+                lastTimeUpdate = Date.now(); // Prevent jump when releasing
+                
+                const hours = Math.floor(timeOfDay);
+                const minutes = Math.floor((timeOfDay - hours) * 60);
+                sliderValue.textContent = `Manual: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            });
+            
+            timeSlider.addEventListener('change', () => {
+                // Resume auto-cycle after releasing slider
+                setTimeout(() => {
+                    autoCycleEnabled = true;
+                    manualTimeControl = false;
+                    lastTimeUpdate = Date.now();
+                    sliderValue.textContent = 'Auto-cycling';
+                }, 500);
             });
             
             // Click handler for selecting planes to start takeoff
@@ -693,14 +734,24 @@
         }
 
         function updateDayNightCycle() {
-            // Calculate elapsed real time and convert to game hours
-            const now = Date.now();
-            const elapsedMs = now - lastTimeUpdate;
-            lastTimeUpdate = now;
-            
-            // 24 game-hours pass in dayDuration milliseconds
-            // So per millisecond: 24 / dayDuration hours
-            timeOfDay = (timeOfDay + (elapsedMs * 24 / dayDuration)) % 24;
+            // Only advance time if auto-cycle is enabled
+            if (autoCycleEnabled) {
+                const now = Date.now();
+                const elapsedMs = now - lastTimeUpdate;
+                lastTimeUpdate = now;
+                
+                // 24 game-hours pass in dayDuration milliseconds
+                // So per millisecond: 24 / dayDuration hours
+                timeOfDay = (timeOfDay + (elapsedMs * 24 / dayDuration)) % 24;
+                
+                // Update slider to match current time
+                if (!manualTimeControl) {
+                    const slider = document.getElementById('timeSlider');
+                    if (slider) slider.value = timeOfDay.toFixed(1);
+                }
+            } else {
+                lastTimeUpdate = Date.now(); // Keep resetting to prevent jump on resume
+            }
             
             // Position sun - rises at 6 AM, sets at 8 PM
             const angle = (timeOfDay - 6) / 24 * Math.PI * 2;
