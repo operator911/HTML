@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Physics Simulation</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f0f0f0; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: #333;
+            font-family: sans-serif;
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="info">
+        <h1>Cloth Physics Model</h1>
+        <p>Left-click and drag on the cloth to push it. Right-click and drag to rotate the camera.</p>
+    </div>
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Configuration ---
+        const config = {
+            rows: 30,           // Cloth width segments
+            cols: 40,           // Cloth height segments
+            spacing: 1.2,       // Distance between points
+            gravity: -30,       // Gravity force (scaled for coordinate space)
+            windStrength: 15,   // Wind intensity
+            floorY: -15,        // Floor collision level
+            mouseForce: 200,    // Force applied by mouse interaction
+            mouseRadius: 8,     // Radius around mouse click for interaction
+            iterations: 15      // Constraint solver iterations
+        };
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeef2ff);
+        scene.fog = new THREE.Fog(0xeef2ff, 20, 100);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(-25, 15, 45);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // Enable shadows for realism
+        document.body.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(-20, 30, -20);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // --- Physics Objects ---
+        const points = [];
+        const sticks = [];
+        
+        let geometry, material, mesh;
+
+        function initCloth() {
+            // 1. Create the Points (Particles)
+            for (let i = 0; i <= config.rows; i++) {
+                for (let j = 0; j <= config.cols; j++) {
+                    const x = i * config.spacing - (config.rows * config.spacing) / 2;
+                    const y = j * config.spacing; // Start high up
+                    const z = 0;
+
+                    points.push(new Point(x, y, z));
+                }
+            }
+
+            // 2. Create Constraints (Sticks connecting points)
+            for (let i = 0; i <= config.rows; i++) {
+                for (let j = 0; j <= config.cols; j++) {
+                    const idx1 = i * (config.cols + 1) + j;
+
+                    // Connect to right neighbor
+                    if (i < config.rows) {
+                        const idx2 = (i + 1) * (config.cols + 1) + j;
+                        sticks.push(new Stick(points[idx1], points[idx2]));
+                    }
+
+                    // Connect to bottom neighbor
+                    if (j < config.cols) {
+                        const idx2 = i * (config.cols + 1) + (j + 1);
+                        sticks.push(new Stick(points[idx1], points[idx2]));
+                    }
+                }
+            }
+
+            // 3. Pin the top row (like a clothesline)
+            for (let j = 0; j <= config.cols; j++) {
+                const idx = j; // First row: i=0, so idx = 0 * (cols+1) + j = j
+                points[idx].pin = true; 
+            }
+
+            // 4. Create Visual Mesh from Points
+            const vertices = [];
+            const indices = [];
+            
+            for (let i = 0; i <= config.rows; i++) {
+                for (let j = 0; j <= config.cols; j++) {
+                    const x = i * config.spacing - (config.rows * config.spacing) / 2;
+                    const y = j * config.spacing;
+                    vertices.push(x, y, 0);
+                }
+            }
+            
+            for (let i = 0; i < config.rows; i++) {
+                for (let j = 0; j < config.cols; j++) {
+                    const a = i * (config.cols + 1) + j;
+                    const b = a + 1;
+                    const c = a + (config.cols + 1);
+                    const d = c + 1;
+                    indices.push(a, b, c);
+                    indices.push(b, d, c);
+                }
+            }
+
+            geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setIndex(indices);
+
+            material = new THREE.MeshStandardMaterial({
+                color: 0xff4757,
+                side: THREE.DoubleSide,
+                roughness: 0.8,
+                metalness: 0.1,
+                flatShading: true // Gives it a stylized "low poly" cloth look
+            });
+
+            mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            
+            scene.add(mesh);
+            
+            // Add ground plane for visual reference
+            const groundGeo = new THREE.PlaneGeometry(100, 100);
+            const groundMat = new THREE.MeshStandardMaterial({ 
+                color: 0xcccccc, 
+                roughness: 1.0,
+                metalness: 0.0
+            });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = config.floorY;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        // --- Physics Classes ---
+
+        class Point {
+            constructor(x, y, z) {
+                this.position = new THREE.Vector3(x, y, z);
+                this.oldPosition = new THREE.Vector3(x, y, z);
+                this.acceleration = new THREE.Vector3(0, 0, 0);
+                this.pin = false; // Is pinned to space?
+            }
+
+            update(dt, mouseForce) {
+                if (this.pin) return;
+
+                const mf = mouseForce || new THREE.Vector3(0, 0, 0);
+
+                const velocity = new THREE.Vector3()
+                    .subVectors(this.position, this.oldPosition);
+
+                // Damping (Air resistance)
+                velocity.multiplyScalar(0.985); 
+
+                this.oldPosition.copy(this.position);
+
+                // Apply Forces: Gravity + Wind
+                const time = performance.now() * 0.001;
+                const windX = Math.sin(time + this.position.y * 0.1) * config.windStrength * dt;
+                const windZ = Math.cos(time + this.position.x * 0.1) * config.windStrength * dt * 0.5;
+
+                this.acceleration.set(windX, config.gravity, windZ);
+
+                // Add mouse force
+                this.acceleration.add(mf);
+
+                // Verlet Integration: x(t+dt) = x(t) + v(t)*dt + a(t)*dt^2
+                const dtSq = dt * dt;
+                const displacement = new THREE.Vector3()
+                    .copy(this.acceleration).multiplyScalar(dtSq)
+                    .add(velocity.clone().multiplyScalar(dt));
+
+                this.position.add(displacement);
+
+                // Floor Collision
+                if (this.position.y < config.floorY) {
+                    this.position.y = config.floorY;
+                    // Friction on floor
+                    const friction = 0.5;
+                    this.oldPosition.x += (this.position.x - this.oldPosition.x) * friction;
+                    this.oldPosition.z += (this.position.z - this.oldPosition.z) * friction;
+                }
+            }
+        }
+
+        class Stick {
+            constructor(p1, p2) {
+                this.p1 = p1;
+                this.p2 = p2;
+                this.length = p1.position.distanceTo(p2.position);
+            }
+
+            update() {
+                const dx = this.p2.position.x - this.p1.position.x;
+                const dy = this.p2.position.y - this.p1.position.y;
+                const dz = this.p2.position.z - this.p1.position.z;
+
+                const currentDist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                
+                if (currentDist === 0) return; // Prevent division by zero
+
+                const diff = this.length - currentDist;
+                const percent = diff / currentDist / 2;
+                
+                const offsetX = dx * percent;
+                const offsetY = dy * percent;
+                const offsetZ = dz * percent;
+
+                if (!this.p1.pin) {
+                    this.p1.position.x -= offsetX;
+                    this.p1.position.y -= offsetY;
+                    this.p1.position.z -= offsetZ;
+                }
+                if (!this.p2.pin) {
+                    this.p2.position.x += offsetX;
+                    this.p2.position.y += offsetY;
+                    this.p2.position.z += offsetZ;
+                }
+            }
+        }
+
+        // --- Mouse Interaction ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const intersectPoint = new THREE.Vector3();
+        let prevIntersectPoint = new THREE.Vector3();
+        let isMouseDown = false;
+        let mouseButton = -1;
+
+        function onMouseDown(event) {
+            if (event.button !== 0) return; // Only handle left-click
+            mouseButton = event.button;
+            updateMouse(event);
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(mesh);
+            if (intersects.length > 0) {
+                isMouseDown = true;
+                prevIntersectPoint.copy(intersects[0].point);
+            } else {
+                // Click missed the cloth - let OrbitControls handle it
+                isMouseDown = false;
+                mouseButton = -1;
+            }
+        }
+
+        function onMouseUp() {
+            isMouseDown = false;
+            mouseButton = -1;
+        }
+
+        function onMouseMove(event) {
+            if (isMouseDown && mouseButton === 0) {
+                updateMouse(event);
+            }
+        }
+
+        function onTouchStart(event) {
+            isMouseDown = true;
+            mouseButton = 0;
+            event.preventDefault();
+            const touch = event.touches[0];
+            mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(mesh);
+            if (intersects.length > 0) {
+                prevIntersectPoint.copy(intersects[0].point);
+            }
+        }
+
+        function onTouchEnd() {
+            isMouseDown = false;
+            mouseButton = -1;
+        }
+
+        function onTouchMove(event) {
+            if (isMouseDown) {
+                event.preventDefault();
+                const touch = event.touches[0];
+                mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+            }
+        }
+
+        function updateMouse(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        document.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('touchstart', onTouchStart, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // --- Main Loop ---
+
+        const clock = new THREE.Clock();
+        
+        function updatePhysics() {
+            const dt = Math.min(clock.getDelta(), 0.03);
+            
+            if (isMouseDown && mouseButton === 0) {
+                raycaster.setFromCamera(mouse, camera);
+                
+                const intersects = raycaster.intersectObject(mesh);
+                if (intersects.length > 0) {
+                    intersectPoint.copy(intersects[0].point);
+                    
+                    // Calculate drag direction from previous intersection
+                    const dragDelta = new THREE.Vector3()
+                        .subVectors(intersectPoint, prevIntersectPoint);
+                    
+                    // Apply force to nearby points based on drag movement
+                    for (let p of points) {
+                        if (p.pin) continue;
+                        
+                        const dist = p.position.distanceTo(intersectPoint);
+                        if (dist < config.mouseRadius) {
+                            const influence = Math.pow(1 - (dist / config.mouseRadius), 2);
+                            
+                            // Apply drag force proportional to mouse movement
+                            const dragForce = new THREE.Vector3()
+                                .copy(dragDelta).multiplyScalar(influence * 200);
+                            
+                            // Also apply a slight outward push for tactile feel
+                            const outwardDir = new THREE.Vector3()
+                                .subVectors(p.position, intersectPoint).normalize().multiplyScalar(influence * 15);
+                            
+                            p.update(dt, dragForce.add(outwardDir));
+                        }
+                    }
+                    
+                    prevIntersectPoint.copy(intersectPoint);
+                } else {
+                    // If ray no longer hits mesh, update all points normally
+                    for (let p of points) {
+                        p.update(dt);
+                    }
+                }
+            } else {
+                // Normal physics update when not interacting
+                for (let p of points) {
+                    p.update(dt);
+                }
+            }
+
+            // Solve Constraints (Sticks)
+            const iterations = config.iterations; 
+            for(let i = 0; i < iterations; i++) {
+                for (let s of sticks) {
+                    s.update();
+                }
+            }
+
+            // Sync Mesh Geometry with Physics Points
+            const posAttribute = geometry.attributes.position;
+            
+            for (let i = 0; i < points.length; i++) {
+                posAttribute.setXYZ(i, points[i].position.x, points[i].position.y, points[i].position.z); 
+            }
+
+            posAttribute.needsUpdate = true;
+            geometry.computeVertexNormals(); // Recalculate lighting normals for folds
+        }
+
+        initCloth();
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            updatePhysics();
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+
+    </script>
+</body>
+</html>
