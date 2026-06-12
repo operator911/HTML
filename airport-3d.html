@@ -42,6 +42,7 @@
         <h2>Airport 3D Simulation</h2>
         <p>South Runway - Landing (west to east)</p>
         <p>North Runway - Takeoff (west to east)</p>
+        <p id="timeDisplay">Time: --:--</p>
         <p>Drag to rotate | Scroll to zoom | Click plane for takeoff</p>
     </div>
 
@@ -51,6 +52,16 @@
         let airplanes = [];
         const gates = [];
         const airplaneColors = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6];
+        
+        // Day/night cycle variables
+        let timeOfDay = 0; // 0-24 hours
+        const dayDuration = 120000; // 2 minutes (120000ms) for full day cycle
+        let lastTimeUpdate = Date.now();
+        let sun, moon;
+        let runwayLights = [];
+        let taxiwayLights = [];
+        let lampPosts = []; // Actual illuminating lights
+        let lastTakeoffTime = 0; // Track when last plane started takeoff
 
         function init() {
             scene = new THREE.Scene();
@@ -66,9 +77,11 @@
             renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
 
+            // Ambient light (will be adjusted by day/night cycle)
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
 
+            // Directional light (sun)
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
             directionalLight.position.set(-200, 500, 300);
             directionalLight.castShadow = true;
@@ -77,6 +90,15 @@
             directionalLight.shadow.camera.top = 500;
             directionalLight.shadow.camera.bottom = -500;
             scene.add(directionalLight);
+
+            // Create sun and moon
+            createCelestialBodies();
+            
+            // Create runway and taxiway lights (visible bulbs)
+            createRunwayLights();
+            
+            // Create illuminating lamp posts (actual light sources)
+            createLampPosts();
 
             createGround();
             createRunways();
@@ -97,7 +119,6 @@
             let orbitRadius = 565;
             let orbitHeight = 250;
             let selectedPlane = null;
-            let lastTakeoffTime = 0; // Track when last plane started takeoff
 
             // Raycaster for clicking on planes
             const raycaster = new THREE.Raycaster();
@@ -437,6 +458,342 @@
             }
         }
 
+        function createCelestialBodies() {
+            // Sun
+            const sunGeo = new THREE.SphereGeometry(80, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            sun = new THREE.Mesh(sunGeo, sunMat);
+            scene.add(sun);
+
+            // Moon - orbits same direction as sun but positioned opposite (visible at night)
+            const moonGeo = new THREE.SphereGeometry(60, 32, 32);
+            const moonMat = new THREE.MeshBasicMaterial({ color: 0x8888aa });
+            moon = new THREE.Mesh(moonGeo, moonMat);
+            scene.add(moon);
+
+            // Stars (small points in the sky)
+            const starsGeometry = new THREE.BufferGeometry();
+            const starPositions = [];
+            for (let i = 0; i < 500; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = Math.random() * 800 + 100;
+                const z = (Math.random() - 0.5) * 2000;
+                starPositions.push(x, y, z);
+            }
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+            const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 2 });
+            const stars = new THREE.Points(starsGeometry, starsMaterial);
+            stars.userData.isStars = true;
+            scene.add(stars);
+        }
+
+        function createLampPosts() {
+            // Create lamp posts with actual spotlights that illuminate the ground
+            const lampPostHeight = 40;
+            
+            // Define materials and geometries once (shared across all lamp posts)
+            const poleGeo = new THREE.CylinderGeometry(1, 1.5, lampPostHeight, 8);
+            const poleMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
+            const lampHeadGeo = new THREE.SphereGeometry(3, 8, 8);
+            const lampHeadMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+            
+            // Lamp posts along main taxiway (z=280)
+            for (let x = -400; x <= 400; x += 80) {
+                const pole = new THREE.Mesh(poleGeo, poleMat);
+                pole.position.set(x, lampPostHeight / 2, 280);
+                scene.add(pole);
+
+                // Lamp head (visible bulb)
+                const lampHead = new THREE.Mesh(lampHeadGeo, lampHeadMat);
+                lampHead.position.set(x, lampPostHeight + 5, 280);
+                scene.add(lampHead);
+
+                // Actual spotlight pointing down
+                const spotLight = new THREE.SpotLight(0xffffaa, 1.5);
+                spotLight.position.set(x, lampPostHeight + 3, 280);
+                spotLight.target.position.set(x, 0, 280);
+                spotLight.angle = Math.PI / 6;
+                spotLight.penumbra = 0.3;
+                spotLight.distance = 150;
+                scene.add(spotLight);
+                scene.add(spotLight.target);
+                
+                lampPosts.push({ light: spotLight, bulb: lampHead });
+            }
+
+            // Lamp posts along runway connector (x=380)
+            for (let z = -120; z <= 260; z += 60) {
+                const pole = new THREE.Mesh(poleGeo, poleMat);
+                pole.position.set(380, lampPostHeight / 2, z);
+                scene.add(pole);
+
+                const lampHead = new THREE.Mesh(lampHeadGeo, lampHeadMat);
+                lampHead.position.set(380, lampPostHeight + 5, z);
+                scene.add(lampHead);
+
+                const spotLight = new THREE.SpotLight(0xffffaa, 1.5);
+                spotLight.position.set(380, lampPostHeight + 3, z);
+                spotLight.target.position.set(380, 0, z);
+                spotLight.angle = Math.PI / 6;
+                spotLight.penumbra = 0.3;
+                spotLight.distance = 150;
+                scene.add(spotLight);
+                scene.add(spotLight.target);
+                
+                lampPosts.push({ light: spotLight, bulb: lampHead });
+            }
+
+            // Lamp posts along gate areas
+            for (let i = 0; i < 5; i++) {
+                const x = -120 + i * 60;
+                const pole = new THREE.Mesh(poleGeo, poleMat);
+                pole.position.set(x, lampPostHeight / 2, 300);
+                scene.add(pole);
+
+                const lampHead = new THREE.Mesh(lampHeadGeo, lampHeadMat);
+                lampHead.position.set(x, lampPostHeight + 5, 300);
+                scene.add(lampHead);
+
+                const spotLight = new THREE.SpotLight(0xffffaa, 1.2);
+                spotLight.position.set(x, lampPostHeight + 3, 300);
+                spotLight.target.position.set(x, 0, 300);
+                spotLight.angle = Math.PI / 5;
+                spotLight.penumbra = 0.4;
+                spotLight.distance = 120;
+                scene.add(spotLight);
+                scene.add(spotLight.target);
+                
+                lampPosts.push({ light: spotLight, bulb: lampHead });
+            }
+
+            // Lamp posts along takeoff runway connector (x=-380)
+            for (let z = 120; z <= 260; z += 50) {
+                const pole = new THREE.Mesh(poleGeo, poleMat);
+                pole.position.set(-380, lampPostHeight / 2, z);
+                scene.add(pole);
+
+                const lampHead = new THREE.Mesh(lampHeadGeo, lampHeadMat);
+                lampHead.position.set(-380, lampPostHeight + 5, z);
+                scene.add(lampHead);
+
+                const spotLight = new THREE.SpotLight(0xffffaa, 1.5);
+                spotLight.position.set(-380, lampPostHeight + 3, z);
+                spotLight.target.position.set(-380, 0, z);
+                spotLight.angle = Math.PI / 6;
+                spotLight.penumbra = 0.3;
+                spotLight.distance = 150;
+                scene.add(spotLight);
+                scene.add(spotLight.target);
+                
+                lampPosts.push({ light: spotLight, bulb: lampHead });
+            }
+        }
+
+        function createRunwayLights() {
+            // Runway edge lights (blue for taxiways, white/green/red for runways)
+            const runwayEdgeLightGeo = new THREE.SphereGeometry(1.5, 8, 8);
+            
+            // Landing runway (south) edge lights - white on both sides
+            for (let x = -380; x <= 380; x += 40) {
+                // North edge
+                const lightNorthL = new THREE.Mesh(runwayEdgeLightGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                lightNorthL.position.set(x, 1, -125);
+                scene.add(lightNorthL);
+                runwayLights.push(lightNorthL);
+
+                const lightNorthR = new THREE.Mesh(runwayEdgeLightGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                lightNorthR.position.set(x, 1, -175);
+                scene.add(lightNorthR);
+                runwayLights.push(lightNorthR);
+
+                // South edge
+                const lightSouthL = new THREE.Mesh(runwayEdgeLightGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                lightSouthL.position.set(x, 1, -125);
+                scene.add(lightSouthL);
+                runwayLights.push(lightSouthL);
+
+                const lightSouthR = new THREE.Mesh(runwayEdgeLightGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                lightSouthR.position.set(x, 1, -175);
+                scene.add(lightSouthR);
+                runwayLights.push(lightSouthR);
+            }
+
+            // Takeoff runway (north) edge lights
+            for (let x = -380; x <= 380; x += 40) {
+                const lightNorth = new THREE.Mesh(runwayEdgeLightGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                lightNorth.position.set(x, 1, 125);
+                scene.add(lightNorth);
+                runwayLights.push(lightNorth);
+
+                const lightSouth = new THREE.Mesh(runwayEdgeLightGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                lightSouth.position.set(x, 1, 175);
+                scene.add(lightSouth);
+                runwayLights.push(lightSouth);
+            }
+
+            // Taxiway edge lights (blue)
+            for (let x = -430; x <= 430; x += 30) {
+                const taxiLightNorth = new THREE.Mesh(runwayEdgeLightGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0x0088ff }));
+                taxiLightNorth.position.set(x, 1, 267);
+                scene.add(taxiLightNorth);
+                taxiwayLights.push(taxiLightNorth);
+
+                const taxiLightSouth = new THREE.Mesh(runwayEdgeLightGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0x0088ff }));
+                taxiLightSouth.position.set(x, 1, 293);
+                scene.add(taxiLightSouth);
+                taxiwayLights.push(taxiLightSouth);
+            }
+
+            // Runway threshold lights (green at start, red at end)
+            const landingThresholdGeo = new THREE.SphereGeometry(2, 8, 8);
+            
+            // Landing runway west end (approach) - green
+            for (let z = -170; z <= -130; z += 20) {
+                const thresholdLight = new THREE.Mesh(landingThresholdGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+                thresholdLight.position.set(-400, 1, z);
+                scene.add(thresholdLight);
+                runwayLights.push(thresholdLight);
+            }
+
+            // Landing runway east end - red
+            for (let z = -170; z <= -130; z += 20) {
+                const thresholdLight = new THREE.Mesh(landingThresholdGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                thresholdLight.position.set(400, 1, z);
+                scene.add(thresholdLight);
+                runwayLights.push(thresholdLight);
+            }
+
+            // Takeoff runway west end - green
+            for (let z = 130; z <= 170; z += 20) {
+                const thresholdLight = new THREE.Mesh(landingThresholdGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+                thresholdLight.position.set(-400, 1, z);
+                scene.add(thresholdLight);
+                runwayLights.push(thresholdLight);
+            }
+
+            // Takeoff runway east end - red  
+            for (let z = 130; z <= 170; z += 20) {
+                const thresholdLight = new THREE.Mesh(landingThresholdGeo, 
+                    new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                thresholdLight.position.set(400, 1, z);
+                scene.add(thresholdLight);
+                runwayLights.push(thresholdLight);
+            }
+        }
+
+        function updateDayNightCycle() {
+            // Calculate elapsed real time and convert to game hours
+            const now = Date.now();
+            const elapsedMs = now - lastTimeUpdate;
+            lastTimeUpdate = now;
+            
+            // 24 game-hours pass in dayDuration milliseconds
+            // So per millisecond: 24 / dayDuration hours
+            timeOfDay = (timeOfDay + (elapsedMs * 24 / dayDuration)) % 24;
+            
+            // Position sun - rises at 6 AM, sets at 8 PM
+            const angle = (timeOfDay - 6) / 24 * Math.PI * 2;
+            
+            sun.position.x = Math.cos(angle) * 800;
+            sun.position.y = Math.sin(angle) * 600;
+            
+            // Moon orbits same direction as sun, but positioned opposite (180 degrees away)
+            // So moon is visible at night when sun has set
+            const moonAngle = angle + Math.PI; // Opposite side of sky
+            
+            moon.position.x = Math.cos(moonAngle) * 800;
+            moon.position.y = Math.sin(moonAngle) * 600;
+
+            // Determine if it's day, dusk, or night based on sun position
+            const isNight = timeOfDay < 6 || timeOfDay > 20;
+            const isDusk = (timeOfDay >= 5 && timeOfDay < 7) || (timeOfDay >= 19 && timeOfDay <= 21);
+
+            // Update sky color and lighting
+            let skyColor, ambientIntensity, directionalIntensity;
+            
+            if (isNight) {
+                skyColor = new THREE.Color(0x0a0a1a);
+                ambientIntensity = 0.15;
+                directionalIntensity = 0;
+            } else if (isDusk) {
+                // Sunset/sunrise colors
+                const duskProgress = timeOfDay < 12 ? 
+                    Math.max(0, Math.min(1, (timeOfDay - 5) / 2)) :
+                    Math.max(0, Math.min(1, (21 - timeOfDay) / 2));
+                
+                skyColor = new THREE.Color(0x0a0a1a).lerp(new THREE.Color(0xff6b35), duskProgress);
+                ambientIntensity = 0.2 + duskProgress * 0.4;
+                directionalIntensity = duskProgress * 0.8;
+            } else {
+                skyColor = new THREE.Color(0x87ceeb); // day blue
+                ambientIntensity = 0.6;
+                directionalIntensity = 1.0;
+            }
+
+            scene.background = skyColor;
+            scene.fog.color.copy(skyColor);
+
+            // Update lights
+            scene.children.forEach(child => {
+                if (child.type === 'AmbientLight') {
+                    child.intensity = ambientIntensity;
+                } else if (child.type === 'DirectionalLight') {
+                    child.position.copy(sun.position);
+                    child.intensity = directionalIntensity;
+                }
+            });
+
+            // Update runway/taxiway light visibility based on time of day
+            const lightsVisible = isNight || isDusk;
+            runwayLights.forEach(light => {
+                light.visible = lightsVisible;
+            });
+            taxiwayLights.forEach(light => {
+                light.visible = lightsVisible;
+            });
+
+            // Update stars visibility (only at night)
+            scene.children.forEach(child => {
+                if (child.userData.isStars) {
+                    child.visible = isNight;
+                }
+            });
+
+            // Update airplane navigation lights visibility (only at night)
+            airplanes.forEach(plane => {
+                plane.mesh.children.forEach(child => {
+                    if (child.userData.isNavLight) {
+                        child.visible = isNight;
+                    }
+                });
+            });
+
+            // Update lamp posts (actual illumination - only on at night)
+            lampPosts.forEach(lamp => {
+                if (lamp.light) {
+                    lamp.light.intensity = isNight ? 1.5 : 0;
+                }
+                lamp.bulb.visible = isNight;
+            });
+
+            // Update time display
+            const hours = Math.floor(timeOfDay);
+            const minutes = Math.floor((timeOfDay - hours) * 60);
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            document.getElementById('timeDisplay').textContent = `Time: ${timeStr}`;
+        }
+
         function createAirplane(color) {
             const airplane = new THREE.Group();
 
@@ -572,6 +929,31 @@
             stripe.position.set(0, 3.1, -5);
             airplane.add(stripe);
 
+            // Navigation lights (visible at night)
+            // Red light on left (port) wingtip
+            const navLightLeftGeo = new THREE.SphereGeometry(1, 8, 8);
+            const navLightLeftMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const navLightLeft = new THREE.Mesh(navLightLeftGeo, navLightLeftMat);
+            navLightLeft.position.set(-25, 4, -5);
+            navLightLeft.userData.isNavLight = true;
+            airplane.add(navLightLeft);
+
+            // Green light on right (starboard) wingtip
+            const navLightRightGeo = new THREE.SphereGeometry(1, 8, 8);
+            const navLightRightMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const navLightRight = new THREE.Mesh(navLightRightGeo, navLightRightMat);
+            navLightRight.position.set(25, 4, -5);
+            navLightRight.userData.isNavLight = true;
+            airplane.add(navLightRight);
+
+            // White light on tail
+            const navLightTailGeo = new THREE.SphereGeometry(1, 8, 8);
+            const navLightTailMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const navLightTail = new THREE.Mesh(navLightTailGeo, navLightTailMat);
+            navLightTail.position.set(0, 12, -30);
+            navLightTail.userData.isNavLight = true;
+            airplane.add(navLightTail);
+
             airplane.castShadow = true;
             return airplane;
         }
@@ -583,6 +965,7 @@
             // All planes start by landing first - approach from west heading east
             airplane.position.set(-600, 250, -150);
             airplane.rotation.y = Math.PI / 2; // Nose pointing positive X (east, along runway)
+            airplane.userData.holdingShort = false; // Initialize hold short flag
             
             scene.add(airplane);
             
@@ -596,6 +979,9 @@
 
         function animate() {
             requestAnimationFrame(animate);
+
+            // Update day/night cycle
+            updateDayNightCycle();
 
             for (let i = airplanes.length - 1; i >= 0; i--) {
                 const plane = airplanes[i];
@@ -668,6 +1054,36 @@
                 } else if (plane.state === 'taxiToGate') {
                     const gate = gates[plane.gateIndex];
                     const t = Math.min(plane.progress, 1);
+                    
+                    // Check if plane needs to hold short of active takeoff runway
+                    // Takeoff runway is at z=150, main taxiway crossing is around x=-380 to -300
+                    const planeTakingOff = airplanes.some(p => 
+                        p.state === 'takeoffRoll' || (p.state === 'lineUp' && p.progress > 0.5)
+                    );
+                    
+                    // Hold short point is at x=-320, z=280 (before crossing takeoff runway path)
+                    const atHoldShort = plane.mesh.position.x < -300 && plane.mesh.position.x > -400 && plane.mesh.position.z === 280;
+                    
+                    if (atHoldShort && planeTakingOff && !plane.mesh.userData.holdingShort) {
+                        // Stop and wait for runway to clear
+                        plane.mesh.userData.holdingShort = true;
+                    }
+                    
+                    if (plane.mesh.userData.holdingShort) {
+                        // Check if runway is now clear
+                        const runwayClear = !airplanes.some(p => 
+                            p.state === 'takeoffRoll' || (p.state === 'lineUp' && p.progress > 0.5)
+                        );
+                        
+                        if (runwayClear) {
+                            plane.mesh.userData.holdingShort = false;
+                            // Continue taxiing
+                        } else {
+                            // Stay stopped at hold short line, flash lights to indicate waiting
+                            return; // Skip position update this frame
+                        }
+                    }
+                    
                     plane.progress += 0.007; // ~half speed
                     
                     // Turn LEFT from north (0) to west (3PI/2), taxi west, then turn RIGHT into gate facing south
@@ -694,6 +1110,7 @@
                         plane.progress = 0;
                         plane.mesh.rotation.y = Math.PI; // facing south (-Z direction) into gate
                         plane.mesh.userData.readyForTakeoff = true; // Ready immediately!
+                        plane.mesh.userData.holdingShort = false; // Reset hold short flag
                         // Gate already marked occupied when assigned in exitRunway
                     }
                 } else if (plane.state === 'parked') {
