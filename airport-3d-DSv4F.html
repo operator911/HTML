@@ -1,0 +1,709 @@
+// coded by DeekseekV4 Flash MTP
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Airport Simulation</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.6);
+            padding: 12px 18px;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 14px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        #info span {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">🛩️ <span>3D Airport</span> | Drag to rotate · Scroll to zoom</div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 150, 300);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 500);
+        camera.position.set(60, 40, 80);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.update();
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+        sunLight.position.set(50, 100, 50);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        const d = 120;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 200;
+        scene.add(sunLight);
+
+        const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
+        fillLight.position.set(-50, 50, -50);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        rimLight.position.set(0, -20, -80);
+        scene.add(rimLight);
+
+        // --- Ground ---
+        const groundGeometry = new THREE.PlaneGeometry(300, 300);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x4a7c59, roughness: 0.9 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.1;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // --- Helper: Create Textures ---
+        function createRunwayTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, 512, 128);
+            // Side lines
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(12, 12, 488, 104);
+            // Center dashed line
+            ctx.setLineDash([24, 24]);
+            ctx.beginPath();
+            ctx.moveTo(256, 12);
+            ctx.lineTo(256, 116);
+            ctx.stroke();
+            // Threshold markings
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'white';
+            for (let i = 0; i < 8; i++) {
+                ctx.fillRect(40 + i * 56, 20, 24, 88);
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createTaxiwayTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#3a3a3a';
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.strokeStyle = 'yellow';
+            ctx.lineWidth = 6;
+            ctx.setLineDash([12, 12]);
+            ctx.beginPath();
+            ctx.moveTo(64, 0);
+            ctx.lineTo(64, 128);
+            ctx.stroke();
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- Runways ---
+        const runwayTexture = createRunwayTexture();
+        runwayTexture.wrapS = THREE.RepeatWrapping;
+        runwayTexture.wrapT = THREE.RepeatWrapping;
+        runwayTexture.repeat.set(1, 5);
+
+        const runwayMat = new THREE.MeshStandardMaterial({ map: runwayTexture, roughness: 0.6, metalness: 0.2 });
+
+        const runwayGeo = new THREE.BoxGeometry(14, 0.3, 90);
+
+        const landingRunway = new THREE.Mesh(runwayGeo, runwayMat);
+        landingRunway.position.set(-35, 0, 0);
+        landingRunway.receiveShadow = true;
+        scene.add(landingRunway);
+
+        const takeoffRunway = new THREE.Mesh(runwayGeo, runwayMat);
+        takeoffRunway.position.set(35, 0, 0);
+        takeoffRunway.receiveShadow = true;
+        scene.add(takeoffRunway);
+
+        // Runway Labels
+        function createLabel(text, color = '#ffffff') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.beginPath();
+            ctx.roundRect(10, 10, 108, 108, 12);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.font = 'Bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 64, 64);
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(6, 6, 1);
+            return sprite;
+        }
+
+        const labelLanding = createLabel('27L');
+        labelLanding.position.set(-35, 1.5, 48);
+        scene.add(labelLanding);
+
+        const labelTakeoff = createLabel('27R');
+        labelTakeoff.position.set(35, 1.5, 48);
+        scene.add(labelTakeoff);
+
+        // Runway Lights
+        function createRunwayLight() {
+            const geo = new THREE.SphereGeometry(0.25, 8);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.8 });
+            const light = new THREE.Mesh(geo, mat);
+            light.castShadow = false;
+            return light;
+        }
+
+        for (let z = -44; z <= 44; z += 4) {
+            const light1 = createRunwayLight();
+            light1.position.set(-35, 0.2, z);
+            scene.add(light1);
+            const light2 = createRunwayLight();
+            light2.position.set(35, 0.2, z);
+            scene.add(light2);
+        }
+
+        // --- Taxiways ---
+        const taxiwayTexture = createTaxiwayTexture();
+        taxiwayTexture.wrapS = THREE.RepeatWrapping;
+        taxiwayTexture.wrapT = THREE.RepeatWrapping;
+        taxiwayTexture.repeat.set(6, 1);
+
+        const taxiMat = new THREE.MeshStandardMaterial({ map: taxiwayTexture, roughness: 0.7 });
+
+        // Horizontal taxiway
+        const taxiGeoH = new THREE.BoxGeometry(80, 0.2, 8);
+        const taxiH = new THREE.Mesh(taxiGeoH, taxiMat);
+        taxiH.position.set(0, 0, -48);
+        taxiH.receiveShadow = true;
+        scene.add(taxiH);
+
+        // Vertical taxiway to terminal
+        const taxiGeoV = new THREE.BoxGeometry(8, 0.2, 28);
+        const taxiV = new THREE.Mesh(taxiGeoV, taxiMat);
+        taxiV.position.set(0, 0, -28);
+        taxiV.receiveShadow = true;
+        scene.add(taxiV);
+
+        // Apron
+        const apronGeo = new THREE.BoxGeometry(50, 0.2, 18);
+        const apronMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.8 });
+        const apron = new THREE.Mesh(apronGeo, apronMat);
+        apron.position.set(0, 0, -14);
+        apron.receiveShadow = true;
+        scene.add(apron);
+
+        // Hold short lines
+        const holdMat = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+        const hold1 = new THREE.Mesh(new THREE.BoxGeometry(14, 0.05, 0.5), holdMat);
+        hold1.position.set(-35, 0.1, -44);
+        scene.add(hold1);
+        const hold2 = new THREE.Mesh(new THREE.BoxGeometry(14, 0.05, 0.5), holdMat);
+        hold2.position.set(35, 0.1, -44);
+        scene.add(hold2);
+
+        // --- Terminal ---
+        const terminalMat = new THREE.MeshStandardMaterial({ color: 0xccccdd, roughness: 0.4, metalness: 0.3 });
+        const terminalGeo = new THREE.BoxGeometry(36, 6, 12);
+        const terminal = new THREE.Mesh(terminalGeo, terminalMat);
+        terminal.position.set(0, 3, -20);
+        terminal.castShadow = true;
+        terminal.receiveShadow = true;
+        scene.add(terminal);
+
+        // Terminal Glass
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.4, roughness: 0.1, metalness: 0.8 });
+        const glassGeo = new THREE.BoxGeometry(34, 4, 0.5);
+        const glass = new THREE.Mesh(glassGeo, glassMat);
+        glass.position.set(0, 4, -14.5);
+        scene.add(glass);
+
+        // Terminal Roof
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.6 });
+        const roofGeo = new THREE.BoxGeometry(38, 0.5, 14);
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.set(0, 6.25, -20);
+        roof.castShadow = true;
+        roof.receiveShadow = true;
+        scene.add(roof);
+
+        // Gates (Jetways)
+        function createJetway() {
+            const group = new THREE.Group();
+            const bridgeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+            const bridgeGeo = new THREE.BoxGeometry(5, 0.6, 0.6);
+            const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+            bridge.position.set(0, 0, 0);
+            bridge.castShadow = true;
+            bridge.receiveShadow = true;
+            group.add(bridge);
+
+            const pillarMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+            const pillarGeo = new THREE.BoxGeometry(0.3, 2.5, 0.3);
+            const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+            pillar.position.set(0, -1.25, 0);
+            pillar.castShadow = true;
+            pillar.receiveShadow = true;
+            group.add(pillar);
+
+            // Connector
+            const connMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+            const connGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            const conn = new THREE.Mesh(connGeo, connMat);
+            conn.position.set(0, 0.4, 0);
+            conn.castShadow = true;
+            conn.receiveShadow = true;
+            group.add(conn);
+
+            return group;
+        }
+
+        const gatePositions = [-15, -7.5, 0, 7.5, 15];
+        gatePositions.forEach(x => {
+            const jetway = createJetway();
+            jetway.position.set(x, 1.8, -14);
+            jetway.rotation.y = Math.PI / 2;
+            scene.add(jetway);
+
+            // Gate markings
+            const markMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const mark = new THREE.Mesh(new THREE.BoxGeometry(3, 0.05, 5), markMat);
+            mark.position.set(x, 0.1, -14);
+            scene.add(mark);
+        });
+
+        // --- Control Tower ---
+        function createTower() {
+            const group = new THREE.Group();
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.7 });
+            const baseGeo = new THREE.CylinderGeometry(1.5, 2, 6);
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 3;
+            base.castShadow = true;
+            base.receiveShadow = true;
+            group.add(base);
+
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.6, roughness: 0.1, metalness: 0.5 });
+            const cabinGeo = new THREE.CylinderGeometry(2.5, 2.5, 1.2);
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.y = 7;
+            cabin.castShadow = true;
+            cabin.receiveShadow = true;
+            group.add(cabin);
+
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+            const roofGeo = new THREE.CylinderGeometry(2.7, 2.7, 0.3);
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 7.8;
+            roof.castShadow = true;
+            roof.receiveShadow = true;
+            group.add(roof);
+
+            return group;
+        }
+
+        const tower = createTower();
+        tower.position.set(20, 0, -35);
+        scene.add(tower);
+
+        // --- Environment (Trees) ---
+        function createTree() {
+            const group = new THREE.Group();
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6B4226 });
+            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.5);
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 0.75;
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            group.add(trunk);
+
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d6a4f });
+            const foliageGeo = new THREE.SphereGeometry(1, 6);
+            const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+            foliage.position.y = 2;
+            foliage.castShadow = true;
+            foliage.receiveShadow = true;
+            group.add(foliage);
+
+            return group;
+        }
+
+        for (let i = 0; i < 30; i++) {
+            const tree = createTree();
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 50 + Math.random() * 40;
+            tree.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+            tree.scale.set(0.6 + Math.random() * 0.8, 0.6 + Math.random() * 0.8, 0.6 + Math.random() * 0.8);
+            scene.add(tree);
+        }
+
+        // --- Clouds ---
+        function createCloud() {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+            const geo = new THREE.SphereGeometry(1, 7);
+            const p1 = new THREE.Mesh(geo, mat); p1.position.set(0, 0, 0); group.add(p1);
+            const p2 = new THREE.Mesh(geo, mat); p2.position.set(1.8, 0.6, 0.6); group.add(p2);
+            const p3 = new THREE.Mesh(geo, mat); p3.position.set(-1.6, 0.4, -0.6); group.add(p3);
+            const p4 = new THREE.Mesh(geo, mat); p4.position.set(0.6, 0.9, -1.2); group.add(p4);
+            const p5 = new THREE.Mesh(geo, mat); p5.position.set(-0.6, 0.7, 1.2); group.add(p5);
+            return group;
+        }
+
+        for (let i = 0; i < 20; i++) {
+            const cloud = createCloud();
+            cloud.position.set(
+                (Math.random() - 0.5) * 200,
+                15 + Math.random() * 25,
+                (Math.random() - 0.5) * 200
+            );
+            cloud.scale.set(3 + Math.random() * 5, 1.5 + Math.random() * 2, 3 + Math.random() * 5);
+            scene.add(cloud);
+        }
+
+        // --- Aircraft ---
+        function createAircraft(fuselageColor = 0xffffff, tailColor = 0xff0000) {
+            const group = new THREE.Group();
+
+            // Fuselage
+            const fuselageMat = new THREE.MeshStandardMaterial({ color: fuselageColor, roughness: 0.3, metalness: 0.2 });
+            const fuselageGeo = new THREE.CylinderGeometry(0.6, 0.6, 4, 10);
+            const fuselage = new THREE.Mesh(fuselageGeo, fuselageMat);
+            fuselage.rotation.x = Math.PI / 2;
+            fuselage.castShadow = true;
+            fuselage.receiveShadow = true;
+            group.add(fuselage);
+
+            // Wings
+            const wingMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+            const wingGeo = new THREE.BoxGeometry(4.5, 0.1, 1.2);
+            const wings = new THREE.Mesh(wingGeo, wingMat);
+            wings.position.set(0, 0, 0.3);
+            wings.castShadow = true;
+            wings.receiveShadow = true;
+            group.add(wings);
+
+            // Tail Vertical
+            const tailVMat = new THREE.MeshStandardMaterial({ color: tailColor, roughness: 0.4 });
+            const tailVGeo = new THREE.BoxGeometry(0.1, 1.4, 0.9);
+            const tailV = new THREE.Mesh(tailVGeo, tailVMat);
+            tailV.position.set(0, 0.7, -1.9);
+            tailV.castShadow = true;
+            tailV.receiveShadow = true;
+            group.add(tailV);
+
+            // Tail Horizontal
+            const tailHMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+            const tailHGeo = new THREE.BoxGeometry(1.8, 0.1, 0.6);
+            const tailH = new THREE.Mesh(tailHGeo, tailHMat);
+            tailH.position.set(0, 0, -1.9);
+            tailH.castShadow = true;
+            tailH.receiveShadow = true;
+            group.add(tailH);
+
+            // Engines
+            const engineMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.6, metalness: 0.4 });
+            const engineGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.6, 10);
+            const engine1 = new THREE.Mesh(engineGeo, engineMat);
+            engine1.rotation.x = Math.PI / 2;
+            engine1.position.set(-1.3, -0.3, 0.6);
+            engine1.castShadow = true;
+            engine1.receiveShadow = true;
+            group.add(engine1);
+
+            const engine2 = new THREE.Mesh(engineGeo, engineMat);
+            engine2.rotation.x = Math.PI / 2;
+            engine2.position.set(1.3, -0.3, 0.6);
+            engine2.castShadow = true;
+            engine2.receiveShadow = true;
+            group.add(engine2);
+
+            // Landing Gear
+            const gearMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const gearGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.3, 6);
+            const gear1 = new THREE.Mesh(gearGeo, gearMat);
+            gear1.position.set(-0.6, -0.3, 1.4);
+            gear1.castShadow = true;
+            gear1.receiveShadow = true;
+            group.add(gear1);
+
+            const gear2 = new THREE.Mesh(gearGeo, gearMat);
+            gear2.position.set(0.6, -0.3, 1.4);
+            gear2.castShadow = true;
+            gear2.receiveShadow = true;
+            group.add(gear2);
+
+            const gear3 = new THREE.Mesh(gearGeo, gearMat);
+            gear3.position.set(0, -0.3, -1.6);
+            gear3.castShadow = true;
+            gear3.receiveShadow = true;
+            group.add(gear3);
+
+            return group;
+        }
+
+        // --- Aircraft State Machine ---
+        const aircraftStates = {
+            APPROACHING: 'APPROACHING',
+            LANDING: 'LANDING',
+            TAXI_TO_GATE: 'TAXI_TO_GATE',
+            PARKED: 'PARKED',
+            TAXI_TO_RUNWAY: 'TAXI_TO_RUNWAY',
+            TAKEOFF: 'TAKEOFF',
+            DEPARTED: 'DEPARTED'
+        };
+
+        class AirportAircraft {
+            constructor(mesh, gateIndex) {
+                this.mesh = mesh;
+                this.gateIndex = gateIndex;
+                this.state = aircraftStates.APPROACHING;
+                this.waypoints = [];
+                this.currentWaypointIndex = 0;
+                this.speed = 0;
+                this.parkTimer = 0;
+                this.setupPath();
+            }
+
+            setupPath() {
+                const gates = [-15, -7.5, 0, 7.5, 15];
+                const gateX = gates[this.gateIndex % gates.length];
+
+                switch (this.state) {
+                    case aircraftStates.APPROACHING:
+                        this.waypoints = [
+                            new THREE.Vector3(-35, 3, 60),
+                            new THREE.Vector3(-35, 1.5, 55),
+                            new THREE.Vector3(-35, 0.5, 50),
+                            new THREE.Vector3(-35, 0, 45)
+                        ];
+                        this.speed = 1.2;
+                        break;
+                    case aircraftStates.LANDING:
+                        this.waypoints = [
+                            new THREE.Vector3(-35, 0, 45),
+                            new THREE.Vector3(-35, 0, -40)
+                        ];
+                        this.speed = 0.4;
+                        break;
+                    case aircraftStates.TAXI_TO_GATE:
+                        this.waypoints = [
+                            new THREE.Vector3(-35, 0, -40),
+                            new THREE.Vector3(-25, 0, -48),
+                            new THREE.Vector3(0, 0, -48),
+                            new THREE.Vector3(gateX, 0, -14)
+                        ];
+                        this.speed = 0.6;
+                        break;
+                    case aircraftStates.TAXI_TO_RUNWAY:
+                        this.waypoints = [
+                            new THREE.Vector3(gateX, 0, -14),
+                            new THREE.Vector3(0, 0, -48),
+                            new THREE.Vector3(35, 0, -48)
+                        ];
+                        this.speed = 0.6;
+                        break;
+                    case aircraftStates.TAKEOFF:
+                        this.waypoints = [
+                            new THREE.Vector3(35, 0, -48),
+                            new THREE.Vector3(35, 0, 45),
+                            new THREE.Vector3(35, 0.5, 50),
+                            new THREE.Vector3(35, 1.5, 55),
+                            new THREE.Vector3(35, 3, 60)
+                        ];
+                        this.speed = 1.2;
+                        break;
+                }
+                this.currentWaypointIndex = 0;
+            }
+
+            update(delta) {
+                if (this.state === aircraftStates.PARKED) {
+                    this.parkTimer -= delta;
+                    if (this.parkTimer <= 0) {
+                        this.state = aircraftStates.TAXI_TO_RUNWAY;
+                        this.setupPath();
+                    }
+                    return;
+                }
+
+                if (this.waypoints.length === 0) return;
+
+                const target = this.waypoints[this.currentWaypointIndex];
+                const currentPos = this.mesh.position;
+                const direction = new THREE.Vector3().subVectors(target, currentPos);
+                const distance = direction.length();
+
+                if (distance < 0.5) {
+                    this.currentWaypointIndex++;
+                    if (this.currentWaypointIndex >= this.waypoints.length) {
+                        this.transitionState();
+                    }
+                    return;
+                }
+
+                direction.normalize();
+                const moveSpeed = this.speed * delta * 12;
+                const moveVector = direction.clone().multiplyScalar(moveSpeed);
+                
+                // Prevent overshooting
+                if (moveVector.length() > distance) {
+                    this.mesh.position.copy(target);
+                } else {
+                    this.mesh.position.add(moveVector);
+                }
+
+                // Smooth Yaw Rotation
+                const targetAngle = Math.atan2(direction.x, direction.z);
+                const currentAngle = this.mesh.rotation.y;
+                let diff = targetAngle - currentAngle;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                this.mesh.rotation.y += diff * 0.08;
+
+                // Smooth Pitch Rotation
+                if (this.state === aircraftStates.APPROACHING || this.state === aircraftStates.TAKEOFF) {
+                    const targetPitch = -direction.y * 1.2;
+                    this.mesh.rotation.x += (targetPitch - this.mesh.rotation.x) * 0.05;
+                } else {
+                    this.mesh.rotation.x += (0 - this.mesh.rotation.x) * 0.05;
+                }
+
+                // Keep roll stable
+                this.mesh.rotation.z = 0;
+            }
+
+            transitionState() {
+                switch (this.state) {
+                    case aircraftStates.APPROACHING:
+                        this.state = aircraftStates.LANDING;
+                        this.setupPath();
+                        break;
+                    case aircraftStates.LANDING:
+                        this.state = aircraftStates.TAXI_TO_GATE;
+                        this.setupPath();
+                        break;
+                    case aircraftStates.TAXI_TO_GATE:
+                        this.state = aircraftStates.PARKED;
+                        this.parkTimer = 4 + Math.random() * 6;
+                        break;
+                    case aircraftStates.TAXI_TO_RUNWAY:
+                        this.state = aircraftStates.TAKEOFF;
+                        this.setupPath();
+                        break;
+                    case aircraftStates.TAKEOFF:
+                        this.state = aircraftStates.DEPARTED;
+                        setTimeout(() => {
+                            this.mesh.position.set(-35, 3, 60 + Math.random() * 20);
+                            this.mesh.rotation.set(0, 0, 0);
+                            this.state = aircraftStates.APPROACHING;
+                            this.setupPath();
+                        }, 3000);
+                        break;
+                }
+            }
+        }
+
+        // --- Create Aircraft Fleet ---
+        const aircraftList = [];
+        const numAircraft = 6;
+        const fuselageColors = [0xffffff, 0xe0e0e0, 0xffd0d0, 0xd0ffd0, 0xd0d0ff, 0xfff0d0];
+        const tailColors = [0xff0000, 0x0000ff, 0x00aa00, 0xff00ff, 0xffaa00, 0x00aaff];
+
+        for (let i = 0; i < numAircraft; i++) {
+            const mesh = createAircraft(fuselageColors[i % fuselageColors.length], tailColors[i % tailColors.length]);
+            mesh.position.set(-35, 3, 60 + i * 18);
+            mesh.scale.set(1, 1, 1);
+            scene.add(mesh);
+
+            const aircraft = new AirportAircraft(mesh, i);
+            // Stagger initial states so they don't all land at once
+            if (i > 0) {
+                aircraft.state = aircraftStates.APPROACHING;
+                aircraft.setupPath();
+                // Move them further back in the approach path
+                aircraft.mesh.position.z = 60 + i * 18;
+                // Adjust waypoint index to match position (skip first few waypoints)
+                // Actually, just let them start at the beginning, the spacing will stagger them naturally
+            }
+            aircraftList.push(aircraft);
+        }
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const delta = Math.min(clock.getDelta(), 0.05);
+
+            aircraftList.forEach(aircraft => {
+                aircraft.update(delta);
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // --- Window Resize Handler ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        console.log('3D Airport Simulation Loaded!');
+    </script>
+</body>
+</html>
