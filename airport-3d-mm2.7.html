@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Airport Simulation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; }
+        #canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            background: rgba(0,0,0,0.6);
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+        }
+        #info h1 { font-size: 18px; margin-bottom: 10px; color: #4fc3f7; }
+        #info p { margin: 5px 0; opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>✈ 3D Airport Simulation</h1>
+        <p>Planes: <span id="planeCount">0</span></p>
+        <p>Gates: <span id="gateStatus">0/0</span></p>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 500, 20000);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50000);
+        camera.position.set(300, 200, 400);
+
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2.1;
+
+        const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfffacd, 1.2);
+        sunLight.position.set(200, 300, 100);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 10;
+        sunLight.shadow.camera.far = 1000;
+        sunLight.shadow.camera.left = -500;
+        sunLight.shadow.camera.right = 500;
+        sunLight.shadow.camera.top = 500;
+        sunLight.shadow.camera.bottom = -500;
+        scene.add(sunLight);
+
+        const runwayMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
+        const markingMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+        const taxiwayMaterial = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.9 });
+        const grassMaterial = new THREE.MeshStandardMaterial({ color: 0x2d5a27, roughness: 1 });
+        const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x7a7a7a, roughness: 0.9 });
+        const buildingMaterial = new THREE.MeshStandardMaterial({ color: 0x5a6a7a, roughness: 0.7 });
+
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), grassMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const concreteArea = new THREE.Mesh(new THREE.BoxGeometry(400, 0.1, 300), concreteMaterial);
+        concreteArea.position.set(-50, 0.05, -20);
+        concreteArea.receiveShadow = true;
+        scene.add(concreteArea);
+
+        function createRunway(x, z, width, length, rotation) {
+            const runway = new THREE.Mesh(new THREE.BoxGeometry(width, 0.3, length), runwayMaterial);
+            runway.position.set(x, 0.15, z);
+            runway.rotation.y = rotation;
+            runway.receiveShadow = true;
+            scene.add(runway);
+
+            const markingGeom = new THREE.BoxGeometry(width - 4, 0.35, 3);
+            for (let i = -length / 2 + 20; i < length / 2 - 10; i += 30) {
+                const marking = new THREE.Mesh(markingGeom, markingMaterial);
+                marking.position.set(
+                    x + Math.sin(rotation) * i,
+                    0.2,
+                    z + Math.cos(rotation) * i
+                );
+                marking.rotation.y = rotation;
+                scene.add(marking);
+            }
+
+            const thresholdGeom = new THREE.BoxGeometry(width, 0.35, 8);
+            [-length / 2 + 5, length / 2 - 5].forEach(offset => {
+                const threshold = new THREE.Mesh(thresholdGeom, markingMaterial);
+                threshold.position.set(
+                    x + Math.sin(rotation) * offset,
+                    0.2,
+                    z + Math.cos(rotation) * offset
+                );
+                threshold.rotation.y = rotation;
+                scene.add(threshold);
+            });
+
+            return { x, z, width, length, rotation };
+        }
+
+        const takeoffRunway = createRunway(200, -100, 40, 300, 0);
+        const landingRunway = createRunway(-200, -100, 40, 300, 0);
+
+        function createTaxiwaySegment(p1, p2) {
+            const dx = p2.x - p1.x;
+            const dz = p2.z - p1.z;
+            const length = Math.sqrt(dx * dx + dz * dz);
+            if (length < 1) return null;
+            const angle = Math.atan2(dx, dz);
+
+            const taxiway = new THREE.Mesh(
+                new THREE.BoxGeometry(20, 0.2, length),
+                taxiwayMaterial
+            );
+            taxiway.position.set((p1.x + p2.x) / 2, 0.1, (p1.z + p2.z) / 2);
+            taxiway.rotation.y = -angle;
+            taxiway.receiveShadow = true;
+            scene.add(taxiway);
+            return { x: (p1.x + p2.x) / 2, z: (p1.z + p2.z) / 2 };
+        }
+
+        const taxiwayPaths = [
+            { start: { x: 200, z: 50 }, end: { x: 100, z: 80 } },
+            { start: { x: 100, z: 80 }, end: { x: -50, z: 80 } },
+            { start: { x: -50, z: 80 }, end: { x: -100, z: 60 } },
+            { start: { x: -100, z: 60 }, end: { x: -200, z: 50 } },
+            { start: { x: 100, z: 80 }, end: { x: 50, z: 0 } },
+            { start: { x: 50, z: 0 }, end: { x: -100, z: 0 } },
+            { start: { x: -50, z: 80 }, end: { x: -20, z: 0 } },
+            { start: { x: -100, z: 60 }, end: { x: -150, z: 0 } },
+        ];
+
+        taxiwayPaths.forEach(path => createTaxiwaySegment(path.start, path.end));
+
+        const gates = [];
+        const gatePositions = [
+            { x: -150, z: 0 }, { x: -120, z: 0 }, { x: -90, z: 0 },
+            { x: -60, z: 0 }, { x: -30, z: 0 },
+            { x: 0, z: 0 }, { x: 30, z: 0 }
+        ];
+
+        gatePositions.forEach((pos, index) => {
+            const gateGroup = new THREE.Group();
+
+            const stand = new THREE.Mesh(
+                new THREE.BoxGeometry(25, 0.1, 15),
+                markingMaterial
+            );
+            stand.position.set(pos.x, 0.1, pos.z + 20);
+            gateGroup.add(stand);
+
+            const building = new THREE.Mesh(
+                new THREE.BoxGeometry(20, 15, 10),
+                buildingMaterial
+            );
+            building.position.set(pos.x - 15, 7.5, pos.z + 30);
+            building.castShadow = true;
+            gateGroup.add(building);
+
+            const leadLight = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 2, 1),
+                new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 0.5 })
+            );
+            leadLight.position.set(pos.x + 10, 1, pos.z + 20);
+            gateGroup.add(leadLight);
+
+            scene.add(gateGroup);
+
+            gates.push({
+                id: index,
+                position: { x: pos.x, z: pos.z + 20 },
+                occupied: false
+            });
+        });
+
+        const tower = new THREE.Mesh(
+            new THREE.BoxGeometry(15, 40, 15),
+            buildingMaterial
+        );
+        tower.position.set(-10, 20, -60);
+        tower.castShadow = true;
+        scene.add(tower);
+
+        const towerTop = new THREE.Mesh(
+            new THREE.BoxGeometry(20, 10, 20),
+            new THREE.MeshStandardMaterial({ color: 0x87ceeb, roughness: 0.2, transparent: true, opacity: 0.7 })
+        );
+        towerTop.position.set(-10, 45, -60);
+        scene.add(towerTop);
+
+        class Plane {
+            constructor() {
+                this.mesh = new THREE.Group();
+
+                const fuselageGeom = new THREE.CylinderGeometry(1.5, 1.5, 12, 8);
+                fuselageGeom.rotateX(Math.PI / 2);
+                const fuselage = new THREE.Mesh(fuselageGeom, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 }));
+                fuselage.castShadow = true;
+                this.mesh.add(fuselage);
+
+                const wingGeom = new THREE.BoxGeometry(18, 0.3, 4);
+                const wing = new THREE.Mesh(wingGeom, new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4 }));
+                wing.position.z = -1;
+                wing.castShadow = true;
+                this.mesh.add(wing);
+
+                const tailGeom = new THREE.BoxGeometry(6, 0.3, 2);
+                const tail = new THREE.Mesh(tailGeom, new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4 }));
+                tail.position.z = -5;
+                tail.castShadow = true;
+                this.mesh.add(tail);
+
+                const vertTailGeom = new THREE.BoxGeometry(0.3, 3, 2);
+                const vertTail = new THREE.Mesh(vertTailGeom, new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4 }));
+                vertTail.position.set(0, 1.5, -5);
+                this.mesh.add(vertTail);
+
+                const engineGeom = new THREE.CylinderGeometry(0.6, 0.6, 3, 8);
+                engineGeom.rotateZ(Math.PI / 2);
+                [-5, 5].forEach(xOff => {
+                    const engine = new THREE.Mesh(engineGeom, new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 }));
+                    engine.position.set(xOff, -1, 2);
+                    this.mesh.add(engine);
+                });
+
+                const colors = [0xff4444, 0x4444ff, 0x44ff44, 0xffff44, 0xff44ff, 0x44ffff];
+                const noseGeom = new THREE.ConeGeometry(1.5, 3, 8);
+                noseGeom.rotateX(-Math.PI / 2);
+                const nose = new THREE.Mesh(noseGeom, new THREE.MeshStandardMaterial({ color: colors[Math.floor(Math.random() * colors.length)], roughness: 0.3 }));
+                nose.position.z = -7;
+                this.mesh.add(nose);
+
+                scene.add(this.mesh);
+
+                this.state = 'spawning';
+                this.targetGate = null;
+                this.currentPathIndex = 0;
+                this.speed = 3;
+                this.verticalSpeed = 0;
+                this.waitTime = 0;
+                this.respawnTimer = 200;
+                this.holdingPatternAngle = Math.random() * Math.PI * 2;
+
+                let startGate = null;
+                for (let attempt = 0; attempt < 100; attempt++) {
+                    const g = gates[Math.floor(Math.random() * gates.length)];
+                    if (!g.occupied) {
+                        startGate = g;
+                        break;
+                    }
+                }
+
+                if (!startGate) {
+                    startGate = gates[0];
+                }
+                startGate.occupied = true;
+                this.targetGate = startGate;
+
+                const entryPath = [
+                    { x: landingRunway.x - 150, z: landingRunway.z + 50, y: 0.5 },
+                    { x: -100, z: 80, y: 0.5 },
+                    { x: startGate.position.x, z: startGate.position.z, y: 0.5 }
+                ];
+                this.taxiPath = entryPath;
+                this.currentPathIndex = 0;
+
+                this.mesh.position.set(this.taxiPath[0].x, this.taxiPath[0].y || 0.5, this.taxiPath[0].z);
+                this.mesh.rotation.y = Math.PI;
+            }
+
+            update() {
+                switch (this.state) {
+                    case 'spawning':
+                        this.taxiToTarget();
+                        if (this.isAtGate()) {
+                            this.state = 'atGate';
+                        }
+                        break;
+
+                    case 'taxiingToGate':
+                        this.taxiToTarget();
+                        if (this.isAtGate()) {
+                            this.state = 'atGate';
+                        }
+                        break;
+
+                    case 'atGate':
+                        this.waitTime++;
+                        if (this.waitTime > 200) {
+                            this.waitTime = 0;
+                            this.state = 'taxiingToTakeoff';
+                            const path = [
+                                { x: this.targetGate.position.x, z: this.targetGate.position.z, y: 0.5 },
+                                { x: -50, z: this.targetGate.position.z, y: 0.5 },
+                                { x: -100, z: 60, y: 0.5 },
+                                { x: takeoffRunway.x - 130, z: takeoffRunway.z + 50, y: 0.5 }
+                            ];
+                            this.taxiPath = path;
+                            this.currentPathIndex = 0;
+                        }
+                        break;
+
+                    case 'taxiingToTakeoff':
+                        this.taxiToTarget();
+                        if (this.isNearRunwayEntry()) {
+                            this.state = 'takingOff';
+                        }
+                        break;
+
+                    case 'takingOff':
+                        if (this.mesh.position.y < 60) {
+                            this.verticalSpeed = Math.min(this.verticalSpeed + 0.08, 1.5);
+                            this.mesh.position.y += this.verticalSpeed;
+                        } else {
+                            this.state = 'flyingAway';
+                            this.speed = 10;
+                        }
+                        break;
+
+                    case 'flyingAway':
+                        this.mesh.position.x += Math.sin(this.holdingPatternAngle) * 0.3;
+                        this.mesh.position.z -= Math.cos(this.holdingPatternAngle) * 18;
+                        this.mesh.rotation.y = Math.PI + this.holdingPatternAngle;
+
+                        if (this.mesh.position.z < -800) {
+                            this.state = 'respawning';
+                            this.respawnTimer = 300 + Math.random() * 200;
+                        }
+                        break;
+
+                    case 'respawning':
+                        this.respawnTimer--;
+                        if (this.respawnTimer <= 0) {
+                            const newGate = this.findAvailableGate();
+                            if (newGate) {
+                                if (this.targetGate) this.targetGate.occupied = false;
+                                newGate.occupied = true;
+                                this.targetGate = newGate;
+
+                                const approachX = landingRunway.x + (Math.random() - 0.5) * 40;
+                                const approachZ = landingRunway.z + 50;
+
+                                this.taxiPath = [
+                                    { x: approachX, z: -600 + Math.random() * 100, y: 80 },
+                                    { x: approachX - 50 + Math.random() * 20, z: landingRunway.z - 200, y: 60 },
+                                    { x: approachX, z: landingRunway.z - 100, y: 30 },
+                                    { x: approachX, z: approachZ + 50, y: 15 },
+                                    { x: -100, z: approachZ + 30, y: 8 },
+                                    { x: this.targetGate.position.x, z: this.targetGate.position.z, y: 0.5 }
+                                ];
+                                this.currentPathIndex = 0;
+                                this.mesh.position.set(this.taxiPath[0].x, this.taxiPath[0].y, this.taxiPath[0].z);
+                                this.mesh.rotation.y = Math.PI;
+                                this.state = 'approaching';
+                            } else {
+                                this.respawnTimer = 50;
+                            }
+                        }
+                        break;
+
+                    case 'approaching':
+                        this.approachToRunway();
+                        if (this.state === 'landing') break;
+                        const distToRunway = Math.sqrt(
+                            Math.pow(this.mesh.position.x - landingRunway.x, 2) +
+                            Math.pow(this.mesh.position.z - (landingRunway.z + landingRunway.length / 2), 2)
+                        );
+                        if (distToRunway < 30 && this.mesh.position.y < 20) {
+                            this.state = 'landing';
+                            this.verticalSpeed = 0;
+                        }
+                        break;
+
+                    case 'landing':
+                        if (this.mesh.position.y > 0.5) {
+                            this.verticalSpeed = Math.max(this.verticalSpeed + 0.04, 0.15);
+                            this.mesh.position.y -= this.verticalSpeed;
+                        } else {
+                            if (this.targetGate) {
+                                this.state = 'taxiingToGate';
+                                const path = [
+                                    { x: -100, z: landingRunway.z + 50, y: 0.5 },
+                                    { x: this.targetGate.position.x, z: this.targetGate.position.z, y: 0.5 }
+                                ];
+                                this.taxiPath = path;
+                                this.currentPathIndex = 0;
+                            } else {
+                                const newGate = this.findAvailableGate();
+                                if (newGate) {
+                                    newGate.occupied = true;
+                                    this.targetGate = newGate;
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                return true;
+            }
+
+            approachToRunway() {
+                if (this.currentPathIndex >= this.taxiPath.length - 1) return;
+
+                const target = this.taxiPath[this.currentPathIndex + 1];
+                if (!target) return;
+
+                const dx = target.x - this.mesh.position.x;
+                const dz = target.z - this.mesh.position.z;
+                const dy = target.y - this.mesh.position.y;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+
+                if (dist < 5) {
+                    this.currentPathIndex++;
+                } else {
+                    const moveSpeed = Math.min(6, dist);
+                    this.mesh.position.x += (dx / dist) * moveSpeed;
+                    this.mesh.position.z += (dz / dist) * moveSpeed;
+
+                    if (Math.abs(dy) > 0.5 && this.mesh.position.y > 2) {
+                        const verticalMove = Math.sign(dy) * Math.min(Math.abs(dy), 0.8);
+                        this.mesh.position.y += verticalMove;
+                    } else if (this.mesh.position.y > target.y) {
+                        this.mesh.position.y = Math.max(this.mesh.position.y - 0.5, target.y);
+                    }
+
+                    const targetAngle = Math.atan2(dx, dz);
+                    let angleDiff = targetAngle - this.mesh.rotation.y;
+                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                    this.mesh.rotation.y += angleDiff * 0.1;
+                }
+            }
+
+            taxiToTarget() {
+                if (this.currentPathIndex >= this.taxiPath.length - 1) return;
+
+                const target = this.taxiPath[this.currentPathIndex + 1];
+                if (!target) return;
+
+                const dx = target.x - this.mesh.position.x;
+                const dz = target.z - this.mesh.position.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+
+                if (dist < 3) {
+                    this.currentPathIndex++;
+                } else {
+                    const moveSpeed = Math.min(this.speed, dist);
+                    this.mesh.position.x += (dx / dist) * moveSpeed;
+                    this.mesh.position.z += (dz / dist) * moveSpeed;
+
+                    const targetAngle = Math.atan2(dx, dz);
+                    let angleDiff = targetAngle - this.mesh.rotation.y;
+                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                    this.mesh.rotation.y += angleDiff * 0.1;
+
+                    if (this.state === 'taxiingToTakeoff') {
+                        if (Math.abs(this.mesh.position.x - takeoffRunway.x + 130) < 15 &&
+                            Math.abs(this.mesh.position.z - (takeoffRunway.z + 50)) < 20) {
+                            this.state = 'takingOff';
+                        }
+                    }
+
+                    if (this.state === 'spawning' || this.state === 'taxiingToGate') {
+                        const gateDist = Math.sqrt(
+                            Math.pow(this.mesh.position.x - this.targetGate.position.x, 2) +
+                            Math.pow(this.mesh.position.z - this.targetGate.position.z, 2)
+                        );
+                        if (gateDist < 5) {
+                            this.state = 'atGate';
+                        }
+                    }
+                }
+            }
+
+            isAtGate() {
+                if (!this.targetGate) return false;
+                const dist = Math.sqrt(
+                    Math.pow(this.mesh.position.x - this.targetGate.position.x, 2) +
+                    Math.pow(this.mesh.position.z - this.targetGate.position.z, 2)
+                );
+                return dist < 5 && Math.abs(this.mesh.position.y - 0.5) < 1;
+            }
+
+            isNearRunwayEntry() {
+                return Math.abs(this.mesh.position.x - (takeoffRunway.x - 130)) < 15 &&
+                       Math.abs(this.mesh.position.z - (takeoffRunway.z + 50)) < 20;
+            }
+
+            findAvailableGate() {
+                const available = gates.filter(g => !g.occupied);
+                if (available.length > 0) {
+                    return available[Math.floor(Math.random() * available.length)];
+                }
+                return null;
+            }
+
+            destroy() {
+                scene.remove(this.mesh);
+                if (this.targetGate) this.targetGate.occupied = false;
+            }
+        }
+
+        const planes = [];
+        const maxPlanes = 8;
+
+        function spawnPlane() {
+            if (planes.length < maxPlanes) {
+                planes.push(new Plane());
+            }
+        }
+
+        spawnPlane();
+        setTimeout(spawnPlane, 3000);
+        setTimeout(spawnPlane, 6000);
+        setInterval(spawnPlane, 10000);
+
+        function updateUI() {
+            document.getElementById('planeCount').textContent = planes.length;
+            const occupiedGates = gates.filter(g => g.occupied).length;
+            document.getElementById('gateStatus').textContent = `${occupiedGates}/${gates.length}`;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            for (let i = planes.length - 1; i >= 0; i--) {
+                if (!planes[i].update()) {
+                    planes[i].destroy();
+                    planes.splice(i, 1);
+                }
+            }
+
+            updateUI();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
