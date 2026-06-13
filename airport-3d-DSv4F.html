@@ -522,12 +522,14 @@
                 switch (this.state) {
                     case aircraftStates.APPROACHING:
                         this.waypoints = [
-                            new THREE.Vector3(-35, 3, 60),
-                            new THREE.Vector3(-35, 1.5, 55),
-                            new THREE.Vector3(-35, 0.8, 50),
+                            new THREE.Vector3(-35, 30, 300),
+                            new THREE.Vector3(-35, 20, 220),
+                            new THREE.Vector3(-35, 10, 150),
+                            new THREE.Vector3(-35, 4, 90),
+                            new THREE.Vector3(-35, 1.5, 60),
                             new THREE.Vector3(-35, 0.5, 45)
                         ];
-                        this.speed = 1.2;
+                        this.speed = 1.8;
                         break;
                     case aircraftStates.LANDING:
                         this.waypoints = [
@@ -557,11 +559,12 @@
                         this.waypoints = [
                             new THREE.Vector3(35, 0.5, -40),
                             new THREE.Vector3(35, 0.5, 45),
-                            new THREE.Vector3(35, 0.5, 50),
-                            new THREE.Vector3(35, 1.5, 55),
-                            new THREE.Vector3(35, 3, 60)
+                            new THREE.Vector3(35, 4, 90),
+                            new THREE.Vector3(35, 10, 150),
+                            new THREE.Vector3(35, 20, 220),
+                            new THREE.Vector3(35, 30, 300)
                         ];
-                        this.speed = 1.2;
+                        this.speed = 2.5;
                         break;
                 }
                 this.currentWaypointIndex = 0;
@@ -643,12 +646,17 @@
                         break;
                     case aircraftStates.TAKEOFF:
                         this.state = aircraftStates.DEPARTED;
+                        this.waypoints = [];
                         setTimeout(() => {
-                            this.mesh.position.set(-35, 3.5, 60 + Math.random() * 20);
+                            this.mesh.position.set(-35, 30, 300 + Math.random() * 80);
                             this.mesh.rotation.set(0, 0, 0);
                             this.state = aircraftStates.APPROACHING;
                             this.setupPath();
-                        }, 3000);
+                            // Skip first 2 waypoints so they don't start too far back
+                            this.currentWaypointIndex = 2;
+                            this.mesh.position.copy(this.waypoints[this.currentWaypointIndex]);
+                            this.mesh.position.z += Math.random() * 40;
+                        }, 4000);
                         break;
                 }
             }
@@ -662,19 +670,21 @@
 
         for (let i = 0; i < numAircraft; i++) {
             const mesh = createAircraft(fuselageColors[i % fuselageColors.length], tailColors[i % tailColors.length]);
-            mesh.position.set(-35, 3.5, 60 + i * 18);
-            mesh.scale.set(1, 1, 1);
+            const startZ = 300 + i * 50 + Math.random() * 40;
+            mesh.position.set(-35, 30, startZ);
+            // Face toward the runway (negative Z direction)
+            mesh.rotation.y = 0;
             scene.add(mesh);
 
             const aircraft = new AirportAircraft(mesh, i);
             // Stagger initial states so they don't all land at once
             if (i > 0) {
                 aircraft.state = aircraftStates.APPROACHING;
-                aircraft.setupPath();
-                // Move them further back in the approach path
-                aircraft.mesh.position.z = 60 + i * 18;
-                // Adjust waypoint index to match position (skip first few waypoints)
-                // Actually, just let them start at the beginning, the spacing will stagger them naturally
+                // Skip waypoints so planes are staggered along the approach
+                aircraft.currentWaypointIndex = Math.min(i * 2, 5);
+                aircraft.mesh.position.copy(aircraft.waypoints[aircraft.currentWaypointIndex]);
+                // Add random offset for further staggering
+                aircraft.mesh.position.z += Math.random() * 40;
             }
             aircraftList.push(aircraft);
         }
