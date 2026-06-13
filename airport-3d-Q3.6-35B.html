@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+// coded by Qwen 3.6 35B-A3B UD MTP
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Airport Simulation</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; font-family: Arial, sans-serif; }
+canvas { display: block; }
+#info {
+  position: absolute; top: 10px; left: 10px; color: #fff;
+  background: rgba(0,0,0,0.6); padding: 12px 18px; border-radius: 8px;
+  font-size: 13px; pointer-events: none; line-height: 1.6;
+}
+#info h2 { margin-bottom: 4px; font-size: 15px; }
+</style>
+</head>
+<body>
+<div id="info">
+  <h2>Airport 3D Simulation</h2>
+  <div>Left Runway: Landings &nbsp;|&nbsp; Right Runway: Takeoffs</div>
+  <div id="stats"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function() {
+
+// --- Scene Setup ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);
+scene.fog = new THREE.FogExp2(0x87CEEB, 0.00015);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 20000);
+camera.position.set(800, 600, 800);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.maxPolarAngle = Math.PI / 2.2;
+controls.minDistance = 100;
+controls.maxDistance = 3000;
+
+// --- Lighting ---
+const ambientLight = new THREE.AmbientLight(0x6688cc, 0.5);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xffffee, 1.2);
+sunLight.position.set(500, 800, 300);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 4096;
+sunLight.shadow.mapSize.height = 4096;
+sunLight.shadow.camera.near = 10;
+sunLight.shadow.camera.far = 3000;
+sunLight.shadow.camera.left = -2000;
+sunLight.shadow.camera.right = 2000;
+sunLight.shadow.camera.top = 2000;
+sunLight.shadow.camera.bottom = -2000;
+scene.add(sunLight);
+
+const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x556633, 0.4);
+scene.add(hemiLight);
+
+// --- Materials ---
+const grassMat = new THREE.MeshLambertMaterial({ color: 0x4a7c3f });
+const runwayMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+const taxiwayMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
+const concreteMat = new THREE.MeshLambertMaterial({ color: 0x999999 });
+const buildingMat = new THREE.MeshLambertMaterial({ color: 0xccbbaa });
+const roofMat = new THREE.MeshLambertMaterial({ color: 0x887766 });
+const glassMat = new THREE.MeshPhongMaterial({ color: 0x4488aa, transparent: true, opacity: 0.6 });
+const whiteLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const yellowLineMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+const redLightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+const greenLightMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+// --- Ground ---
+const groundGeo = new THREE.PlaneGeometry(8000, 8000);
+const ground = new THREE.Mesh(groundGeo, grassMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// --- Runways ---
+function createRunway(x, z, length, width, rotation) {
+  const group = new THREE.Group();
+
+  // Main runway surface
+  const geo = new THREE.PlaneGeometry(width, length);
+  const mesh = new THREE.Mesh(geo, runwayMat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.rotation.z = rotation || 0;
+  mesh.position.set(x, 0.1, z);
+  if (rotation) mesh.rotation.y = rotation;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+
+  // White edge lines
+  const lineW = width - 20;
+  for (let side of [-1, 1]) {
+    const lineGeo = new THREE.PlaneGeometry(3, length);
+    const line = new THREE.Mesh(lineGeo, whiteLineMat);
+    line.rotation.x = -Math.PI / 2;
+    if (rotation) {
+      line.position.set(x + side * (lineW / 2), 0.2, z);
+      line.rotation.z = rotation || 0;
+    } else {
+      line.position.set(x + side * (lineW / 2), 0.2, z);
+    }
+    group.add(line);
+  }
+
+  // Center dashed line
+  const dashCount = Math.floor(length / 40);
+  for (let i = 0; i < dashCount; i++) {
+    const dashGeo = new THREE.PlaneGeometry(3, 15);
+    const dash = new THREE.Mesh(dashGeo, whiteLineMat);
+    dash.rotation.x = -Math.PI / 2;
+    if (rotation) {
+      dash.position.set(x, 0.2, z + (i * 40 - length / 2 + 20));
+      dash.rotation.z = rotation || 0;
+    } else {
+      dash.position.set(x, 0.2, i * 40 - length / 2 + 20);
+    }
+    group.add(dash);
+  }
+
+  // Threshold markings (stripes at each end)
+  for (let end of [-1, 1]) {
+    const stripeCount = 6;
+    for (let s = 0; s < stripeCount; s++) {
+      const stripeGeo = new THREE.PlaneGeometry(8, length / (stripeCount + 1));
+      const stripe = new THREE.Mesh(stripeGeo, whiteLineMat);
+      stripe.rotation.x = -Math.PI / 2;
+      if (rotation) {
+        stripe.position.set(x + ((s % 2 === 0) ? -lineW/3 : lineW/3), 0.2, z + end * (length / 2 - 40));
+        stripe.rotation.z = rotation || 0;
+      } else {
+        stripe.position.set(x + ((s % 2 === 0) ? -lineW/3 : lineW/3), 0.2, end * (length / 2 - 40));
+      }
+      group.add(stripe);
+    }
+  }
+
+  // Runway numbers at each end
+  const runwayLength = length;
+  for (let end of [-1, 1]) {
+    const numGeo = new THREE.PlaneGeometry(25, 10);
+    const numCanvas = document.createElement('canvas');
+    numCanvas.width = 128; numCanvas.height = 64;
+    const ctx = numCanvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 128, 64);
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 40px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(end < 0 ? '09L' : '27R', 64, 48);
+    const numTex = new THREE.CanvasTexture(numCanvas);
+    const numMat = new THREE.MeshBasicMaterial({ map: numTex });
+    const numMesh = new THREE.Mesh(numGeo, numMat);
+    numMesh.rotation.x = -Math.PI / 2;
+    if (rotation) {
+      numMesh.position.set(x, 0.3, z + end * (length / 2 - 15));
+      numMesh.rotation.z = rotation || 0;
+    } else {
+      numMesh.position.set(x, 0.3, end * (length / 2 - 15));
+    }
+    group.add(numMesh);
+  }
+
+  // Runway edge lights
+  for (let i = 0; i < length / 30; i++) {
+    const zPos = z + (i * 30 - length / 2);
+    for (let side of [-1, 1]) {
+      const lightGeo = new THREE.SphereGeometry(1.5, 6, 6);
+      const lightMesh = new THREE.Mesh(lightGeo, greenLightMat);
+      if (rotation) {
+        lightMesh.position.set(x + side * (width / 2 - 5), 2, zPos);
+      } else {
+        lightMesh.position.set(x + side * (width / 2 - 5), 2, zPos);
+      }
+      group.add(lightMesh);
+    }
+  }
+
+  scene.add(group);
+  return { x, z, length, width };
+}
+
+// Landing runway (left) - oriented roughly east-west
+const landingRunway = createRunway(-300, 0, 2400, 150, 0);
+
+// Takeoff runway (right) - parallel
+const takeoffRunway = createRunway(300, 0, 2400, 150, 0);
+
+// --- Taxiways ---
+function createTaxiway(points, width) {
+  const group = new THREE.Group();
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i], p2 = points[i + 1];
+    const dx = p2.x - p1.x, dz = p2.z - p1.z;
+    const len = Math.sqrt(dx * dx + dz * dz);
+    const angle = Math.atan2(dx, dz);
+
+    const geo = new THREE.PlaneGeometry(width || 40, len);
+    const mesh = new THREE.Mesh(geo, taxiwayMat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set((p1.x + p2.x) / 2, 0.15, (p1.z + p2.z) / 2);
+    mesh.rotation.y = angle;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+
+    // Yellow center line
+    const lineGeo = new THREE.PlaneGeometry(1, len - 4);
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+    for (let d = 8; d < len - 4; d += 20) {
+      const dash = new THREE.Mesh(new THREE.PlaneGeometry(1, 8), lineMat);
+      dash.rotation.x = -Math.PI / 2;
+      dash.position.set(
+        p1.x + (dx / len) * (d - len / 2),
+        0.2,
+        p1.z + (dz / len) * (d - len / 2)
+      );
+      dash.rotation.y = angle;
+      group.add(dash);
+    }
+  }
+  scene.add(group);
+}
+
+// Taxiways connecting runways to terminal area
+createTaxiway([
+  { x: -300, z: 800 }, { x: -300, z: 400 }, { x: -150, z: 400 },
+  { x: -150, z: 200 }, { x: -100, z: 200 }
+]);
+createTaxiway([
+  { x: -300, z: -800 }, { x: -300, z: -400 }, { x: -150, z: -400 },
+  { x: -150, z: -200 }, { x: -100, z: -200 }
+]);
+createTaxiway([
+  { x: 300, z: 800 }, { x: 300, z: 400 }, { x: 150, z: 400 },
+  { x: 150, z: 200 }, { x: 100, z: 200 }
+]);
+createTaxiway([
+  { x: 300, z: -800 }, { x: 300, z: -400 }, { x: 150, z: -400 },
+  { x: 150, z: -200 }, { x: 100, z: -200 }
+]);
+
+// Cross taxiway along terminal
+createTaxiway([
+  { x: -600, z: 300 }, { x: -400, z: 300 }, { x: -200, z: 300 },
+  { x: 0, z: 300 }, { x: 200, z: 300 }, { x: 400, z: 300 }, { x: 600, z: 300 }
+]);
+
+// --- Terminal Building ---
+function createTerminal(x, z, width, depth) {
+  const group = new THREE.Group();
+
+  // Main building
+  const buildGeo = new THREE.BoxGeometry(width, 40, depth);
+  const building = new THREE.Mesh(buildGeo, buildingMat);
+  building.position.set(x, 20, z);
+  building.castShadow = true;
+  building.receiveShadow = true;
+  group.add(building);
+
+  // Roof
+  const roofGeo = new THREE.BoxGeometry(width + 10, 5, depth + 10);
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.position.set(x, 42, z);
+  roof.castShadow = true;
+  group.add(roof);
+
+  // Windows (glass strips along the sides)
+  for (let side of [-1, 1]) {
+    const winGeo = new THREE.PlaneGeometry(width - 20, 15);
+    const win = new THREE.Mesh(winGeo, glassMat);
+    win.position.set(x, 25, z + side * (depth / 2 + 0.5));
+    if (side > 0) win.rotation.y = Math.PI;
+    group.add(win);
+  }
+
+  scene.add(group);
+  return { x, z, width, depth };
+}
+
+const terminal = createTerminal(0, -100, 500, 80);
+
+// --- Gates (Jets / Boarding Bridges) ---
+function createGate(x, z, rotation) {
+  const group = new THREE.Group();
+
+  // Gate position marker on tarmac
+  const gateGeo = new THREE.BoxGeometry(30, 2, 15);
+  const gateMesh = new THREE.Mesh(gateGeo, concreteMat);
+  gateMesh.position.set(x, 1, z);
+  gateMesh.receiveShadow = true;
+  group.add(gateMesh);
+
+  // Jet bridge (boarding bridge)
+  const bridgeGeo = new THREE.BoxGeometry(8, 6, 40);
+  const bridgeMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
+  const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+  bridge.position.set(x + (rotation > 0 ? -20 : 20), 15, z);
+  bridge.castShadow = true;
+  group.add(bridge);
+
+  // Gate number sign
+  const signCanvas = document.createElement('canvas');
+  signCanvas.width = 64; signCanvas.height = 32;
+  const ctx = signCanvas.getContext('2d');
+  ctx.fillStyle = '#003366';
+  ctx.fillRect(0, 0, 64, 32);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 18px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('A' + Math.abs(Math.round(x / 50)), 32, 24);
+  const signTex = new THREE.CanvasTexture(signCanvas);
+  const signGeo = new THREE.PlaneGeometry(12, 6);
+  const signMat = new THREE.MeshBasicMaterial({ map: signTex });
+  const sign = new THREE.Mesh(signGeo, signMat);
+  sign.position.set(x, 30, z + (rotation > 0 ? -5 : 5));
+  group.add(sign);
+
+  scene.add(group);
+  return { x, z };
+}
+
+const gates = [];
+for (let i = -4; i <= 4; i++) {
+  const gateX = i * 55;
+  gates.push(createGate(gateX, -60, i > 0 ? 1 : -1));
+}
+
+// --- Control Tower ---
+function createTower(x, z) {
+  const group = new THREE.Group();
+
+  // Base
+  const baseGeo = new THREE.CylinderGeometry(25, 30, 80, 8);
+  const base = new THREE.Mesh(baseGeo, buildingMat);
+  base.position.set(x, 40, z);
+  base.castShadow = true;
+  group.add(base);
+
+  // Top cabin
+  const cabinGeo = new THREE.CylinderGeometry(20, 25, 20, 8);
+  const cabin = new THREE.Mesh(cabinGeo, glassMat);
+  cabin.position.set(x, 90, z);
+  group.add(cabin);
+
+  // Roof
+  const topGeo = new THREE.ConeGeometry(22, 15, 8);
+  const top = new THREE.Mesh(topGeo, roofMat);
+  top.position.set(x, 107, z);
+  top.castShadow = true;
+  group.add(top);
+
+  scene.add(group);
+}
+createTower(-350, -200);
+
+// --- Cargo / Maintenance Buildings ---
+function createBuilding(x, z, w, d, h) {
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mesh = new THREE.Mesh(geo, buildingMat);
+  mesh.position.set(x, h / 2, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+
+  const roofGeo = new THREE.BoxGeometry(w + 5, 3, d + 5);
+  const roofMesh = new THREE.Mesh(roofGeo, roofMat);
+  roofMesh.position.set(x, h + 1.5, z);
+  roofMesh.castShadow = true;
+  scene.add(roofMesh);
+}
+
+createBuilding(-700, -250, 200, 120, 35);
+createBuilding(700, -250, 180, 100, 30);
+createBuilding(-600, 400, 150, 80, 25);
+
+// --- Trees (scattered) ---
+function createTree(x, z) {
+  const trunkGeo = new THREE.CylinderGeometry(2, 3, 15, 6);
+  const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+  const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+  trunk.position.set(x, 7.5, z);
+  scene.add(trunk);
+
+  const leavesGeo = new THREE.SphereGeometry(10, 8, 6);
+  const leavesMat = new THREE.MeshLambertMaterial({ color: 0x2d5a1e });
+  const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+  leaves.position.set(x, 22, z);
+  scene.add(leaves);
+}
+
+for (let i = 0; i < 60; i++) {
+  const tx = (Math.random() - 0.5) * 6000;
+  const tz = (Math.random() - 0.5) * 6000;
+  // Avoid runways and terminal area
+  if (Math.abs(tx) < 500 && Math.abs(tz) < 1400) continue;
+  createTree(tx, tz);
+}
+
+// --- Airplane Model Builder ---
+function createAirplane(color, scale) {
+  const s = scale || 1;
+  const group = new THREE.Group();
+
+  // Fuselage
+  const fuselageGeo = new THREE.CylinderGeometry(4 * s, 3.5 * s, 60 * s, 12);
+  const bodyMat = new THREE.MeshPhongMaterial({ color: 0xeeeeee });
+  const fuselage = new THREE.Mesh(fuselageGeo, bodyMat);
+  fuselage.rotation.z = Math.PI / 2;
+  group.add(fuselage);
+
+  // Color stripe along fuselage
+  const stripeGeo = new THREE.CylinderGeometry(4.1 * s, 3.6 * s, 58 * s, 12, 1, true, -0.3, 0.6);
+  const stripeMat = new THREE.MeshPhongMaterial({ color: color });
+  const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+  stripe.rotation.z = Math.PI / 2;
+  group.add(stripe);
+
+  // Nose cone
+  const noseGeo = new THREE.SphereGeometry(3.5 * s, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+  const nose = new THREE.Mesh(noseGeo, bodyMat);
+  nose.rotation.z = -Math.PI / 2;
+  nose.position.x = 30 * s;
+  group.add(nose);
+
+  // Tail cone
+  const tailConeGeo = new THREE.SphereGeometry(3.5 * s, 12, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+  const tailCone = new THREE.Mesh(tailConeGeo, bodyMat);
+  tailCone.rotation.z = Math.PI / 2;
+  tailCone.position.x = -30 * s;
+  group.add(tailCone);
+
+  // Main wings
+  const wingShape = new THREE.Shape();
+  wingShape.moveTo(0, 0);
+  wingShape.lineTo(-8 * s, 25 * s);
+  wingShape.lineTo(-6 * s, 25 * s);
+  wingShape.lineTo(4 * s, 0);
+  const wingExtrudeSettings = { depth: 1.5 * s, bevelEnabled: false };
+  const wingGeo = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
+
+  // Left wing
+  const leftWing = new THREE.Mesh(wingGeo, bodyMat);
+  leftWing.position.set(0, -1 * s, 0);
+  group.add(leftWing);
+
+  // Right wing (mirrored)
+  const rightWingShape = new THREE.Shape();
+  rightWingShape.moveTo(0, 0);
+  rightWingShape.lineTo(-8 * s, -25 * s);
+  rightWingShape.lineTo(-6 * s, -25 * s);
+  rightWingShape.lineTo(4 * s, 0);
+  const rightWingGeo = new THREE.ExtrudeGeometry(rightWingShape, wingExtrudeSettings);
+  const rightWing = new THREE.Mesh(rightWingGeo, bodyMat);
+  rightWing.position.set(0, -1 * s, 0);
+  group.add(rightWing);
+
+  // Wing engines (pods)
+  for (let side of [1, -1]) {
+    const engineGeo = new THREE.CylinderGeometry(2.5 * s, 2 * s, 8 * s, 8);
+    const engineMat = new THREE.MeshPhongMaterial({ color: 0x777777 });
+    const engine = new THREE.Mesh(engineGeo, engineMat);
+    engine.rotation.z = Math.PI / 2;
+    engine.position.set(-5 * s, -3 * s, side * 14 * s);
+    group.add(engine);
+
+    // Engine intake
+    const intakeGeo = new THREE.CircleGeometry(2.3 * s, 8);
+    const intakeMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
+    const intake = new THREE.Mesh(intakeGeo, intakeMat);
+    intake.position.set(-9 * s, -3 * s, side * 14 * s);
+    if (side > 0) {
+      intake.rotation.y = Math.PI / 2;
+    } else {
+      intake.rotation.y = -Math.PI / 2;
+    }
+    group.add(intake);
+  }
+
+  // Vertical stabilizer (tail fin)
+  const tailFinShape = new THREE.Shape();
+  tailFinShape.moveTo(0, 0);
+  tailFinShape.lineTo(-5 * s, 14 * s);
+  tailFinShape.lineTo(-12 * s, 12 * s);
+  tailFinShape.lineTo(-8 * s, 0);
+  const tailFinGeo = new THREE.ExtrudeGeometry(tailFinShape, { depth: 1.5 * s, bevelEnabled: false });
+  const tailFinMat = new THREE.MeshPhongMaterial({ color: color });
+  const tailFin = new THREE.Mesh(tailFinGeo, tailFinMat);
+  tailFin.position.set(-28 * s, 0, -0.75 * s);
+  group.add(tailFin);
+
+  // Horizontal stabilizers
+  for (let side of [1, -1]) {
+    const hStabShape = new THREE.Shape();
+    hStabShape.moveTo(0, 0);
+    hStabShape.lineTo(-4 * s, 8 * s * side);
+    hStabShape.lineTo(-3 * s, 8 * s * side);
+    hStabShape.lineTo(2 * s, 0);
+    const hStabGeo = new THREE.ExtrudeGeometry(hStabShape, { depth: 1 * s, bevelEnabled: false });
+    const hStab = new THREE.Mesh(hStabGeo, bodyMat);
+    hStab.position.set(-26 * s, 1 * s, -0.5 * s);
+    group.add(hStab);
+  }
+
+  // Cockpit windows
+  for (let i = 0; i < 4; i++) {
+    const winGeo = new THREE.PlaneGeometry(2 * s, 2 * s);
+    const winMat = new THREE.MeshPhongMaterial({ color: 0x112244 });
+    const win = new THREE.Mesh(winGeo, winMat);
+    win.position.set(28 * s + (i % 2) * 1.5 * s, 2 * s, Math.floor(i / 2) * 3 * s - 1.5 * s);
+    if ((i % 2) === 0) {
+      win.rotation.y = Math.PI / 2;
+    } else {
+      win.rotation.y = -Math.PI / 2;
+    }
+    group.add(win);
+  }
+
+  // Landing lights (nose gear area)
+  const lightGeo = new THREE.SphereGeometry(1 * s, 6, 6);
+  const noseLight = new THREE.Mesh(lightGeo, new THREE.MeshBasicMaterial({ color: 0xffffcc }));
+  noseLight.position.set(25 * s, -3 * s, 0);
+  group.add(noseLight);
+
+  // Beacon (rotating red/white on top)
+  const beaconGeo = new THREE.SphereGeometry(1.5 * s, 6, 6);
+  const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+  beacon.position.set(-10 * s, 4 * s, 0);
+  group.add(beacon);
+
+  // Navigation lights (wingtips)
+  for (let side of [1, -1]) {
+    const navLightGeo = new THREE.SphereGeometry(1.2 * s, 6, 6);
+    const navColor = side > 0 ? 0x00ff00 : 0xff0000;
+    const navMat = new THREE.MeshBasicMaterial({ color: navColor });
+    const navLight = new THREE.Mesh(navLightGeo, navMat);
+    navLight.position.set(-5 * s, -1 * s, side * 24 * s);
+    group.add(navLight);
+  }
+
+  // Landing gear (simplified)
+  const gearMat = new THREE.MeshPhongMaterial({ color: 0x444444 });
+  // Nose gear
+  const noseGearGeo = new THREE.CylinderGeometry(0.8 * s, 0.8 * s, 6 * s, 6);
+  const noseGear = new THREE.Mesh(noseGearGeo, gearMat);
+  noseGear.position.set(20 * s, -5 * s, 0);
+  group.add(noseGear);
+
+  // Main gear (left)
+  for (let side of [1, -1]) {
+    const mainGearGeo = new THREE.CylinderGeometry(1 * s, 1 * s, 7 * s, 6);
+    const mainGear = new THREE.Mesh(mainGearGeo, gearMat);
+    mainGear.position.set(-8 * s, -5.5 * s, side * 12 * s);
+    group.add(mainGear);
+
+    // Wheels
+    for (let w = -1; w <= 1; w++) {
+      const wheelGeo = new THREE.CylinderGeometry(1.5 * s, 1.5 * s, 0.8 * s, 8);
+      const wheelMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
+      const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+      wheel.rotation.x = Math.PI / 2;
+      wheel.position.set(-8 * s, -9 * s, side * 12 * s + w * 1.5 * s);
+      group.add(wheel);
+    }
+  }
+
+  // Tail light
+  const tailLightGeo = new THREE.SphereGeometry(1 * s, 6, 6);
+  const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const tailLight = new THREE.Mesh(tailLightGeo, tailLightMat);
+  tailLight.position.set(-30 * s, 2 * s, 0);
+  group.add(tailLight);
+
+  return group;
+}
+
+// --- Plane States ---
+const PLANE_STATES = {
+  TAXI_TO_RUNWAY: 'taxi_to_runway',
+  ON_RUNWAY_TAKEOFF: 'on_runway_takeoff',
+  CLIMBING: 'climbing',
+  CRUISING: 'cruising',
+  DESCENDING: 'descending',
+  ON_RUNWAY_LANDING: 'on_runway_landing',
+  TAXI_TO_GATE: 'taxi_to_gate',
+  AT_GATE: 'at_gate'
+};
+
+const planes = [];
+const planeColors = [0xcc2233, 0x2244aa, 0xdd6600, 0x117755, 0x8833aa, 0x2288cc, 0xaa4422, 0x336699];
+let planeCount = 0;
+
+function getGatePosition() {
+  return gates[Math.floor(Math.random() * gates.length)];
+}
+
+function spawnPlane(state) {
+  const color = planeColors[planeCount % planeColors.length];
+  const scale = 0.8 + Math.random() * 0.5;
+  const airplane = createAirplane(color, scale);
+  scene.add(airplane);
+
+  const gate = getGatePosition();
+  const isTakeoff = state === PLANE_STATES.TAXI_TO_RUNWAY;
+
+  const planeData = {
+    mesh: airplane,
+    state: state,
+    speed: 0,
+    targetSpeed: isTakeoff ? 3.5 : 2.5,
+    scale: scale,
+    gateX: gate.x,
+    gateZ: gate.z,
+    runwayX: isTakeoff ? takeoffRunway.x : landingRunway.x,
+    taxiInPoint: { x: isTakeoff ? 300 : -300, z: isTakeoff ? 600 : (Math.random() > 0.5 ? 600 : -600) },
+    runwayEndZ: 1200,
+    taxiOutPoint: { x: -300, z: 800 },
+    climbAngle: 0.04,
+    cruiseAltitude: 1200 + Math.random() * 800,
+    cruiseDistance: 3000 + Math.random() * 2000,
+    distanceTraveled: 0,
+    direction: isTakeoff ? 1 : -1,
+    beaconPhase: Math.random() * Math.PI * 2,
+    navLightPhase: Math.random() * Math.PI * 2,
+    landed: false
+  };
+
+  if (isTakeoff) {
+    airplane.position.set(planeData.gateX, 0, planeData.gateZ);
+    // Face toward runway end
+    airplane.rotation.y = Math.PI / 2;
+  } else {
+    // Start off-screen for landing planes
+    const startZ = -3500 * planeData.direction;
+    airplane.position.set(landingRunway.x, 800, startZ);
+    airplane.rotation.y = planeData.direction * Math.PI / 2;
+    airplane.rotation.x = -planeData.climbAngle;
+  }
+
+  planes.push(planeData);
+  planeCount++;
+}
+
+// --- Initial Planes ---
+for (let i = 0; i < 3; i++) {
+  spawnPlane(PLANE_STATES.TAXI_TO_RUNWAY);
+}
+spawnPlane(PLANE_STATES.DESCENDING);
+
+// --- Animation Loop ---
+const clock = new THREE.Clock();
+let statsUpdateTimer = 0;
+let activeTakeoffs = 0;
+let activeLandings = 0;
+
+function updatePlane(plane, dt) {
+  const m = plane.mesh;
+  plane.beaconPhase += dt * 3;
+  plane.navLightPhase += dt * 2;
+
+  // Beacon blink
+  const beaconMesh = m.children.find((c, i) => c.geometry && c.geometry.type === 'SphereGeometry' && i < m.children.length - 5);
+  if (beaconMesh) {
+    beaconMesh.material.color.setHex(Math.sin(plane.beaconPhase) > 0 ? 0xff0000 : 0xffffff);
+  }
+
+  switch (plane.state) {
+    case PLANE_STATES.TAXI_TO_RUNWAY: {
+      plane.speed = THREE.MathUtils.lerp(plane.speed, plane.targetSpeed, dt * 2);
+      const dx = plane.taxiInPoint.x - m.position.x;
+      const dz = plane.taxiInPoint.z - m.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      if (dist < 5) {
+        // Reached runway entry, turn onto runway
+        plane.state = PLANE_STATES.ON_RUNWAY_TAKEOFF;
+        plane.speed = 0;
+        m.rotation.y = Math.PI / 2;
+        m.position.x = plane.taxiInPoint.x;
+      } else {
+        const nx = dx / dist, nz = dz / dist;
+        m.position.x += nx * plane.speed * dt * 60;
+        m.position.z += nz * plane.speed * dt * 60;
+
+        // Face direction of travel
+        const targetAngle = Math.atan2(nx, nz);
+        let angleDiff = targetAngle - m.rotation.y;
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        m.rotation.y += angleDiff * dt * 5;
+      }
+      break;
+    }
+
+    case PLANE_STATES.ON_RUNWAY_TAKEOFF: {
+      plane.speed = THREE.MathUtils.lerp(plane.speed, 6 + Math.random() * 0.5, dt * 1.5);
+      m.position.z += plane.direction * plane.speed * dt * 60;
+
+      // Rotate wheels (visual effect via slight vibration)
+      if (plane.speed > 2) {
+        m.rotation.x = THREE.MathUtils.lerp(m.rotation.x, -0.03 * (1 - Math.min(plane.speed / 8, 1)), dt * 5);
+      }
+
+      // Check if reached runway end (absolute Z position)
+      if (m.position.z >= plane.runwayEndZ) {
+        plane.state = PLANE_STATES.CLIMBING;
+        m.rotation.x = -plane.climbAngle;
+      }
+
+      // Add thrust particles effect (simple speed lines)
+      if (plane.speed > 3) {
+        const trailGeo = new THREE.SphereGeometry(0.5 * plane.scale, 4, 4);
+        const trailMat = new THREE.MeshBasicMaterial({ color: 0xffaa44, transparent: true, opacity: 0.6 });
+        for (let t = -1; t <= 1; t++) {
+          const trail = new THREE.Mesh(trailGeo, trailMat);
+          trail.position.set(
+            m.position.x + (Math.random() - 0.5) * 4 * plane.scale,
+            m.position.y - 3 * plane.scale,
+            m.position.z + plane.direction * (-15 * plane.scale)
+          );
+          scene.add(trail);
+          setTimeout(() => { if (trail.parent) scene.remove(trail); }, 500);
+        }
+      }
+      break;
+    }
+
+    case PLANE_STATES.CLIMBING: {
+      m.position.y += plane.climbAngle * plane.speed * dt * 60;
+      m.position.z += plane.direction * plane.speed * dt * 30;
+      plane.distanceTraveled += plane.speed * dt * 60;
+
+      if (m.position.y >= plane.cruiseAltitude) {
+        plane.state = PLANE_STATES.CRUISING;
+        m.rotation.x = 0;
+      }
+      break;
+    }
+
+    case PLANE_STATES.CRUISING: {
+      m.position.z += plane.direction * plane.speed * dt * 60;
+      plane.distanceTraveled += plane.speed * dt * 60;
+
+      if (plane.distanceTraveled >= plane.cruiseDistance) {
+        plane.state = PLANE_STATES.DESCENDING;
+        plane.descendStartZ = m.position.z;
+        plane.descendStartY = m.position.y;
+        m.rotation.x = -0.02;
+      }
+      break;
+    }
+
+    case PLANE_STATES.DESCENDING: {
+      // Smooth descent tied to Z progress toward runway
+      const startZ = plane.descendStartZ || 3500;
+      const startY = plane.descendStartY || 800;
+      const endZ = plane.taxiOutPoint.z;
+      const zProgress = Math.max(0, (m.position.z - endZ) / (startZ - endZ));
+      const targetY = Math.max(2, startY * zProgress);
+      m.position.y = THREE.MathUtils.lerp(m.position.y, targetY, dt * 4);
+
+      m.position.z += plane.direction * plane.speed * dt * 30;
+      plane.distanceTraveled += plane.speed * dt * 60;
+
+      if (m.position.z <= endZ) {
+        plane.state = PLANE_STATES.ON_RUNWAY_LANDING;
+        m.position.y = 2;
+        m.rotation.x = 0;
+        plane.speed = 6;
+      }
+      break;
+    }
+
+    case PLANE_STATES.ON_RUNWAY_LANDING: {
+      m.rotation.y = -Math.PI / 2; // Face direction of travel (-Z) during landing roll
+      plane.speed = THREE.MathUtils.lerp(plane.speed, 5.5, dt * 1);
+      m.position.z += plane.direction * plane.speed * dt * 60;
+      plane.speed *= (1 - dt * 0.3); // Decelerate
+
+      if (plane.speed < 2) {
+        plane.state = PLANE_STATES.TAXI_TO_GATE;
+        plane.speed = 0;
+        const dx = plane.gateX - m.position.x;
+        const dz = plane.gateZ - m.position.z;
+        m.rotation.y = Math.atan2(dx, dz); // Face toward gate immediately
+      }
+      break;
+    }
+
+    case PLANE_STATES.TAXI_TO_GATE: {
+      plane.speed = THREE.MathUtils.lerp(plane.speed, plane.targetSpeed * 0.7, dt * 2);
+      const dx = plane.gateX - m.position.x;
+      const dz = plane.gateZ - m.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      if (dist < 5) {
+        plane.state = PLANE_STATES.AT_GATE;
+        plane.speed = 0;
+        m.position.x = plane.gateX;
+        m.position.z = plane.gateZ;
+        m.rotation.y = Math.PI / 2;
+      } else {
+        const nx = dx / dist, nz = dz / dist;
+        m.position.x += nx * plane.speed * dt * 60;
+        m.position.z += nz * plane.speed * dt * 60;
+
+        const targetAngle = Math.atan2(nx, nz);
+        let angleDiff = targetAngle - m.rotation.y;
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        m.rotation.y += angleDiff * dt * 5;
+      }
+      break;
+    }
+
+    case PLANE_STATES.AT_GATE: {
+      // Idle at gate, slight beacon animation only
+      break;
+    }
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  controls.update();
+
+  for (let i = planes.length - 1; i >= 0; i--) {
+    const plane = planes[i];
+    updatePlane(plane, dt);
+
+    // Remove planes that have reached gate and been idle too long
+    if (plane.state === PLANE_STATES.AT_GATE) {
+      plane.idleTime = (plane.idleTime || 0) + dt;
+      if (plane.idleTime > 8) {
+        scene.remove(plane.mesh);
+        planes.splice(i, 1);
+
+        // Spawn a new takeoff plane to replace it
+        setTimeout(() => spawnPlane(PLANE_STATES.TAXI_TO_RUNWAY), Math.random() * 2000);
+      }
+    }
+  }
+
+  // Spawn landing planes periodically
+  if (Math.random() < dt * 0.15) {
+    const startZ = -3500;
+    const newPlane = createAirplane(planeColors[planeCount % planeColors.length], 0.8 + Math.random() * 0.5);
+    scene.add(newPlane);
+
+    const gate = getGatePosition();
+    planes.push({
+      mesh: newPlane,
+      state: PLANE_STATES.DESCENDING,
+      speed: 4,
+      targetSpeed: 4,
+      scale: newPlane.scale || 1,
+      gateX: gate.x,
+      gateZ: gate.z,
+      runwayX: landingRunway.x,
+      taxiInPoint: { x: -300, z: (Math.random() > 0.5 ? 600 : -600) },
+      runwayEndZ: landingRunway.length / 2,
+      taxiOutPoint: { x: 300, z: (Math.random() > 0.5 ? 600 : -600) },
+      climbAngle: 0.04,
+      cruiseAltitude: 1200 + Math.random() * 800,
+      cruiseDistance: 3000 + Math.random() * 2000,
+      distanceTraveled: 0,
+      direction: -1,
+      beaconPhase: Math.random() * Math.PI * 2,
+      navLightPhase: Math.random() * Math.PI * 2,
+      landed: false
+    });
+
+    newPlane.position.set(landingRunway.x, 1500, startZ);
+    newPlane.rotation.y = Math.PI / 2;
+    newPlane.rotation.x = -0.04;
+    planeCount++;
+  }
+
+  // Spawn takeoff planes periodically at gates
+  if (Math.random() < dt * 0.1 && planes.filter(p => p.state === PLANE_STATES.TAXI_TO_RUNWAY || p.state === PLANE_STATES.AT_GATE).length < 5) {
+    spawnPlane(PLANE_STATES.TAXI_TO_RUNWAY);
+  }
+
+  // Update stats display
+  statsUpdateTimer += dt;
+  if (statsUpdateTimer > 0.5) {
+    statsUpdateTimer = 0;
+    const taxiing = planes.filter(p => p.state === PLANE_STATES.TAXI_TO_GATE || p.state === PLANE_STATES.TAXI_TO_RUNWAY).length;
+    const takeoffs = planes.filter(p => p.state === PLANE_STATES.ON_RUNWAY_TAKEOFF || p.state === PLANE_STATES.CLIMBING).length;
+    const landings = planes.filter(p => p.state === PLANE_STATES.DESCENDING || p.state === PLANE_STATES.ON_RUNWAY_LANDING).length;
+    const atGate = planes.filter(p => p.state === PLANE_STATES.AT_GATE).length;
+    const cruising = planes.filter(p => p.state === PLANE_STATES.CRUISING).length;
+
+    document.getElementById('stats').innerHTML =
+      `Taxiing: ${taxiing} | Takeoffs: ${takeoffs} | Landings: ${landings}<br>` +
+      `At Gate: ${atGate} | Cruising: ${cruising}`;
+  }
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// --- Resize Handler ---
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+})();
+</script>
+</body>
+</html>
