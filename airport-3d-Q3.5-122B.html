@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+// coded by Qwen 3.5 128B-A10B UD MTP
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airport 3D Simulation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; font-family: Arial, sans-serif; background: #87ceeb; }
+        #info { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; font-size: 14px; z-index: 100; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="info"><strong>Airport Simulation</strong><br>Drag: Rotate | Scroll: Zoom<br>Planes: <span id="plane-count">0</span></div>
+    
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        let width, height;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        resize();
+        window.addEventListener("resize", resize);
+
+        // Camera
+        const camera = {
+            x: 0, y: 120, z: 180,
+            rotX: 0.5, rotY: 0,
+            targetX: 0, targetY: 0, targetZ: 0
+        };
+
+        // Scene objects
+        const planes = [];
+        const gates = [
+            { x: -45, z: -130, occupied: false },
+            { x: -22, z: -130, occupied: false },
+            { x: 0, z: -130, occupied: false },
+            { x: 22, z: -130, occupied: false },
+            { x: 45, z: -130, occupied: false },
+            { x: -45, z: -85, occupied: false },
+            { x: -22, z: -85, occupied: false },
+            { x: 22, z: -85, occupied: false }
+        ];
+
+        // Mouse controls
+        let isDragging = false, lastX = 0, lastY = 0;
+        canvas.addEventListener("mousedown", e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+        canvas.addEventListener("mousemove", e => {
+            if (!isDragging) return;
+            camera.rotY += (e.clientX - lastX) * 0.01;
+            camera.rotX += (e.clientY - lastY) * 0.01;
+            camera.rotX = Math.max(0.2, Math.min(Math.PI / 2.5, camera.rotX));
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+        canvas.addEventListener("mouseup", () => isDragging = false);
+        canvas.addEventListener("wheel", e => {
+            const zoom = e.deltaY * 0.1;
+            camera.z += zoom;
+            camera.z = Math.max(80, Math.min(350, camera.z));
+        });
+
+        // 3D projection
+        function project(x, y, z) {
+            // Camera position based on rotation
+            const camRadius = camera.z;
+            const camX = Math.sin(camera.rotY) * camRadius;
+            const camZ = -Math.cos(camera.rotY) * camRadius;
+            const camY = camera.y;
+
+            // Translate point relative to camera
+            let dx = x - camX;
+            let dy = y - camY;
+            let dz = z - camZ;
+
+            // Rotate around Y axis (yaw)
+            const cosY = Math.cos(-camera.rotY);
+            const sinY = Math.sin(-camera.rotY);
+            const rx = dx * cosY - dz * sinY;
+            const rz = dx * sinY + dz * cosY;
+
+            // Rotate around X axis (pitch)
+            const cosX = Math.cos(-camera.rotX);
+            const sinX = Math.sin(-camera.rotX);
+            const ry = dy * cosX - rz * sinX;
+            const finalZ = dy * sinX + rz * cosX;
+
+            if (finalZ <= 0.1) return null;
+
+            // Perspective projection
+            const fov = 500;
+            const scale = fov / finalZ;
+
+            return {
+                x: width / 2 + rx * scale,
+                y: height / 2 - ry * scale,
+                z: finalZ
+            };
+        }
+
+        // Draw filled polygon (for runway/ground)
+        function drawPolygon(points, color) {
+            const projected = points.map(p => project(p.x, p.y, p.z)).filter(p => p !== null);
+            if (projected.length < 3) return;
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(projected[0].x, projected[0].y);
+            for (let i = 1; i < projected.length; i++) {
+                ctx.lineTo(projected[i].x, projected[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Draw plane model
+        function drawPlane(plane) {
+            const p = project(plane.x, plane.y, plane.z);
+            if (!p) return;
+
+            const scale = 1;
+            const angle = plane.angle || 0;
+
+            // Calculate rotated wing positions
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+
+            // Fuselage (main body)
+            ctx.fillStyle = "#f5f5f5";
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y - 40 * scale, 20 * scale, 5 * scale, angle, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cockpit (dark window area)
+            ctx.fillStyle = "#3a4a6b";
+            ctx.beginPath();
+            ctx.ellipse(p.x - 12 * scale, p.y - 42 * scale, 5 * scale, 2.5 * scale, angle, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Main wings
+            const wingSpan = 35 * scale;
+            const wingLeftX = p.x + cosA * (-wingSpan/2) - sinA * (4 * scale);
+            const wingLeftY = p.y - 40 * scale + sinA * (-wingSpan/2) + cosA * (4 * scale);
+            const wingRightX = p.x + cosA * (wingSpan/2) - sinA * (4 * scale);
+            const wingRightY = p.y - 40 * scale + sinA * (wingSpan/2) + cosA * (4 * scale);
+
+            ctx.fillStyle = "#cccccc";
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y - 45 * scale);
+            ctx.lineTo(wingLeftX, wingLeftY);
+            ctx.lineTo(wingLeftX + 3, wingLeftY);
+            ctx.lineTo(wingRightX + 3, wingRightY);
+            ctx.lineTo(wingRightX, wingRightY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Tail section
+            const tailX = p.x + cosA * (-15 * scale) - sinA * (4 * scale);
+            const tailY = p.y - 40 * scale + sinA * (-15 * scale) + cosA * (4 * scale);
+
+            ctx.fillStyle = "#cccccc";
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y - 38 * scale);
+            ctx.lineTo(tailX - 8 * scale, tailY);
+            ctx.lineTo(tailX + 8 * scale, tailY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Vertical stabilizer
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY - 5 * scale);
+            ctx.lineTo(tailX - 3 * scale, tailY + 3 * scale);
+            ctx.lineTo(tailX + 3 * scale, tailY + 3 * scale);
+            ctx.closePath();
+            ctx.fill();
+
+            // Landing gear (wheels)
+            ctx.fillStyle = "#2a2a2a";
+            ctx.beginPath();
+            ctx.ellipse(p.x - 4 * scale, p.y - 30 * scale, 2 * scale, 1 * scale, angle, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(p.x + 6 * scale, p.y - 30 * scale, 2 * scale, 1 * scale, angle, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Engine glow
+            ctx.fillStyle = "#ff8844";
+            ctx.beginPath();
+            ctx.arc(p.x + 5 * scale, p.y - 36 * scale, 2 * scale, 0, Math.PI * 2);
+            ctx.fill();
+
+            return { x: p.x, y: p.y };
+        }
+
+        // Draw runway
+        function drawRunway(x, z, length, width, color, markingsColor) {
+            const halfL = length / 2;
+            const halfW = width / 2;
+
+            // Runway surface
+            ctx.fillStyle = color;
+            
+            // Draw as rotated rectangle
+            const cosA = Math.cos(0);
+            const sinA = Math.sin(0);
+
+            const corners = [
+                { x: x + cosA * halfL - sinA * halfW, z: z + sinA * halfL + cosA * halfW },
+                { x: x + cosA * halfL + sinA * halfW, z: z + sinA * halfL - cosA * halfW },
+                { x: x - cosA * halfL + sinA * halfW, z: z - sinA * halfL - cosA * halfW },
+                { x: x - cosA * halfL - sinA * halfW, z: z - sinA * halfL + cosA * halfW }
+            ];
+
+            const projected = corners.map(c => project(c.x, 0.1, c.z)).filter(p => p !== null);
+            if (projected.length < 3) return;
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(projected[0].x, projected[0].y);
+            for (let i = 1; i < projected.length; i++) {
+                ctx.lineTo(projected[i].x, projected[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Center markings
+            ctx.fillStyle = markingsColor;
+            for (let i = -halfL + 20; i < halfL; i += 30) {
+                const markX = x + cosA * i;
+                const markZ = z + sinA * i;
+                const mp = project(markX, 0.15, markZ);
+                if (mp) {
+                    ctx.fillRect(mp.x - 2, mp.y - 8, 4, 16);
+                }
+            }
+
+            // Edge lines
+            ctx.strokeStyle = markingsColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const leftEdgeStart = project(x + cosA * (-halfL + 5) - sinA * (halfW - 1), 0.1, z + sinA * (-halfL + 5) + cosA * (halfW - 1));
+            const leftEdgeEnd = project(x + cosA * (halfL - 5) - sinA * (halfW - 1), 0.1, z + sinA * (halfL - 5) + cosA * (halfW - 1));
+            if (leftEdgeStart && leftEdgeEnd) {
+                ctx.moveTo(leftEdgeStart.x, leftEdgeStart.y);
+                ctx.lineTo(leftEdgeEnd.x, leftEdgeEnd.y);
+            }
+
+            const rightEdgeStart = project(x + cosA * (-halfL + 5) + sinA * (halfW - 1), 0.1, z + sinA * (-halfL + 5) - cosA * (halfW - 1));
+            const rightEdgeEnd = project(x + cosA * (halfL - 5) + sinA * (halfW - 1), 0.1, z + sinA * (halfL - 5) - cosA * (halfW - 1));
+            if (rightEdgeStart && rightEdgeEnd) {
+                ctx.moveTo(rightEdgeStart.x, rightEdgeStart.y);
+                ctx.lineTo(rightEdgeEnd.x, rightEdgeEnd.y);
+            }
+            
+            ctx.stroke();
+
+            // Threshold markings
+            const thresholdSize = 8;
+            const threshold1p = project(x + cosA * (-halfL), 0.2, z + sinA * (-halfL));
+            const threshold2p = project(x + cosA * halfL, 0.2, z + sinA * halfL);
+            
+            if (threshold1p) {
+                ctx.fillRect(threshold1p.x - thresholdSize/2, threshold1p.y - 3, thresholdSize, 6);
+            }
+            if (threshold2p) {
+                ctx.fillRect(threshold2p.x - thresholdSize/2, threshold2p.y - 3, thresholdSize, 6);
+            }
+
+            return corners;
+        }
+
+        // Draw gate marking
+        function drawGate(gate) {
+            const halfW = 10;
+            const halfL = 14;
+
+            const corners = [
+                { x: gate.x + halfW, z: gate.z - halfL },
+                { x: gate.x - halfW, z: gate.z - halfL },
+                { x: gate.x - halfW, z: gate.z + halfL },
+                { x: gate.x + halfW, z: gate.z + halfL }
+            ];
+
+            const projected = corners.map(c => project(c.x, 0.14, c.z)).filter(p => p !== null);
+            if (projected.length < 3) return;
+
+            ctx.fillStyle = gate.occupied ? "#2d5a27" : "#4a7c3d";
+            ctx.beginPath();
+            ctx.moveTo(projected[0].x, projected[0].y);
+            for (let i = 1; i < projected.length; i++) {
+                ctx.lineTo(projected[i].x, projected[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Gate number
+            ctx.fillStyle = "#ffff00";
+            ctx.font = "bold 12px Arial";
+            const midp = project(gate.x, 0.14, gate.z);
+            if (midp) {
+                ctx.fillText("G" + (gates.indexOf(gate) + 1), midp.x - 8, midp.y + 5);
+            }
+
+            // Parking lines
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            const frontP = project(gate.x, 0.14, gate.z - halfL + 2);
+            if (frontP) {
+                ctx.moveTo(frontP.x - 6, frontP.y);
+                ctx.lineTo(frontP.x + 6, frontP.y);
+            }
+            const backP = project(gate.x, 0.14, gate.z + halfL - 2);
+            if (backP) {
+                ctx.moveTo(backP.x - 6, backP.y);
+                ctx.lineTo(backP.x + 6, backP.y);
+            }
+            ctx.stroke();
+
+            return projected;
+        }
+
+        // Draw terminal building
+        function drawTerminal() {
+            const corners = [
+                { x: -40, y: 0, z: -100 },
+                { x: 40, y: 0, z: -100 },
+                { x: 40, y: 20, z: -100 },
+                { x: -40, y: 20, z: -100 }
+            ];
+
+            const projected = corners.map(c => project(c.x, c.y, c.z)).filter(p => p !== null);
+            if (projected.length < 3) return;
+
+            // Front face
+            ctx.fillStyle = "#d0d0d0";
+            ctx.beginPath();
+            ctx.moveTo(projected[0].x, projected[0].y);
+            for (let i = 1; i < projected.length; i++) {
+                ctx.lineTo(projected[i].x, projected[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Windows
+            ctx.fillStyle = "#87ceeb";
+            for (let i = -35; i <= 35; i += 10) {
+                for (let j = 2; j <= 16; j += 4) {
+                    const wp = project(i, j, -99);
+                    if (wp) {
+                        ctx.fillRect(wp.x - 3, wp.y - 2, 5, 3);
+                    }
+                }
+            }
+
+            // Roof
+            const roofCorners = [
+                { x: -42, y: 20, z: -102 },
+                { x: 42, y: 20, z: -102 },
+                { x: 42, y: 23, z: -98 },
+                { x: -42, y: 23, z: -98 }
+            ];
+
+            const roofProjected = roofCorners.map(c => project(c.x, c.y, c.z)).filter(p => p !== null);
+            if (roofProjected.length >= 3) {
+                ctx.fillStyle = "#a0a0a0";
+                ctx.beginPath();
+                ctx.moveTo(roofProjected[0].x, roofProjected[0].y);
+                for (let i = 1; i < roofProjected.length; i++) {
+                    ctx.lineTo(roofProjected[i].x, roofProjected[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Jet bridges
+            for (let i = 0; i < 4; i++) {
+                const bx = -35 + i * 22;
+                const bridgeCorners = [
+                    { x: bx, y: 14, z: -88 },
+                    { x: bx, y: 17, z: -96 }
+                ];
+
+                const bp0 = project(bridgeCorners[0].x, bridgeCorners[0].y, bridgeCorners[0].z);
+                const bp1 = project(bridgeCorners[1].x, bridgeCorners[1].y, bridgeCorners[1].z);
+
+                if (bp0 && bp1) {
+                    ctx.fillStyle = "#666";
+                    ctx.beginPath();
+                    ctx.moveTo(bp0.x - 3, bp0.y);
+                    ctx.lineTo(bp0.x + 3, bp0.y);
+                    ctx.lineTo(bp1.x + 3, bp1.y);
+                    ctx.lineTo(bp1.x - 3, bp1.y);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Draw control tower
+        function drawTower() {
+            const corners = [
+                { x: 50, y: 0, z: -70 },
+                { x: 58, y: 0, z: -70 },
+                { x: 58, y: 40, z: -70 },
+                { x: 50, y: 40, z: -70 }
+            ];
+
+            const projected = corners.map(c => project(c.x, c.y, c.z)).filter(p => p !== null);
+            if (projected.length < 3) return;
+
+            ctx.fillStyle = "#ccc";
+            ctx.beginPath();
+            ctx.moveTo(projected[0].x, projected[0].y);
+            for (let i = 1; i < projected.length; i++) {
+                ctx.lineTo(projected[i].x, projected[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Control room at top
+            const controlRoomCorners = [
+                { x: 48, y: 40, z: -72 },
+                { x: 60, y: 40, z: -72 },
+                { x: 60, y: 45, z: -68 },
+                { x: 48, y: 45, z: -68 }
+            ];
+
+            const crProjected = controlRoomCorners.map(c => project(c.x, c.y, c.z)).filter(p => p !== null);
+            if (crProjected.length >= 3) {
+                ctx.fillStyle = "#999";
+                ctx.beginPath();
+                ctx.moveTo(crProjected[0].x, crProjected[0].y);
+                for (let i = 1; i < crProjected.length; i++) {
+                    ctx.lineTo(crProjected[i].x, crProjected[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Windows around control room
+                ctx.fillStyle = "#87ceeb";
+                for (let i = 0; i < 3; i++) {
+                    const wpx = project(50 + i * 4, 42, -71);
+                    if (wpx) {
+                        ctx.fillRect(wpx.x - 2, wpx.y - 2, 4, 4);
+                    }
+                }
+            }
+
+            // Beacon light
+            const beaconP = project(54, 48, -70);
+            if (beaconP) {
+                ctx.fillStyle = "#ff0000";
+                ctx.beginPath();
+                ctx.arc(beaconP.x, beaconP.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Blink effect
+                const blink = Math.sin(Date.now() / 250) > 0;
+                if (blink) {
+                    ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
+                    ctx.beginPath();
+                    ctx.arc(beaconP.x, beaconP.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Draw taxiway
+        function drawTaxiway(x, zStart, zEnd, width) {
+            const corners = [
+                { x: x - width/2, z: zStart },
+                { x: x + width/2, z: zStart },
+                { x: x + width/2, z: zEnd },
+                { x: x - width/2, z: zEnd }
+            ];
+
+            const projected = corners.map(c => project(c.x, 0.15, c.z)).filter(p => p !== null);
+            if (projected.length < 3) return;
+
+            ctx.fillStyle = "#555";
+            ctx.beginPath();
+            ctx.moveTo(projected[0].x, projected[0].y);
+            for (let i = 1; i < projected.length; i++) {
+                ctx.lineTo(projected[i].x, projected[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Yellow centerline
+            ctx.fillStyle = "#ffcc00";
+            for (let z = Math.min(zStart, zEnd) + 10; z < Math.max(zStart, zEnd); z += 15) {
+                const cp = project(x, 0.16, z);
+                if (cp) {
+                    ctx.fillRect(cp.x - 1, cp.y - 4, 2, 8);
+                }
+            }
+
+            return projected;
+        }
+
+        // Spawn plane
+        function spawnPlane(type) {
+            const plane = {
+                x: type === "arrival" ? -60 : gates[0]?.x || 0,
+                y: type === "arrival" ? 25 : 1.5,
+                z: type === "arrival" ? -280 : (gates[0]?.z || -130) + 20,
+                angle: Math.PI, // Facing south for arrivals
+                state: "approach",
+                speed: 0,
+                targetSpeed: type === "arrival" ? 2.5 : 0,
+                type: type,
+                waitTimer: null
+            };
+
+            if (type === "departure") {
+                const gate = gates.find(g => !g.occupied);
+                if (!gate) return;
+                gate.occupied = true;
+                plane.gate = gate;
+                plane.x = gate.x;
+                plane.z = gate.z + 18;
+            }
+
+            planes.push(plane);
+            updatePlaneCount();
+        }
+
+        function updatePlaneCount() {
+            document.getElementById("plane-count").textContent = planes.length;
+        }
+
+        // Update all planes
+        function updatePlanes(dt) {
+            for (let i = planes.length - 1; i >= 0; i--) {
+                const p = planes[i];
+                
+                // Smooth speed transition
+                p.speed += (p.targetSpeed - p.speed) * 0.05;
+
+                switch (p.state) {
+                    case "approach":
+                        p.z += p.speed * dt * 60;
+                        if (p.y > 3 && p.z > -200) {
+                            p.y -= 0.02 * dt * 60;
+                        }
+                        if (p.z >= -185) {
+                            p.state = "landing";
+                            p.targetSpeed = 1.8;
+                        }
+                        break;
+
+                    case "landing":
+                        p.z += p.speed * dt * 60;
+                        if (p.y > 1.5 && p.z > -190) {
+                            p.y = Math.max(1.5, p.y - 0.08 * dt * 60);
+                        }
+                        if (p.z >= 40) {
+                            p.state = "taxiing";
+                            p.targetSpeed = 0.7;
+                            
+                            const gate = gates.find(g => !g.occupied);
+                            if (gate) {
+                                gate.occupied = true;
+                                p.gate = gate;
+                                p.targetX = gate.x;
+                                p.targetZ = gate.z + 18;
+                            } else {
+                                p.targetX = 30 + Math.random() * 20 - 10;
+                                p.waitingForGate = true;
+                            }
+
+                            // Face towards apron
+                            const dx = (p.gate?.x || 30) - (-60);
+                            const dz = -100 - 50;
+                            p.angle = Math.atan2(dx, dz);
+                        }
+                        break;
+
+                    case "taxiing":
+                        if (p.waitingForGate) {
+                            // Circle around apron waiting for gate
+                            p.x += Math.sin(Date.now() / 1000) * 0.3;
+                            p.z += 0.5 * dt * 60;
+                            
+                            if (p.z >= -80 && !p.gate) {
+                                const availableGate = gates.find(g => !g.occupied);
+                                if (availableGate) {
+                                    availableGate.occupied = true;
+                                    p.gate = availableGate;
+                                    p.waitingForGate = false;
+                                    p.targetX = availableGate.x;
+                                    p.targetZ = availableGate.z + 18;
+                                }
+                            }
+
+                            // Remove if gone too far
+                            if (p.z < -100) {
+                                planes.splice(i, 1);
+                                updatePlaneCount();
+                            }
+                        } else {
+                            const dx = (p.targetX || 0) - p.x;
+                            const dz = (p.targetZ || -80) - p.z;
+
+                            if (Math.abs(dx) < 0.5 && Math.abs(dz) < 0.5) {
+                                p.state = "gate";
+                                p.speed = 0;
+                                p.waitTimer = Date.now() + 6000 + Math.random() * 4000;
+                            } else {
+                                p.x += dx * 0.02;
+                                p.z += dz * 0.02;
+                                p.angle = Math.atan2(dx, dz);
+                            }
+                        }
+                        break;
+
+                    case "gate":
+                        if (p.waitTimer && Date.now() - p.waitTimer > 10000) {
+                            p.state = "departure";
+                            p.targetSpeed = 0.6;
+                            p.departPhase = "taxi_to_runway";
+                        }
+                        break;
+
+                    case "departure":
+                        switch (p.departPhase) {
+                            case "taxi_to_runway":
+                                // Taxi from gate to takeoff runway
+                                const tx = 60 - p.x;
+                                const tz = 50 - p.z;
+
+                                if (Math.abs(tx) < 2 && Math.abs(tz) < 2) {
+                                    p.departPhase = "line_up";
+                                    p.targetSpeed = 0;
+                                } else {
+                                    p.x += tx * 0.015;
+                                    p.z += tz * 0.015;
+                                    p.angle = Math.atan2(tx, tz);
+                                }
+
+                                if (p.z >= 48) {
+                                    setTimeout(() => {
+                                        p.targetSpeed = 1.5;
+                                    }, 1500);
+                                }
+                                break;
+
+                            case "line_up":
+                                // Line up on runway
+                                if (p.speed > 1) {
+                                    p.departPhase = "takeoff_roll";
+                                }
+                                break;
+
+                            case "takeoff_roll":
+                                p.z += p.speed * dt * 60;
+
+                                // Rotate at speed
+                                if (p.speed >= 2 && p.z <= 50 && !p.rotated) {
+                                    p.rotated = true;
+                                    setTimeout(() => {
+                                        p.state = "climbing";
+                                    }, 1500);
+                                }
+                                break;
+
+                            case "climbing":
+                                p.y += 0.2 * dt * 60;
+                                p.z -= 0.3 * dt * 60;
+
+                                if (p.y > 25) {
+                                    planes.splice(i, 1);
+                                    if (p.gate) p.gate.occupied = false;
+                                    updatePlaneCount();
+                                }
+                                break;
+                        }
+                        break;
+                }
+
+                // Remove planes that fly away
+                if (p.y > 50 || p.z < -320 || p.z > 400) {
+                    planes.splice(i, 1);
+                    if (p.gate) p.gate.occupied = false;
+                    updatePlaneCount();
+                }
+            }
+
+            // Randomly spawn new arrivals
+            if (Math.random() < 0.002 && planes.filter(p => p.type === "arrival").length < 5) {
+                setTimeout(() => spawnPlane("arrival"), 100);
+            }
+
+            // Spawn departures from waiting planes
+            planes.forEach(p => {
+                if (p.state === "gate" && p.waitTimer && !p.departScheduled) {
+                    const waitEnd = p.waitTimer + 10000;
+                    if (Date.now() >= waitEnd) {
+                        p.departScheduled = true;
+                    }
+                }
+            });
+        }
+
+        // Main render loop
+        let lastTime = performance.now();
+        
+        function render() {
+            requestAnimationFrame(render);
+
+            const now = performance.now();
+            const dt = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
+            // Sky gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, "#87ceeb");
+            grad.addColorStop(1, "#b8d8e8");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Collect all renderable objects with their z-depth for sorting
+            const renderList = [];
+
+            // Ground plane (far)
+            const groundCorners = [
+                { x: -200, y: 0, z: -250 },
+                { x: 200, y: 0, z: -250 },
+                { x: 200, y: 0, z: 250 },
+                { x: -200, y: 0, z: 250 }
+            ];
+            const groundProjected = groundCorners.map(c => project(c.x, c.y, c.z)).filter(p => p !== null);
+            
+            // Draw grass ground
+            ctx.fillStyle = "#4a7c3d";
+            ctx.beginPath();
+            for (let i = 0; i < groundProjected.length; i++) {
+                const next = groundProjected[(i + 1) % groundProjected.length];
+                if (i === 0) ctx.moveTo(next.x, next.y);
+                else ctx.lineTo(next.x, next.y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Apron area
+            const apronCorners = [
+                { x: -70, y: 0.12, z: -150 },
+                { x: 70, y: 0.12, z: -150 },
+                { x: 70, y: 0.12, z: -60 },
+                { x: -70, y: 0.12, z: -60 }
+            ];
+            const apronProjected = apronCorners.map(c => project(c.x, c.y, c.z)).filter(p => p !== null);
+            if (apronProjected.length >= 3) {
+                ctx.fillStyle = "#4a4a4a";
+                ctx.beginPath();
+                ctx.moveTo(apronProjected[0].x, apronProjected[0].y);
+                for (let i = 1; i < apronProjected.length; i++) {
+                    ctx.lineTo(apronProjected[i].x, apronProjected[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Apron markings
+                ctx.fillStyle = "#ffffff";
+                for (let x = -60; x <= 60; x += 25) {
+                    const mp = project(x, 0.13, -110);
+                    if (mp) {
+                        ctx.fillRect(mp.x - 3, mp.y - 4, 6, 8);
+                    }
+                }
+            }
+
+            // Draw gates (behind planes)
+            gates.forEach(gate => drawGate(gate));
+
+            // Draw taxiways
+            for (let i = -2; i <= 2; i++) {
+                drawTaxiway(i * 18, -70, 70, 6);
+            }
+
+            // Draw runways (with z-depth info)
+            const landingRunway = {
+                corners: drawRunway(-60, 50, 350, 12, "#4a4a4a", "#ffffff"),
+                depth: project(-60, 0.1, 50)?.z || 999
+            };
+
+            const takeoffRunway = {
+                corners: drawRunway(60, 50, 350, 12, "#3a3a3a", "#ffcc00"),
+                depth: project(60, 0.1, 50)?.z || 999
+            };
+
+            // Add planes to render list with their z-depth
+            planes.forEach(plane => {
+                const p = project(plane.x, plane.y, plane.z);
+                if (p) {
+                    renderList.push({ type: "plane", data: plane, depth: p.z });
+                }
+            });
+
+            // Sort by depth (far to near) and draw planes
+            renderList.sort((a, b) => b.depth - a.depth);
+            renderList.forEach(item => {
+                if (item.type === "plane") {
+                    drawPlane(item.data);
+                }
+            });
+
+            // Draw terminal building
+            drawTerminal();
+
+            // Draw control tower
+            drawTower();
+
+            updatePlanes(dt);
+        }
+
+        // Start simulation
+        setTimeout(() => spawnPlane("arrival"), 500);
+        setTimeout(() => spawnPlane("arrival"), 2000);
+        setTimeout(() => {
+            const gate = gates.find(g => !g.occupied);
+            if (gate) spawnPlane("departure");
+        }, 4000);
+
+        render();
+    </script>
+</body>
+</html>
