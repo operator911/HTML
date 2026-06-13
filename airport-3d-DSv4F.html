@@ -311,14 +311,14 @@
         const gatePositions = [-15, -7.5, 0, 7.5, 15];
         gatePositions.forEach(x => {
             const jetway = createJetway();
-            jetway.position.set(x, 1.8, -26);
+            jetway.position.set(x, 1.8, -28.5);
             jetway.rotation.y = Math.PI / 2;
             scene.add(jetway);
 
             // Gate markings
             const markMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
             const mark = new THREE.Mesh(new THREE.BoxGeometry(3, 0.05, 5), markMat);
-            mark.position.set(x, 0.1, -26);
+            mark.position.set(x, 0.1, -28.5);
             scene.add(mark);
         });
 
@@ -492,9 +492,10 @@
             return group;
         }
 
-        // --- Aircraft State Machine ---
+// --- Aircraft State Machine ---
         const aircraftStates = {
             APPROACHING: 'APPROACHING',
+            HOLDING: 'HOLDING',
             LANDING: 'LANDING',
             TAXI_TO_GATE: 'TAXI_TO_GATE',
             PARKED: 'PARKED',
@@ -503,16 +504,223 @@
             DEPARTED: 'DEPARTED'
         };
 
+        // Runway and gate occupancy tracking
+        let landingRunwayOccupied = false;
+        let takeoffRunwayOccupied = false;
+        const gateOccupied = [false, false, false, false, false];
+
         class AirportAircraft {
             constructor(mesh, gateIndex) {
                 this.mesh = mesh;
                 this.gateIndex = gateIndex;
-                this.state = aircraftStates.APPROACHING;
+                this.state = aircraftStates.HOLDING; // Start in holding pattern
                 this.waypoints = [];
                 this.currentWaypointIndex = 0;
                 this.speed = 0;
                 this.parkTimer = 0;
                 this.setupPath();
+            }
+
+            setupPath() {
+                const gates = [-15, -7.5, 0, 7.5, 15];
+                const gateX = gates[this.gateIndex % gates.length];
+
+                switch (this.state) {
+                    case aircraftStates.APPROACHING:
+                        this.waypoints = [
+                            new THREE.Vector3(-35, 30, 300),
+                            new THREE.Vector3(-35, 20, 220),
+                            new THREE.Vector3(-35, 10, 150),
+                            new THREE.Vector3(-35, 4, 90),
+                            new THREE.Vector3(-35, 1.5, 60),
+                            new THREE.Vector3(-35, 0.8, 55), // holding point before runway
+                            new THREE.Vector3(-35, 0.5, 45)  // runway threshold
+                        ];
+                        this.speed = 1.8;
+                        break;
+                    case aircraftStates.HOLDING:
+                        // Circular holding pattern above the airport
+                        this.waypoints = [
+                            new THREE.Vector3(-35, 25, 100),
+                            new THREE.Vector3(0, 30, 120),
+                            new THREE.Vector3(35, 25, 100),
+                            new THREE.Vector3(0, 20, 80)
+                        ];
+                        this.speed = 1.2;
+                        break;
+                    case aircraftStates.LANDING:
+                        this.waypoints = [
+                            new THREE.Vector3(-35, 0.5, 45),
+                            new THREE.Vector3(-35, 0.5, -40)
+                        ];
+                        this.speed = 0.4;
+                        break;
+                    case aircraftStates.TAXI_TO_GATE:
+                        this.waypoints = [
+                            new THREE.Vector3(-35, 0.5, -40),
+                            new THREE.Vector3(-25, 0.5, -48),
+                            new THREE.Vector3(0, 0.5, -48),
+                            new THREE.Vector3(gateX, 0.5, -28.5)
+                        ];
+                        this.speed = 0.6;
+                        break;
+                    case aircraftStates.TAXI_TO_RUNWAY:
+                        this.waypoints = [
+                            new THREE.Vector3(gateX, 0.5, -28.5),
+                            new THREE.Vector3(0, 0.5, -48),
+                            new THREE.Vector3(35, 0.5, -40)
+                        ];
+                        this.speed = 0.6;
+                        break;
+                    case aircraftStates.TAKEOFF:
+                        this.waypoints = [
+                            new THREE.Vector3(35, 0.5, -40),
+                            new THREE.Vector3(35, 0.5, 45),
+                            new THREE.Vector3(35, 4, 90),
+                            new THREE.Vector3(35, 10, 150),
+                            new THREE.Vector3(35, 20, 220),
+                            new THREE.Vector3(35, 30, 300)
+                        ];
+                        this.speed = 2.5;
+                        break;
+                }
+                this.currentWaypointIndex = 0;
+            }
+
+            update(delta) {
+                if (this.state === aircraftStates.PARKED) {
+                    this.parkTimer -= delta;
+                    if (this.parkTimer <= 0) {
+                        // Check if takeoff runway is clear before taxiing out
+                        if (!takeoffRunwayOccupied) {
+                            this.state = aircraftStates.TAXI_TO_RUNWAY;
+                            this.setupPath();
+                        }
+                    }
+                    return;
+                }
+
+                if (this.waypoints.length === 0) return;
+
+                const target = this.waypoints[this.currentWaypointIndex];
+                const currentPos = this.mesh.position;
+                const direction = new THREE.Vector3().subVectors(target, currentPos);
+                const distance = direction.length();
+
+                if (distance < 0.5) {
+                    this.currentWaypointIndex++;
+                    // Check runway occupancy at holding point (index 5 = z=55)
+                    if (this.state === aircraftStates.APPROACHING && this.currentWaypointIndex >= 5) {
+                        if (landingRunwayOccupied) {
+                            // Enter holding pattern instead of waiting at the threshold
+                            this.state = aircraftStates.HOLDING;
+                            this.setupPath();
+                            return;
+                        }
+                    }
+                    if (this.state === aircraftStates.HOLDING && this.currentWaypointIndex >= 4) {
+                        // Completed one loop of holding pattern, check if runway is clear
+                        if (!landingRunwayOccupied) {
+                            this.state = aircraftStates.APPROACHING;
+                            this.setupPath();
+                            // Skip to the holding point (index 5) so we descend immediately
+                            this.currentWaypointIndex = 5;
+                        } else {
+                            // Loop again
+                            this.currentWaypointIndex = 0;
+                        }
+                        return;
+                    }
+                    if (this.state === aircraftStates.TAXI_TO_RUNWAY && this.currentWaypointIndex >= 3) {
+                        if (takeoffRunwayOccupied) {
+                            this.currentWaypointIndex = 3;
+                            return;
+                        }
+                    }
+                    if (this.currentWaypointIndex >= this.waypoints.length) {
+                        this.transitionState();
+                    }
+                    return;
+                }
+
+                direction.normalize();
+                const moveSpeed = this.speed * delta * 12;
+                const moveVector = direction.clone().multiplyScalar(moveSpeed);
+                
+                // Prevent overshooting
+                if (moveVector.length() > distance) {
+                    this.mesh.position.copy(target);
+                } else {
+                    this.mesh.position.add(moveVector);
+                }
+
+                // Smooth Yaw Rotation
+                const targetAngle = Math.atan2(direction.x, direction.z);
+                const currentAngle = this.mesh.rotation.y;
+                let diff = targetAngle - currentAngle;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                this.mesh.rotation.y += diff * 0.08;
+
+                // Smooth Pitch Rotation
+                if (this.state === aircraftStates.APPROACHING || this.state === aircraftStates.TAKEOFF) {
+                    const targetPitch = -direction.y * 1.2;
+                    this.mesh.rotation.x += (targetPitch - this.mesh.rotation.x) * 0.05;
+                } else {
+                    this.mesh.rotation.x += (0 - this.mesh.rotation.x) * 0.05;
+                }
+
+                // Keep roll stable
+                this.mesh.rotation.z = 0;
+            }
+
+            transitionState() {
+                switch (this.state) {
+                    case aircraftStates.APPROACHING:
+                        landingRunwayOccupied = true;
+                        this.state = aircraftStates.LANDING;
+                        this.setupPath();
+                        break;
+                    case aircraftStates.LANDING:
+                        landingRunwayOccupied = false;
+                        this.state = aircraftStates.TAXI_TO_GATE;
+                        this.setupPath();
+                        break;
+                    case aircraftStates.TAXI_TO_GATE:
+                        // Mark gate as occupied
+                        gateOccupied[this.gateIndex % gateOccupied.length] = true;
+                        this.state = aircraftStates.PARKED;
+                        this.parkTimer = 4 + Math.random() * 6;
+                        break;
+                    case aircraftStates.TAXI_TO_RUNWAY:
+                        takeoffRunwayOccupied = true;
+                        // Free the gate
+                        gateOccupied[this.gateIndex % gateOccupied.length] = false;
+                        this.state = aircraftStates.TAKEOFF;
+                        this.setupPath();
+                        break;
+                    case aircraftStates.TAKEOFF:
+                        takeoffRunwayOccupied = false;
+                        this.state = aircraftStates.DEPARTED;
+                        this.waypoints = [];
+                        setTimeout(() => {
+                            // Find an unoccupied gate for respawn
+                            let newGate = this.gateIndex;
+                            for (let g = 0; g < gateOccupied.length; g++) {
+                                if (!gateOccupied[g]) { newGate = g; break; }
+                            }
+                            this.gateIndex = newGate;
+                            this.mesh.position.set(-35, 30, 300 + Math.random() * 80);
+                            this.mesh.rotation.set(0, 0, 0);
+                            this.state = aircraftStates.APPROACHING;
+                            this.setupPath();
+                            // Skip first 2 waypoints so they don't start too far back
+                            this.currentWaypointIndex = 2;
+                            this.mesh.position.copy(this.waypoints[this.currentWaypointIndex]);
+                            this.mesh.position.z += Math.random() * 40;
+                        }, 4000);
+                        break;
+                }
             }
 
             setupPath() {
@@ -543,13 +751,13 @@
                             new THREE.Vector3(-35, 0.5, -40),
                             new THREE.Vector3(-25, 0.5, -48),
                             new THREE.Vector3(0, 0.5, -48),
-                            new THREE.Vector3(gateX, 0.5, -26)
+                            new THREE.Vector3(gateX, 0.5, -28.5)
                         ];
                         this.speed = 0.6;
                         break;
                     case aircraftStates.TAXI_TO_RUNWAY:
                         this.waypoints = [
-                            new THREE.Vector3(gateX, 0.5, -26),
+                            new THREE.Vector3(gateX, 0.5, -28.5),
                             new THREE.Vector3(0, 0.5, -48),
                             new THREE.Vector3(35, 0.5, -40)
                         ];
@@ -571,11 +779,22 @@
             }
 
             update(delta) {
+                if (this.state === aircraftStates.HOLDING) {
+                    this.holdTimer -= delta;
+                    if (this.holdTimer <= 0 && !landingRunwayOccupied) {
+                        this.state = aircraftStates.APPROACHING;
+                        this.setupPath();
+                    }
+                    // Fall through to continue moving in holding pattern
+                }
+
                 if (this.state === aircraftStates.PARKED) {
                     this.parkTimer -= delta;
                     if (this.parkTimer <= 0) {
-                        this.state = aircraftStates.TAXI_TO_RUNWAY;
-                        this.setupPath();
+                        if (!takeoffRunwayOccupied) {
+                            this.state = aircraftStates.TAXI_TO_RUNWAY;
+                            this.setupPath();
+                        }
                     }
                     return;
                 }
@@ -589,6 +808,35 @@
 
                 if (distance < 0.5) {
                     this.currentWaypointIndex++;
+                    // Check runway occupancy at holding point (index 5 = z=55)
+                    if (this.state === aircraftStates.APPROACHING && this.currentWaypointIndex >= 5) {
+                        if (landingRunwayOccupied) {
+                            // Enter holding pattern instead of waiting at the threshold
+                            this.state = aircraftStates.HOLDING;
+                            this.holdTimer = 3 + Math.random() * 5;
+                            this.setupPath();
+                            return;
+                        }
+                    }
+                    if (this.state === aircraftStates.HOLDING && this.currentWaypointIndex >= 4) {
+                        // Completed one loop of holding pattern, check if runway is clear
+                        if (!landingRunwayOccupied) {
+                            this.state = aircraftStates.APPROACHING;
+                            this.setupPath();
+                            // Skip to the holding point (index 5) so we descend immediately
+                            this.currentWaypointIndex = 5;
+                        } else {
+                            // Loop again
+                            this.currentWaypointIndex = 0;
+                        }
+                        return;
+                    }
+                    if (this.state === aircraftStates.TAXI_TO_RUNWAY && this.currentWaypointIndex >= 3) {
+                        if (takeoffRunwayOccupied) {
+                            this.currentWaypointIndex = 3;
+                            return;
+                        }
+                    }
                     if (this.currentWaypointIndex >= this.waypoints.length) {
                         this.transitionState();
                     }
@@ -670,22 +918,25 @@
 
         for (let i = 0; i < numAircraft; i++) {
             const mesh = createAircraft(fuselageColors[i % fuselageColors.length], tailColors[i % tailColors.length]);
-            const startZ = 300 + i * 50 + Math.random() * 40;
-            mesh.position.set(-35, 30, startZ);
-            // Face toward the runway (negative Z direction)
+            // Place planes in holding pattern positions, staggered
+            const holdPositions = [
+                new THREE.Vector3(-35, 25, 100),
+                new THREE.Vector3(0, 30, 120),
+                new THREE.Vector3(35, 25, 100),
+                new THREE.Vector3(0, 20, 80),
+                new THREE.Vector3(-20, 28, 110),
+                new THREE.Vector3(20, 22, 90)
+            ];
+            const pos = holdPositions[i % holdPositions.length];
+            mesh.position.copy(pos);
             mesh.rotation.y = 0;
             scene.add(mesh);
 
             const aircraft = new AirportAircraft(mesh, i);
-            // Stagger initial states so they don't all land at once
-            if (i > 0) {
-                aircraft.state = aircraftStates.APPROACHING;
-                // Skip waypoints so planes are staggered along the approach
-                aircraft.currentWaypointIndex = Math.min(i * 2, 5);
-                aircraft.mesh.position.copy(aircraft.waypoints[aircraft.currentWaypointIndex]);
-                // Add random offset for further staggering
-                aircraft.mesh.position.z += Math.random() * 40;
-            }
+            // Stagger hold timers so they release one by one
+            aircraft.holdTimer = 5 + i * 4 + Math.random() * 3;
+            // Set waypoint index to start at different points in the holding loop
+            aircraft.currentWaypointIndex = i % 4;
             aircraftList.push(aircraft);
         }
 
