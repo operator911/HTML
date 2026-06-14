@@ -57,14 +57,14 @@
         const sunLight = new THREE.DirectionalLight(0xfffacd, 1.2);
         sunLight.position.set(200, 300, 100);
         sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
         sunLight.shadow.camera.near = 10;
         sunLight.shadow.camera.far = 1000;
-        sunLight.shadow.camera.left = -500;
-        sunLight.shadow.camera.right = 500;
-        sunLight.shadow.camera.top = 500;
-        sunLight.shadow.camera.bottom = -500;
+        sunLight.shadow.camera.left = -800;
+        sunLight.shadow.camera.right = 800;
+        sunLight.shadow.camera.top = 600;
+        sunLight.shadow.camera.bottom = -600;
         scene.add(sunLight);
 
         const runwayMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
@@ -95,9 +95,9 @@
             for (let i = -length / 2 + 20; i < length / 2 - 10; i += 30) {
                 const marking = new THREE.Mesh(markingGeom, markingMaterial);
                 marking.position.set(
-                    x + Math.sin(rotation) * i,
+                    x + Math.cos(rotation) * i,
                     0.2,
-                    z + Math.cos(rotation) * i
+                    z + Math.sin(rotation) * i
                 );
                 marking.rotation.y = rotation;
                 scene.add(marking);
@@ -107,9 +107,9 @@
             [-length / 2 + 5, length / 2 - 5].forEach(offset => {
                 const threshold = new THREE.Mesh(thresholdGeom, markingMaterial);
                 threshold.position.set(
-                    x + Math.sin(rotation) * offset,
+                    x + Math.cos(rotation) * offset,
                     0.2,
-                    z + Math.cos(rotation) * offset
+                    z + Math.sin(rotation) * offset
                 );
                 threshold.rotation.y = rotation;
                 scene.add(threshold);
@@ -133,7 +133,7 @@
                 taxiwayMaterial
             );
             taxiway.position.set((p1.x + p2.x) / 2, 0.1, (p1.z + p2.z) / 2);
-            taxiway.rotation.y = -angle;
+            taxiway.rotation.y = angle;
             taxiway.receiveShadow = true;
             scene.add(taxiway);
             return { x: (p1.x + p2.x) / 2, z: (p1.z + p2.z) / 2 };
@@ -328,18 +328,31 @@
                         break;
 
                     case 'takingOff':
-                        if (this.mesh.position.y < 60) {
-                            this.verticalSpeed = Math.min(this.verticalSpeed + 0.08, 1.5);
-                            this.mesh.position.y += this.verticalSpeed;
-                        } else {
+                        // Accelerate along runway
+                        this.speed = Math.min(this.speed + 0.2, 12);
+                        
+                        // Move forward along runway (rotation.y = Math.PI means facing +X)
+                        this.mesh.position.x += this.speed;
+                        
+                        // Speed-based lift: gradual takeoff after building speed
+                        const runwayProgress = Math.max(0, (this.mesh.position.x - takeoffRunway.x + 130) / 120);
+                        const liftFactor = Math.min(1, this.speed / 10) * runwayProgress;
+                        
+                        if (runwayProgress > 0.3 && this.speed > 6) {
+                            this.mesh.position.y = Math.min(this.mesh.position.y + liftFactor * 0.8, 60);
+                        }
+                        
+                        // Transition to flying away once at altitude
+                        if (this.mesh.position.y >= 60) {
                             this.state = 'flyingAway';
-                            this.speed = 10;
+                            this.speed = 8;
                         }
                         break;
 
                     case 'flyingAway':
-                        this.mesh.position.x += Math.sin(this.holdingPatternAngle) * 0.3;
-                        this.mesh.position.z -= Math.cos(this.holdingPatternAngle) * 18;
+                        // Continue forward and gradually climb
+                        this.mesh.position.x += Math.sin(this.holdingPatternAngle) * 0.5;
+                        this.mesh.position.z -= Math.cos(this.holdingPatternAngle) * 20;
                         this.mesh.rotation.y = Math.PI + this.holdingPatternAngle;
 
                         if (this.mesh.position.z < -800) {
