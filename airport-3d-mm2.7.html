@@ -67,49 +67,85 @@
         sunLight.shadow.camera.bottom = -600;
         scene.add(sunLight);
 
-        const runwayMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
-        const markingMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-        const taxiwayMaterial = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.9 });
-        const grassMaterial = new THREE.MeshStandardMaterial({ color: 0x2d5a27, roughness: 1 });
-        const concreteMaterial = new THREE.MeshStandardMaterial({ color: 0x7a7a7a, roughness: 0.9 });
+        // Ground level base: y=0 for grass top surface
+        const runwayMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x2a2a2a, 
+            roughness: 0.8,
+            polygonOffset: true,
+            polygonOffsetFactor: 1,
+            polygonOffsetUnits: 1
+        });
+        const markingMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, 
+            roughness: 0.3,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: 1
+        });
+        const taxiwayMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x3a3a3a, 
+            roughness: 0.9,
+            polygonOffset: true,
+            polygonOffsetFactor: 2,
+            polygonOffsetUnits: 1
+        });
+        const grassMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x2d5a27, 
+            roughness: 1,
+            polygonOffset: true,
+            polygonOffsetFactor: 3,
+            polygonOffsetUnits: 1
+        });
+        const concreteMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x7a7a7a, 
+            roughness: 0.9,
+            polygonOffset: true,
+            polygonOffsetFactor: 2,
+            polygonOffsetUnits: 1
+        });
         const buildingMaterial = new THREE.MeshStandardMaterial({ color: 0x5a6a7a, roughness: 0.7 });
 
+        // Ground plane at y=0. Keep paved surfaces slightly above it to avoid z-fighting.
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), grassMaterial);
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         scene.add(ground);
 
-        const concreteArea = new THREE.Mesh(new THREE.BoxGeometry(400, 0.1, 300), concreteMaterial);
-        concreteArea.position.set(-50, 0.05, -20);
+        // Concrete apron area: thin slab above grass, below taxiways/runways.
+        const concreteArea = new THREE.Mesh(new THREE.BoxGeometry(400, 0.02, 300), concreteMaterial);
+        concreteArea.position.set(-50, 0.01, -20);
         concreteArea.receiveShadow = true;
         scene.add(concreteArea);
 
         function createRunway(x, z, width, length, rotation) {
-            const runway = new THREE.Mesh(new THREE.BoxGeometry(width, 0.3, length), runwayMaterial);
-            runway.position.set(x, 0.15, z);
+            // Runway surface: thin slab above concrete/taxiways.
+            const runway = new THREE.Mesh(new THREE.BoxGeometry(width, 0.04, length), runwayMaterial);
+            runway.position.set(x, 0.04, z); // top surface is y=0.06
             runway.rotation.y = rotation;
             runway.receiveShadow = true;
             scene.add(runway);
 
-            const markingGeom = new THREE.BoxGeometry(width - 4, 0.35, 3);
+            // Center line markings - placed above runway surface and repeated along local runway length (Z axis).
+            const markingGeom = new THREE.BoxGeometry(width - 4, 0.005, 3);
             for (let i = -length / 2 + 20; i < length / 2 - 10; i += 30) {
                 const marking = new THREE.Mesh(markingGeom, markingMaterial);
                 marking.position.set(
-                    x + Math.cos(rotation) * i,
-                    0.2,
-                    z + Math.sin(rotation) * i
+                    x + Math.sin(rotation) * i,
+                    0.065,
+                    z + Math.cos(rotation) * i
                 );
                 marking.rotation.y = rotation;
                 scene.add(marking);
             }
 
-            const thresholdGeom = new THREE.BoxGeometry(width, 0.35, 8);
+            // Threshold markings - placed ABOVE runway surface
+            const thresholdGeom = new THREE.BoxGeometry(width, 0.005, 8);
             [-length / 2 + 5, length / 2 - 5].forEach(offset => {
                 const threshold = new THREE.Mesh(thresholdGeom, markingMaterial);
                 threshold.position.set(
-                    x + Math.cos(rotation) * offset,
-                    0.2,
-                    z + Math.sin(rotation) * offset
+                    x + Math.sin(rotation) * offset,
+                    0.065,
+                    z + Math.cos(rotation) * offset
                 );
                 threshold.rotation.y = rotation;
                 scene.add(threshold);
@@ -128,11 +164,12 @@
             if (length < 1) return null;
             const angle = Math.atan2(dx, dz);
 
+            // Taxiway: thin slab above apron/grass, below runway markings.
             const taxiway = new THREE.Mesh(
-                new THREE.BoxGeometry(20, 0.2, length),
+                new THREE.BoxGeometry(20, 0.03, length),
                 taxiwayMaterial
             );
-            taxiway.position.set((p1.x + p2.x) / 2, 0.1, (p1.z + p2.z) / 2);
+            taxiway.position.set((p1.x + p2.x) / 2, 0.025, (p1.z + p2.z) / 2);
             taxiway.rotation.y = angle;
             taxiway.receiveShadow = true;
             scene.add(taxiway);
@@ -162,6 +199,7 @@
         gatePositions.forEach((pos, index) => {
             const gateGroup = new THREE.Group();
 
+            // Gate stand - positioned at same level as taxiway (y=0.1, height 0.1 -> top at y=0.2)
             const stand = new THREE.Mesh(
                 new THREE.BoxGeometry(25, 0.1, 15),
                 markingMaterial
@@ -313,7 +351,7 @@
                                 { x: this.targetGate.position.x, z: this.targetGate.position.z, y: 0.5 },
                                 { x: -50, z: this.targetGate.position.z, y: 0.5 },
                                 { x: -100, z: 60, y: 0.5 },
-                                { x: takeoffRunway.x - 130, z: takeoffRunway.z + 50, y: 0.5 }
+                                { x: takeoffRunway.x, z: takeoffRunway.z + takeoffRunway.length / 2, y: 0.5 }
                             ];
                             this.taxiPath = path;
                             this.currentPathIndex = 0;
@@ -331,11 +369,13 @@
                         // Accelerate along runway
                         this.speed = Math.min(this.speed + 0.2, 12);
                         
-                        // Move forward along runway (rotation.y = Math.PI means facing +X)
-                        this.mesh.position.x += this.speed;
+                        // Move down the takeoff runway centerline, opposite the landing direction.
+                        this.mesh.position.x = takeoffRunway.x;
+                        this.mesh.position.z -= this.speed;
+                        this.mesh.rotation.y = Math.PI;
                         
                         // Speed-based lift: gradual takeoff after building speed
-                        const runwayProgress = Math.max(0, (this.mesh.position.x - takeoffRunway.x + 130) / 120);
+                        const runwayProgress = Math.max(0, (takeoffRunway.z + takeoffRunway.length / 2 - this.mesh.position.z) / takeoffRunway.length);
                         const liftFactor = Math.min(1, this.speed / 10) * runwayProgress;
                         
                         if (runwayProgress > 0.3 && this.speed > 6) {
@@ -370,20 +410,18 @@
                                 newGate.occupied = true;
                                 this.targetGate = newGate;
 
-                                const approachX = landingRunway.x + (Math.random() - 0.5) * 40;
-                                const approachZ = landingRunway.z + 50;
+                                const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
+                                const touchdownZ = runwayEntryZ + 20;
 
                                 this.taxiPath = [
-                                    { x: approachX, z: -600 + Math.random() * 100, y: 80 },
-                                    { x: approachX - 50 + Math.random() * 20, z: landingRunway.z - 200, y: 60 },
-                                    { x: approachX, z: landingRunway.z - 100, y: 30 },
-                                    { x: approachX, z: approachZ + 50, y: 15 },
-                                    { x: -100, z: approachZ + 30, y: 8 },
-                                    { x: this.targetGate.position.x, z: this.targetGate.position.z, y: 0.5 }
+                                    { x: landingRunway.x, z: runwayEntryZ - 450, y: 90 },
+                                    { x: landingRunway.x, z: runwayEntryZ - 250, y: 60 },
+                                    { x: landingRunway.x, z: runwayEntryZ - 100, y: 30 },
+                                    { x: landingRunway.x, z: touchdownZ, y: 6 }
                                 ];
                                 this.currentPathIndex = 0;
                                 this.mesh.position.set(this.taxiPath[0].x, this.taxiPath[0].y, this.taxiPath[0].z);
-                                this.mesh.rotation.y = Math.PI;
+                                this.mesh.rotation.y = 0;
                                 this.state = 'approaching';
                             } else {
                                 this.respawnTimer = 50;
@@ -396,27 +434,38 @@
                         if (this.state === 'landing') break;
                         const distToRunway = Math.sqrt(
                             Math.pow(this.mesh.position.x - landingRunway.x, 2) +
-                            Math.pow(this.mesh.position.z - (landingRunway.z + landingRunway.length / 2), 2)
+                            Math.pow(this.mesh.position.z - (landingRunway.z - landingRunway.length / 2 + 20), 2)
                         );
                         if (distToRunway < 30 && this.mesh.position.y < 20) {
                             this.state = 'landing';
                             this.verticalSpeed = 0;
+                            this.speed = 6;
                         }
                         break;
 
                     case 'landing':
+                        this.mesh.position.x = landingRunway.x;
+                        this.mesh.rotation.y = 0;
+
                         if (this.mesh.position.y > 0.5) {
                             this.verticalSpeed = Math.max(this.verticalSpeed + 0.04, 0.15);
-                            this.mesh.position.y -= this.verticalSpeed;
+                            this.mesh.position.y = Math.max(0.5, this.mesh.position.y - this.verticalSpeed);
+                        }
+
+                        if (this.mesh.position.z < landingRunway.z + landingRunway.length / 2) {
+                            this.mesh.position.z += Math.max(this.speed * 0.8, 4);
+                            this.speed = Math.max(this.speed * 0.98, 4);
                         } else {
                             if (this.targetGate) {
                                 this.state = 'taxiingToGate';
                                 const path = [
-                                    { x: -100, z: landingRunway.z + 50, y: 0.5 },
+                                    { x: landingRunway.x, z: landingRunway.z + landingRunway.length / 2, y: 0.5 },
+                                    { x: -100, z: 60, y: 0.5 },
                                     { x: this.targetGate.position.x, z: this.targetGate.position.z, y: 0.5 }
                                 ];
                                 this.taxiPath = path;
                                 this.currentPathIndex = 0;
+                                this.speed = 3;
                             } else {
                                 const newGate = this.findAvailableGate();
                                 if (newGate) {
@@ -488,8 +537,8 @@
                     this.mesh.rotation.y += angleDiff * 0.1;
 
                     if (this.state === 'taxiingToTakeoff') {
-                        if (Math.abs(this.mesh.position.x - takeoffRunway.x + 130) < 15 &&
-                            Math.abs(this.mesh.position.z - (takeoffRunway.z + 50)) < 20) {
+                        if (Math.abs(this.mesh.position.x - takeoffRunway.x) < 15 &&
+                            Math.abs(this.mesh.position.z - (takeoffRunway.z + takeoffRunway.length / 2)) < 20) {
                             this.state = 'takingOff';
                         }
                     }
@@ -516,8 +565,8 @@
             }
 
             isNearRunwayEntry() {
-                return Math.abs(this.mesh.position.x - (takeoffRunway.x - 130)) < 15 &&
-                       Math.abs(this.mesh.position.z - (takeoffRunway.z + 50)) < 20;
+                return Math.abs(this.mesh.position.x - takeoffRunway.x) < 15 &&
+                       Math.abs(this.mesh.position.z - (takeoffRunway.z + takeoffRunway.length / 2)) < 20;
             }
 
             findAvailableGate() {
