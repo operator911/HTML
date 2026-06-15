@@ -52,6 +52,16 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.maxPolarAngle = Math.PI / 2.1;
+        controls.enablePan = true;
+        
+        // Configure mouse buttons: left=orbit, right=pan, middle/wheel=zoom
+        // Use numeric values: 0=rotate, 1=dolly, 2=pan
+        controls.mouseButtons = {
+            LEFT: 0,
+            MIDDLE: 1,
+            RIGHT: 2
+        };
+        
 
         const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
         scene.add(ambientLight);
@@ -296,11 +306,11 @@
             if (Math.abs(x + 200) < runwayBuffer && Math.abs(z + 100) < 250) return false;
             
             // Check approach/departure paths (in front of runways - where planes fly)
-            // Takeoff departure path (planes fly north from takeoff runway)
-            if (Math.abs(x - 200) < approachPathBuffer && z < -400) return false;
+            // Takeoff departure path (planes fly north from takeoff runway) - extended further
+            if (Math.abs(x - 200) < approachPathBuffer && z < -600) return false;
             
-            // Landing approach path (planes come from north to landing runway)
-            if (Math.abs(x + 200) < approachPathBuffer && z < -150) return false;
+            // Landing approach path (planes come from north to landing runway) - extended further
+            if (Math.abs(x + 200) < approachPathBuffer && z < -250) return false;
             
             // Check taxiways (main parallel taxiway at z=80)
             if (Math.abs(z - 80) < taxiwayBuffer && Math.abs(x) < 250) return false;
@@ -315,8 +325,8 @@
         }
 
         // Spawn trees randomly on valid grass areas
-        const treeCount = 150;
-        const treeSpread = 1400;
+        const treeCount = 200;
+        const treeSpread = 2800; // Extended to near ground edge (3000 units)
         
         for (let i = 0; i < treeCount; i++) {
             let x, z, attempts = 0;
@@ -341,11 +351,11 @@
         // Landing runway: x=-200, z from -250 (north end) to 50 (south end/threshold)
         const holdingPattern = {
             centerX: -80,           // Center x so approach arm is at x=-200 (aligned with runway)
-            centerZ: -350,          // Center point z - positioned so bottom (north end) is near runway
-            longRadius: 400,        // North-south extent (half-length) - extends to horizon
-            shortRadius: 120,       // East-west width (half-width) - offset for return arm
+            centerZ: -450,          // Center point z - positioned so bottom (north end) is near runway
+            longRadius: 500,        // North-south extent (half-length) - extends further toward horizon
+            shortRadius: 140,       // East-west width (half-width) - offset for return arm
             altitude: 150,          // Holding pattern altitude
-            speed: 0.02             // Angular speed around oval - matches approach speed (~8 units/frame)
+            speed: 0.018            // Angular speed around oval - matches approach speed (~8 units/frame)
         };
         // Oval positions (counter-clockwise):
         // At angle 0: sin=0, cos=1 -> x=-80, z=50 (south end, near runway)
@@ -411,9 +421,9 @@
                 this.holdingAngle = 5 * Math.PI / 4; // Start at northwest corner (entry point, facing southwest)
                 this.holdingTimer = 0;
                 
-                // Spawn from horizon (northwest side, offscreen) and fly to holding pattern entry
+                // Spawn from horizon (northwest side, at ground edge or beyond) and fly to holding pattern entry
                 // Planes approach from northwest, already angled toward the runway direction
-                this.spawnPosition = { x: -165, y: 150, z: -950 }; // Northwest of airport, high altitude
+                this.spawnPosition = { x: -200, y: 180, z: -1600 }; // Northwest of airport at ground edge, high altitude
                 // Entry point at northwest corner (angle 5PI/4) where plane is already turning south
                 // sin(5PI/4) ≈ -0.707, cos(5PI/4) ≈ -0.707
                 this.holdingEntryPoint = { 
@@ -422,6 +432,9 @@
                     y: holdingPattern.altitude
                 };
                 
+                // Extended approach from spawn to holding pattern entry
+                this.holdingApproachProgress = 0;
+                
                 this.mesh.position.set(this.spawnPosition.x, this.spawnPosition.y, this.spawnPosition.z);
                 this.mesh.rotation.y = Math.PI * 1.25; // Face southwest (5PI/4 tangent direction)
             }
@@ -429,7 +442,7 @@
             update() {
                 switch (this.state) {
                     case 'enteringHolding':
-                        // Fly from spawn position to holding pattern entry point (northwest corner)
+                        // Fly from spawn position (at ground edge) to holding pattern entry point (northwest corner)
                         const dx = this.holdingEntryPoint.x - this.mesh.position.x;
                         const dz = this.holdingEntryPoint.z - this.mesh.position.z;
                         const dy = this.holdingEntryPoint.y - this.mesh.position.y;
@@ -442,11 +455,11 @@
                             this.holdingAngle = 5 * Math.PI / 4; // Northwest corner (facing southwest)
                             this.mesh.rotation.y = Math.PI * 1.25; // Face southwest (tangent direction)
                         } else {
-                            // Fly toward holding pattern entry (northwest to southeast, angled toward runway)
-                            const moveSpeed = 8;
+                            // Fly toward holding pattern entry from far distance (northwest to southeast, angled toward runway)
+                            const moveSpeed = 10; // Slightly faster for longer approach
                             this.mesh.position.x += (dx / dist) * moveSpeed;
                             this.mesh.position.z += (dz / dist) * moveSpeed;
-                            this.mesh.position.y += dy * 0.02; // Gradual descent to holding altitude
+                            this.mesh.position.y += dy * 0.015; // Gradual descent to holding altitude
                             this.mesh.rotation.y = Math.atan2(dx, dz); // Face direction of travel
                         }
                         break;
@@ -574,7 +587,8 @@
                         this.mesh.position.y += 0.4;
                         this.mesh.rotation.y = Math.PI;
 
-                        if (this.mesh.position.z < -800) {
+                        if (this.mesh.position.z < -1700) {
+                            // Fly beyond ground edge before despawning (ground ends at z=-1500)
                             this.state = 'respawning';
                             this.mesh.visible = false;
                             this.respawnTimer = 300 + Math.random() * 200;
