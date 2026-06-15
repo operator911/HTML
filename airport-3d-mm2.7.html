@@ -345,17 +345,14 @@
             longRadius: 400,        // North-south extent (half-length) - extends to horizon
             shortRadius: 120,       // East-west width (half-width) - offset for return arm
             altitude: 150,          // Holding pattern altitude
-            speed: 0.0025           // Angular speed around oval (slower for larger pattern)
+            speed: 0.02             // Angular speed around oval - matches approach speed (~8 units/frame)
         };
-        // Top of oval (north, near horizon): centerZ - longRadius = -350 - 400 = -750 (spawn point)
-        // Bottom of oval (south, near runway): centerZ + longRadius = -350 + 400 = 50 (near runway threshold)
-        // Approach arm (east side, angle PI/2): x = centerX + shortRadius = -80 + 120 = 40 (return arm)
-        // Wait, let me recalculate for approach from north:
-        // At angle 0: sin=0, cos=1 -> z = -350 + 400 = 50 (south end, near runway)
-        // At angle PI/2: sin=1, cos=0 -> x = -80 + 120 = 40 (east side)
-        // At angle PI: sin=0, cos=-1 -> z = -350 - 400 = -750 (north end, horizon)
-        // At angle 3PI/2: sin=-1, cos=0 -> x = -80 - 120 = -200 (west side, approach arm aligned with runway)
-        // Counter-clockwise orbit: north -> west (approach, flying south toward runway) -> south -> east (return) -> north
+        // Oval positions (counter-clockwise):
+        // At angle 0: sin=0, cos=1 -> x=-80, z=50 (south end, near runway)
+        // At angle PI/2: sin=1, cos=0 -> x=40, z=-350 (east side, return arm)
+        // At angle PI: sin=0, cos=-1 -> x=-80, z=-750 (north end, farthest from runway) - ENTRY/EXIT POINT
+        // At angle 3PI/2: sin=-1, cos=0 -> x=-200, z=-350 (west side, approach arm aligned with runway)
+        // Planes enter at north end (angle PI), orbit counter-clockwise, exit from north end when cleared
 
         class Plane {
             constructor() {
@@ -410,15 +407,16 @@
                 this.respawnTimer = 200;
                 
                 // Holding pattern state
-                this.holdingAngle = Math.random() * Math.PI * 2; // Start at random position in oval
+                this.holdingAngle = Math.PI; // Start at north end of oval (entry point)
                 this.holdingTimer = 0;
                 
                 // Spawn from horizon (north side, offscreen) and fly to holding pattern entry
                 // Planes approach from north, flying south toward the airport (same direction as landing)
-                this.spawnPosition = { x: -200, y: 150, z: -850 }; // Far north of airport (beyond oval), high altitude
+                this.spawnPosition = { x: -80, y: 150, z: -900 }; // Far north of airport (beyond oval), high altitude
+                // Entry point exactly matches north end of oval at angle PI: x=-80, z=-750
                 this.holdingEntryPoint = { 
-                    x: -200,  // Enter on the approach arm (aligned with runway at x=-200)
-                    z: holdingPattern.centerZ - holdingPattern.longRadius + 30, // Near north end of oval (close to spawn)
+                    x: holdingPattern.centerX,  // -80 (north end of oval)
+                    z: holdingPattern.centerZ - holdingPattern.longRadius, // -750 (farthest north point)
                     y: holdingPattern.altitude
                 };
                 
@@ -429,18 +427,17 @@
             update() {
                 switch (this.state) {
                     case 'enteringHolding':
-                        // Fly from spawn position to holding pattern entry point (north end)
+                        // Fly from spawn position to holding pattern entry point (north end, aligned with runway)
                         const dx = this.holdingEntryPoint.x - this.mesh.position.x;
                         const dz = this.holdingEntryPoint.z - this.mesh.position.z;
                         const dy = this.holdingEntryPoint.y - this.mesh.position.y;
                         const dist = Math.sqrt(dx * dx + dz * dz);
                         
                         if (dist < 10) {
-                            // Reached holding pattern entry, start orbiting on approach arm (west side)
+                            // Reached holding pattern entry, seamlessly transition into orbit
                             this.state = 'inHolding';
-                            // Position at north end of oval, on approach arm (x=-200)
-                            this.holdingAngle = Math.PI; // North end of oval (near horizon)
-                            this.mesh.position.set(this.holdingEntryPoint.x, this.holdingEntryPoint.y, this.holdingEntryPoint.z);
+                            // Set angle to north end of oval (PI) - already at correct position from entry
+                            this.holdingAngle = Math.PI; // North end of oval (farthest from runway)
                             this.mesh.rotation.y = Math.PI; // Face south (toward runway)
                         } else {
                             // Fly toward holding pattern entry (north to south, same direction as landing)
@@ -453,9 +450,17 @@
                         break;
 
                     case 'inHolding':
+                        // Store current position before updating for smooth approach transition
+                        const prevCosAngle = Math.cos(this.holdingAngle);
+                        const prevSinAngle = Math.sin(this.holdingAngle);
+                        this.prevHoldingX = holdingPattern.centerX + holdingPattern.shortRadius * prevSinAngle;
+                        this.prevHoldingZ = holdingPattern.centerZ + holdingPattern.longRadius * prevCosAngle;
+                        this.prevHoldingY = holdingPattern.altitude;
+                        
                         // Orbit in elongated oval pattern, waiting for runway clearance
-                        // Counter-clockwise orbit: start at north end (near horizon), go down west side (approach arm aligned with runway, flying south),
-                        // across south end, up east side (return arm offset to east) back to north
+                        // Counter-clockwise orbit: start at north end (farthest from runway), go down west side 
+                        // (approach arm aligned with runway, flying south), across south end, up east side 
+                        // (return arm offset to east) back to north
                         this.holdingTimer++;
                         this.holdingAngle += holdingPattern.speed;
                         
@@ -466,8 +471,8 @@
                         // Oval parametric equation (counter-clockwise, starting from north at angle PI)
                         // At angle 0: sin=0, cos=1 -> z = -350 + 400 = 50 (south end, near runway threshold)
                         // At angle PI/2: sin=1, cos=0 -> x = -80 + 120 = 40 (east side, return arm flying north)
-                        // At angle PI: sin=0, cos=-1 -> z = -350 - 400 = -750 (north end, near horizon)
-                        // At angle 3PI/2: sin=-1, cos=0 -> x = -80 - 120 = -200 (west side, approach arm aligned with runway, flying south)
+                        // At angle PI: sin=0, cos=-1 -> z = -350 - 400 = -750 (north end, farthest from runway)
+                        // At angle 3PI/2: sin=-1, cos=0 -> x = -80 - 120 = -200 (west side, approach arm aligned with runway)
                         this.mesh.position.x = holdingPattern.centerX + holdingPattern.shortRadius * sinAngle;
                         this.mesh.position.z = holdingPattern.centerZ + holdingPattern.longRadius * cosAngle;
                         this.mesh.position.y = holdingPattern.altitude;
@@ -479,16 +484,19 @@
                         this.mesh.rotation.y = Math.atan2(velX, velZ);
                         
                         // Check if runway is clear and enough time since last landing
-                        // Only allow exit from west side (approach arm, flying south toward runway)
+                        // Only allow exit from NORTH END of oval (farthest point, aligned with runway at x=-200)
+                        // This is where angle is near PI (sin ~= 0, cos ~= -1)
                         const framesSinceLanding = Date.now() - lastLandingTime;
-                        // sinAngle < 0 means we're on west side (approach arm at x=-200, flying south toward runway)
-                        // cosAngle > 0 means we're in southern half (approaching runway end)
-                        // Combined: sinAngle < -0.5 && cosAngle > 0 means we're on approach arm in southern half, flying south
-                        if (framesSinceLanding > MIN_LANDING_INTERVAL * 16 && !runwayOccupied && sinAngle < -0.5 && cosAngle > 0) {
-                            // Runway is clear, exit holding pattern and start approach from current position on approach arm
+                        // Allow exit only when very close to north end: sinAngle near 0 (between -0.3 and 0.3) 
+                        // AND cosAngle near -1 (less than -0.95 means we're at the far north tip)
+                        const nearNorthEnd = sinAngle > -0.3 && sinAngle < 0.3 && cosAngle < -0.95;
+                        if (framesSinceLanding > MIN_LANDING_INTERVAL * 16 && !runwayOccupied && nearNorthEnd) {
+                            // Runway is clear, exit holding pattern and start approach from CURRENT position
+                            // This ensures smooth continuous transition with no sudden jumps
                             this.state = 'approaching';
                             const runwayEntryZ = landingRunway.z - landingRunway.length / 2; // North end of runway
-                            this.approachStart = { x: landingRunway.x, z: this.mesh.position.z + 50, y: this.mesh.position.y };
+                            // Start approach from current holding position for seamless transition
+                            this.approachStart = { x: this.prevHoldingX, z: this.prevHoldingZ - 50, y: this.prevHoldingY };
                             this.approachEnd = { x: landingRunway.x, z: runwayEntryZ - 20, y: 6 };
                             this.approachProgress = 0;
                             runwayOccupied = true; // Claim the runway
