@@ -365,7 +365,13 @@
         // - East straight (3PI to 4PI): x=-80, z from -250 to -650 (flying north, return arm)
         // Exit point: start of west straight (angle PI) at northwest corner where plane faces south toward runway
 
+        // FIFO landing queue - tracks planes waiting to land in order of arrival
+        const landingQueue = [];
+        let nextQueueId = 0;
+
         class Plane {
+            static nextPlaneId = 0;
+            
             constructor() {
                 this.mesh = new THREE.Group();
 
@@ -400,10 +406,41 @@
                     this.mesh.add(engine);
                 });
 
-                const colors = [0xff4444, 0x4444ff, 0x44ff44, 0xffff44, 0xff44ff, 0x44ffff];
+                // Unique livery color for each plane - generate random airline colors
+                const liveries = [
+                    { fuselage: 0xffffff, tail: 0xff4444, stripe: 0xcc0000 }, // Red/White
+                    { fuselage: 0xffffff, tail: 0x4444ff, stripe: 0x0000cc }, // Blue/White
+                    { fuselage: 0xffffff, tail: 0x228b22, stripe: 0x006400 }, // Green/White
+                    { fuselage: 0xf5f5dc, tail: 0x8b4513, stripe: 0xa0522d }, // Tan/Brown
+                    { fuselage: 0xffffff, tail: 0xff8c00, stripe: 0xcc7000 }, // Orange/White
+                    { fuselage: 0xe8e8e8, tail: 0x4b0082, stripe: 0x6a0dad }, // Purple/White
+                    { fuselage: 0xffffff, tail: 0x2f4f4f, stripe: 0x708090 }, // Slate/White
+                    { fuselage: 0xf0f0f0, tail: 0xdc143c, stripe: 0xff6347 }, // Crimson/White
+                    { fuselage: 0xffffff, tail: 0x006400, stripe: 0x32cd32 }, // Lime/Green
+                    { fuselage: 0xffffff, tail: 0x191970, stripe: 0x4169e1 }, // Royal/White
+                ];
+                const livery = liveries[Math.floor(Math.random() * liveries.length)];
+                
+                // Apply livery to fuselage
+                const fuselageMat = new THREE.MeshStandardMaterial({ color: livery.fuselage, roughness: 0.3 });
+                fuselage.material = fuselageMat;
+                
+                // Add tail fin with airline colors
+                const tailFinGeom = new THREE.BoxGeometry(0.4, 5, 3);
+                const tailFin = new THREE.Mesh(tailFinGeom, new THREE.MeshStandardMaterial({ color: livery.tail, roughness: 0.4 }));
+                tailFin.position.set(0, 2.5, -4);
+                tailFin.castShadow = true;
+                this.mesh.add(tailFin);
+                
+                // Add stripe along fuselage
+                const stripeGeom = new THREE.BoxGeometry(3.2, 0.15, 14);
+                const stripe = new THREE.Mesh(stripeGeom, new THREE.MeshStandardMaterial({ color: livery.stripe, roughness: 0.3 }));
+                stripe.position.set(0, 0.8, -1);
+                this.mesh.add(stripe);
+
                 const noseGeom = new THREE.ConeGeometry(1.5, 3, 8);
                 noseGeom.rotateX(-Math.PI / 2);
-                const nose = new THREE.Mesh(noseGeom, new THREE.MeshStandardMaterial({ color: colors[Math.floor(Math.random() * colors.length)], roughness: 0.3 }));
+                const nose = new THREE.Mesh(noseGeom, new THREE.MeshStandardMaterial({ color: livery.tail, roughness: 0.3 }));
                 nose.position.z = -7;
                 this.mesh.add(nose);
 
@@ -416,6 +453,15 @@
                 this.verticalSpeed = 0;
                 this.waitTime = 0;
                 this.respawnTimer = 200;
+                
+                // FIFO queue tracking - each plane gets a unique ID and landing order
+                this.planeId = Plane.nextPlaneId++;
+                this.landingQueuePosition = -1; // -1 means not in queue
+                
+                // Green blinking light for indicating next plane to land
+                this.blinkLight = null;
+                this.blinkTimer = 0;
+                this.createBlinkLight(); // Create the blink light mesh
                 
                 // Holding pattern state - entry/exit at northwest corner (start of west straight, facing south)
                 // Racetrack angles: 0=start north semicircle (east side), PI=start west straight (northwest corner, exit point),
@@ -451,11 +497,15 @@
                         const dist = Math.sqrt(dx * dx + dz * dz);
                         
                         if (dist < 10) {
-                            // Reached holding pattern entry, seamlessly transition into orbit
+                            // Reached holding pattern entry, seamlessly transition into orbit and join FIFO queue
                             this.state = 'inHolding';
                             // Set angle to start of west straight (PI) - already at correct position from entry
                             this.holdingAngle = Math.PI; // Northwest corner (facing south)
                             this.mesh.rotation.y = Math.PI; // Face south (toward runway)
+                            
+                            // Add to landing queue when entering holding pattern
+                            this.landingQueuePosition = landingQueue.length;
+                            landingQueue.push(this);
                         } else {
                             // Fly toward holding pattern entry from far distance (north to south, facing runway direction)
                             const moveSpeed = 10; // Slightly faster for longer approach
@@ -495,6 +545,21 @@
                         // Set rotation based on current segment
                         this.mesh.rotation.y = pos.rotation;
                         
+                        // Update green blink light for next plane in queue
+                        if (this.landingQueuePosition === 0) {
+                            // This is the next plane to land - blink green
+                            this.blinkTimer++;
+                            if (this.blinkLight) {
+                                // Toggle blink every 30 frames (~0.5 seconds)
+                                this.blinkLight.visible = Math.floor(this.blinkTimer / 30) % 2 === 0;
+                            }
+                        } else if (this.blinkLight) {
+                            this.blinkLight.visible = false;
+                        }
+                        
+                        // FIFO check: only allow the first plane in queue to land
+                        const isNextInQueue = (this.landingQueuePosition === 0);
+                        
                         // Check if runway is clear and enough time since last landing
                         // Exit ONLY from northwest corner (start of west straight, angle PI) where plane faces south toward runway
                         const framesSinceLanding = Date.now() - lastLandingTime;
@@ -503,9 +568,8 @@
                         // Use a small window around PI to catch the exact exit point
                         const atNorthwestCorner = Math.abs(normalizedAngle - Math.PI) < 0.15;
                         
-                        if (framesSinceLanding > MIN_LANDING_INTERVAL * 16 && !runwayOccupied && atNorthwestCorner) {
-                            // Runway is clear, exit holding pattern and start approach from CURRENT position
-                            // This ensures smooth continuous transition with no sudden jumps
+                        if (isNextInQueue && framesSinceLanding > MIN_LANDING_INTERVAL * 16 && !runwayOccupied && atNorthwestCorner) {
+                            // This plane is first in FIFO queue, runway is clear - exit holding pattern and start approach
                             this.state = 'approaching';
                             const runwayEntryZ = landingRunway.z - landingRunway.length / 2; // North end of runway
                             // Start approach from current holding position for seamless transition
@@ -513,6 +577,14 @@
                             this.approachEnd = { x: landingRunway.x, z: runwayEntryZ - 20, y: 6 };
                             this.approachProgress = 0;
                             runwayOccupied = true; // Claim the runway
+                            
+                            // Remove from queue and update positions of remaining planes
+                            landingQueue.shift(); // Remove this plane from front of queue
+                            this.landingQueuePosition = -1;
+                            // Update queue positions for remaining planes
+                            landingQueue.forEach((plane, index) => {
+                                plane.landingQueuePosition = index;
+                            });
                         }
                         break;
 
@@ -602,12 +674,27 @@
                                 this.targetGate.occupied = false;
                                 this.targetGate = null;
                             }
+                            
+                            // Remove from landing queue if still in it
+                            if (this.landingQueuePosition >= 0) {
+                                const queueIndex = landingQueue.indexOf(this);
+                                if (queueIndex >= 0) {
+                                    landingQueue.splice(queueIndex, 1);
+                                    // Update queue positions for remaining planes
+                                    landingQueue.forEach((plane, index) => {
+                                        plane.landingQueuePosition = index;
+                                    });
+                                }
+                            }
 
                             // Reset to entering holding pattern from horizon
                             this.state = 'enteringHolding';
                             this.mesh.position.set(this.spawnPosition.x, this.spawnPosition.y, this.spawnPosition.z);
                             this.mesh.visible = true;
                             this.mesh.rotation.y = 0;
+                            
+                            // Hide blink light
+                            if (this.blinkLight) this.blinkLight.visible = false;
                         }
                         break;
 
@@ -617,6 +704,9 @@
                         if (!this.approachSpeed) {
                             this.approachSpeed = 0.012; // Initial approach speed (matches holding pattern exit speed)
                         }
+                        
+                        // Hide blink light when on approach
+                        if (this.blinkLight) this.blinkLight.visible = false;
                         
                         // Apply very gentle deceleration during approach - minimal slowdown to maintain realistic speed
                         this.approachSpeed = Math.max(this.approachSpeed - 0.00004, 0.005);
@@ -869,6 +959,22 @@
                 return { x, z, rotation };
             }
 
+            // Create green blink light for indicating next plane to land
+            createBlinkLight() {
+                if (this.blinkLight) return; // Already created
+                
+                const blinkGeom = new THREE.SphereGeometry(0.8, 8, 8);
+                const blinkMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x00ff00, 
+                    emissive: 0x00ff00, 
+                    emissiveIntensity: 1.5 
+                });
+                this.blinkLight = new THREE.Mesh(blinkGeom, blinkMat);
+                this.blinkLight.position.set(0, -2, 5); // Below fuselage, visible from ground
+                this.blinkLight.visible = false;
+                this.mesh.add(this.blinkLight);
+            }
+            
             destroy() {
                 scene.remove(this.mesh);
                 if (this.targetGate) this.targetGate.occupied = false;
