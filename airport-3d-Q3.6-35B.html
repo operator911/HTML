@@ -73,7 +73,7 @@ scene.add(hemiLight);
 const grassMat = new THREE.MeshLambertMaterial({ color: 0x4a7c3f });
 const runwayMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
 const tarmacMat = new THREE.MeshLambertMaterial({ color: 0x777777 });
-const taxiwayMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
+const taxiwayMat = new THREE.MeshLambertMaterial({ color: 0x555555, side: THREE.DoubleSide });
 const concreteMat = new THREE.MeshLambertMaterial({ color: 0x999999 });
 const buildingMat = new THREE.MeshLambertMaterial({ color: 0xccbbaa });
 const roofMat = new THREE.MeshLambertMaterial({ color: 0x887766 });
@@ -225,110 +225,76 @@ function createTaxiway(points, width) {
     const p1 = points[i], p2 = points[i + 1];
     const dx = p2.x - p1.x, dz = p2.z - p1.z;
     const len = Math.sqrt(dx * dx + dz * dz);
-    const angle = Math.atan2(dx, dz);
+    const angle = Math.atan2(dz, dx);
 
+    // Create taxiway segment - width is across the path, len is along the path
     const geo = new THREE.PlaneGeometry(width || 40, len);
     const mesh = new THREE.Mesh(geo, taxiwayMat);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set((p1.x + p2.x) / 2, 0.15, (p1.z + p2.z) / 2);
-    mesh.rotation.y = angle;
+    mesh.rotation.set(-Math.PI / 2, angle, 0, 'YXZ');
+    mesh.position.set((p1.x + p2.x) / 2, 0.14, (p1.z + p2.z) / 2);
     mesh.receiveShadow = true;
     group.add(mesh);
 
-    // Yellow center line dashes
+    // Yellow center line dashes - oriented along the taxiway direction
     const lineMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
     for (let d = 8; d < len - 4; d += 20) {
-      const dashGeo = new THREE.PlaneGeometry(1, 8);
+      const dashGeo = new THREE.PlaneGeometry(2, 6); // width=2 (across), length=6 (along path)
       const dash = new THREE.Mesh(dashGeo, lineMat);
-      dash.rotation.x = -Math.PI / 2;
+      // Rotate to lie flat and align with taxiway direction
+      dash.rotation.set(-Math.PI / 2, angle, 0, 'YXZ');
+      // Position along the center of the taxiway segment
+      const localOffset = d - len / 2;
       dash.position.set(
-        p1.x + (dx / len) * (d - len / 2),
-        0.2,
-        p1.z + (dz / len) * (d - len / 2)
+        (p1.x + p2.x) / 2 + Math.sin(angle) * localOffset,
+        0.15,
+        (p1.z + p2.z) / 2 + Math.cos(angle) * localOffset
       );
-      dash.rotation.y = angle;
       group.add(dash);
     }
   }
   scene.add(group);
 }
 
-// Taxiways connecting landing runway to terminal area
+// Taxiways connecting landing runway (left, centered at x=-300) to terminal area
+// Start from runway EDGE (x=-225, which is -300 + 75) and go to terminal
 createTaxiway([
-  { x: -300, z: 800 }, { x: -300, z: 400 }, { x: -150, z: 400 },
+  { x: -225, z: 600 }, { x: -150, z: 400 },
   { x: -150, z: 200 }, { x: -100, z: 200 }
-]);
+], 35);
 createTaxiway([
-  { x: -300, z: -800 }, { x: -300, z: -400 }, { x: -150, z: -400 },
+  { x: -225, z: -600 }, { x: -150, z: -400 },
   { x: -150, z: -200 }, { x: -100, z: -200 }
-]);
+], 35);
 
-// Taxiways connecting takeoff runway to terminal area
+// Right-side taxiways connecting takeoff runway (right, centered at x=300) to terminal area
+// Start from runway EDGE (x=225, which is 300 - 75) and go to terminal
 createTaxiway([
-  { x: 300, z: 800 }, { x: 300, z: 400 }, { x: 150, z: 400 },
+  { x: 225, z: 600 }, { x: 150, z: 400 },
   { x: 150, z: 200 }, { x: 100, z: 200 }
-]);
+], 35);
 createTaxiway([
-  { x: 300, z: -800 }, { x: 300, z: -400 }, { x: 150, z: -400 },
+  { x: 225, z: -600 }, { x: 150, z: -400 },
   { x: 150, z: -200 }, { x: 100, z: -200 }
-]);
+], 35);
 
-// Cross taxiway along terminal (front side) - split into segments to avoid apron overlap
-// Left segment (outside apron area, x from -600 to -225)
-createTaxiway([
-  { x: -600, z: 300 }, { x: -400, z: 300 }, { x: -225, z: 300 }
-]);
-// Right segment (outside apron area, x from 225 to 600)
-createTaxiway([
-  { x: 225, z: 300 }, { x: 400, z: 300 }, { x: 600, z: 300 }
-]);
-
-// Cross taxiway behind terminal (back side) - split into segments to avoid apron overlap
-createTaxiway([
-  { x: -600, z: -500 }, { x: -400, z: -500 }, { x: -225, z: -500 }
-]);
-createTaxiway([
-  { x: 225, z: -500 }, { x: 400, z: -500 }, { x: 600, z: -500 }
-]);
-
-// Perpendicular connectors to back taxiway (routed outside runway zones)
-// Left connector: goes around left side of airport, outside both runways
-createTaxiway([
-  { x: -600, z: 300 }, { x: -600, z: -500 }
-]);
-// Right connector: goes around right side of airport, outside both runways  
-createTaxiway([
-  { x: 600, z: 300 }, { x: 600, z: -500 }
-]);
-
-// Center connectors (between apron area and back taxiway)
-// These connect the front cross taxiway to the back cross taxiway via paths that don't overlap runways
-// NOTE: These pass through the apron area but are kept at z=0.15 while apron is at z=0.21, so apron covers them
-createTaxiway([
-  { x: -100, z: 300 }, { x: -100, z: -500 }
-]);
-createTaxiway([
-  { x: 100, z: 300 }, { x: 100, z: -500 }
-]);
-
-// Apron surface overlay to cover taxiway segments that pass underneath
-// This creates a seamless tarmac appearance over the apron area
-const apronOverlayGeo = new THREE.PlaneGeometry(450, 600);
+// Apron surface - single unified overlay to avoid z-fighting and overlapping artifacts
+// This creates a seamless tarmac appearance over the apron area without multiple overlapping planes
+const apronOverlayGeo = new THREE.PlaneGeometry(500, 700);
 const apronOverlayMat = new THREE.MeshLambertMaterial({ color: 0x777777 });
 const apronOverlay = new THREE.Mesh(apronOverlayGeo, apronOverlayMat);
-apronOverlay.rotation.x = -Math.PI / 2;
-apronOverlay.position.set(0, 0.22, -100);
+apronOverlay.rotation.set(-Math.PI / 2, 0, 0, 'YXZ');
+apronOverlay.position.set(0, 0.13, -50);
 apronOverlay.receiveShadow = true;
 scene.add(apronOverlay);
 
-// Apron surface markings (painted lines on apron, not separate geometry)
+// Apron surface markings (painted lines on apron)
 const apronLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-// Parking position lines at each gate
+// Parking position lines at each gate - slightly raised above apron to prevent z-fighting
 for (let i = -4; i <= 4; i++) {
   const lineGeo = new THREE.PlaneGeometry(35, 2);
   const line = new THREE.Mesh(lineGeo, apronLineMat);
-  line.rotation.x = -Math.PI / 2;
-  line.position.set(i * 55, 0.22, 60);
+  line.rotation.set(-Math.PI / 2, 0, 0, 'YXZ');
+  line.position.set(i * 55, 0.14, 60);
   scene.add(line);
 
   // Ground power unit markers
@@ -341,55 +307,13 @@ for (let i = -4; i <= 4; i++) {
   }
 }
 
-// Apron area - split into sections to avoid overlapping runways and taxiways
-// Left apron (between left runway and terminal, x from -225 to -30)
-const apronLeftGeo = new THREE.PlaneGeometry(195, 400);
-const apronLeft = new THREE.Mesh(apronLeftGeo, tarmacMat);
-apronLeft.rotation.x = -Math.PI / 2;
-apronLeft.position.set(-127.5, 0.18, 100);
-apronLeft.receiveShadow = true;
-scene.add(apronLeft);
-
-// Right apron (between right runway and terminal, x from 30 to 225)
-const apronRightGeo = new THREE.PlaneGeometry(195, 400);
-const apronRight = new THREE.Mesh(apronRightGeo, tarmacMat);
-apronRight.rotation.x = -Math.PI / 2;
-apronRight.position.set(127.5, 0.18, 100);
-apronRight.receiveShadow = true;
-scene.add(apronRight);
-
-// Center apron connector (in front of terminal, between the two runways)
-// Raised slightly above taxiway lines to prevent visual overlap artifacts
-const apronCenterGeo = new THREE.PlaneGeometry(600, 80);
-const apronCenter = new THREE.Mesh(apronCenterGeo, tarmacMat);
-apronCenter.rotation.x = -Math.PI / 2;
-apronCenter.position.set(0, 0.21, 300);
-apronCenter.receiveShadow = true;
-scene.add(apronCenter);
-
-// Left apron extension (connects to center, fills gap between left runway and terminal)
-const apronLeftExtGeo = new THREE.PlaneGeometry(95, 400);
-const apronLeftExt = new THREE.Mesh(apronLeftExtGeo, tarmacMat);
-apronLeftExt.rotation.x = -Math.PI / 2;
-apronLeftExt.position.set(-37.5, 0.21, 100);
-apronLeftExt.receiveShadow = true;
-scene.add(apronLeftExt);
-
-// Right apron extension (connects to center, fills gap between right runway and terminal)
-const apronRightExtGeo = new THREE.PlaneGeometry(95, 400);
-const apronRightExt = new THREE.Mesh(apronRightExtGeo, tarmacMat);
-apronRightExt.rotation.x = -Math.PI / 2;
-apronRightExt.position.set(37.5, 0.21, 100);
-apronRightExt.receiveShadow = true;
-scene.add(apronRightExt);
-
 // Gate position ring markers on apron (flat on ground) - raised above overlay
 for (let i = -4; i <= 4; i++) {
   const markerGeo = new THREE.RingGeometry(10, 12, 16);
   const markerMat = new THREE.MeshBasicMaterial({ color: 0xffcc00, side: THREE.DoubleSide });
   const marker = new THREE.Mesh(markerGeo, markerMat);
-  marker.rotation.x = -Math.PI / 2;
-  marker.position.set(i * 55, 0.23, 60);
+  marker.rotation.set(-Math.PI / 2, 0, 0, 'YXZ');
+  marker.position.set(i * 55, 0.145, 60);
   scene.add(marker);
 }
 
