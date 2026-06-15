@@ -273,38 +273,123 @@ createTaxiway([
   { x: 150, z: -200 }, { x: 100, z: -200 }
 ]);
 
-// Cross taxiway along terminal (front side)
+// Cross taxiway along terminal (front side) - split into segments to avoid apron overlap
+// Left segment (outside apron area, x from -600 to -225)
 createTaxiway([
-  { x: -600, z: 300 }, { x: -400, z: 300 }, { x: -200, z: 300 },
-  { x: 0, z: 300 }, { x: 200, z: 300 }, { x: 400, z: 300 }, { x: 600, z: 300 }
+  { x: -600, z: 300 }, { x: -400, z: 300 }, { x: -225, z: 300 }
+]);
+// Right segment (outside apron area, x from 225 to 600)
+createTaxiway([
+  { x: 225, z: 300 }, { x: 400, z: 300 }, { x: 600, z: 300 }
 ]);
 
-// Cross taxiway behind terminal (back side)
+// Cross taxiway behind terminal (back side) - split into segments to avoid apron overlap
 createTaxiway([
-  { x: -600, z: -500 }, { x: -400, z: -500 }, { x: -200, z: -500 },
-  { x: 0, z: -500 }, { x: 200, z: -500 }, { x: 400, z: -500 }, { x: 600, z: -500 }
+  { x: -600, z: -500 }, { x: -400, z: -500 }, { x: -225, z: -500 }
+]);
+createTaxiway([
+  { x: 225, z: -500 }, { x: 400, z: -500 }, { x: 600, z: -500 }
 ]);
 
-// Perpendicular connectors to back taxiway
-createTaxiway([{ x: -300, z: 300 }, { x: -300, z: -500 }]);
-createTaxiway([{ x: 0, z: 300 }, { x: 0, z: -500 }]);
-createTaxiway([{ x: 300, z: 300 }, { x: 300, z: -500 }]);
+// Perpendicular connectors to back taxiway (routed outside runway zones)
+// Left connector: goes around left side of airport, outside both runways
+createTaxiway([
+  { x: -600, z: 300 }, { x: -600, z: -500 }
+]);
+// Right connector: goes around right side of airport, outside both runways  
+createTaxiway([
+  { x: 600, z: 300 }, { x: 600, z: -500 }
+]);
 
-// Main apron area (large connected tarmac in front of terminal)
-const apronGeo = new THREE.PlaneGeometry(700, 400);
-const apron = new THREE.Mesh(apronGeo, tarmacMat);
-apron.rotation.x = -Math.PI / 2;
-apron.position.set(0, 0.18, 100);
-apron.receiveShadow = true;
-scene.add(apron);
+// Center connectors (between apron area and back taxiway)
+// These connect the front cross taxiway to the back cross taxiway via paths that don't overlap runways
+// NOTE: These pass through the apron area but are kept at z=0.15 while apron is at z=0.21, so apron covers them
+createTaxiway([
+  { x: -100, z: 300 }, { x: -100, z: -500 }
+]);
+createTaxiway([
+  { x: 100, z: 300 }, { x: 100, z: -500 }
+]);
 
-// Individual gate position markers on apron
+// Apron surface overlay to cover taxiway segments that pass underneath
+// This creates a seamless tarmac appearance over the apron area
+const apronOverlayGeo = new THREE.PlaneGeometry(450, 600);
+const apronOverlayMat = new THREE.MeshLambertMaterial({ color: 0x777777 });
+const apronOverlay = new THREE.Mesh(apronOverlayGeo, apronOverlayMat);
+apronOverlay.rotation.x = -Math.PI / 2;
+apronOverlay.position.set(0, 0.22, -100);
+apronOverlay.receiveShadow = true;
+scene.add(apronOverlay);
+
+// Apron surface markings (painted lines on apron, not separate geometry)
+const apronLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+// Parking position lines at each gate
 for (let i = -4; i <= 4; i++) {
-  const markerGeo = new THREE.RingGeometry(12, 15, 16);
+  const lineGeo = new THREE.PlaneGeometry(35, 2);
+  const line = new THREE.Mesh(lineGeo, apronLineMat);
+  line.rotation.x = -Math.PI / 2;
+  line.position.set(i * 55, 0.22, 60);
+  scene.add(line);
+
+  // Ground power unit markers
+  const gpuGeo = new THREE.BoxGeometry(4, 3, 6);
+  const gpuMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
+  for (let side of [-1, 1]) {
+    const gpu = new THREE.Mesh(gpuGeo, gpuMat);
+    gpu.position.set(i * 55 + side * 22, 1.5, 60);
+    scene.add(gpu);
+  }
+}
+
+// Apron area - split into sections to avoid overlapping runways and taxiways
+// Left apron (between left runway and terminal, x from -225 to -30)
+const apronLeftGeo = new THREE.PlaneGeometry(195, 400);
+const apronLeft = new THREE.Mesh(apronLeftGeo, tarmacMat);
+apronLeft.rotation.x = -Math.PI / 2;
+apronLeft.position.set(-127.5, 0.18, 100);
+apronLeft.receiveShadow = true;
+scene.add(apronLeft);
+
+// Right apron (between right runway and terminal, x from 30 to 225)
+const apronRightGeo = new THREE.PlaneGeometry(195, 400);
+const apronRight = new THREE.Mesh(apronRightGeo, tarmacMat);
+apronRight.rotation.x = -Math.PI / 2;
+apronRight.position.set(127.5, 0.18, 100);
+apronRight.receiveShadow = true;
+scene.add(apronRight);
+
+// Center apron connector (in front of terminal, between the two runways)
+// Raised slightly above taxiway lines to prevent visual overlap artifacts
+const apronCenterGeo = new THREE.PlaneGeometry(600, 80);
+const apronCenter = new THREE.Mesh(apronCenterGeo, tarmacMat);
+apronCenter.rotation.x = -Math.PI / 2;
+apronCenter.position.set(0, 0.21, 300);
+apronCenter.receiveShadow = true;
+scene.add(apronCenter);
+
+// Left apron extension (connects to center, fills gap between left runway and terminal)
+const apronLeftExtGeo = new THREE.PlaneGeometry(95, 400);
+const apronLeftExt = new THREE.Mesh(apronLeftExtGeo, tarmacMat);
+apronLeftExt.rotation.x = -Math.PI / 2;
+apronLeftExt.position.set(-37.5, 0.21, 100);
+apronLeftExt.receiveShadow = true;
+scene.add(apronLeftExt);
+
+// Right apron extension (connects to center, fills gap between right runway and terminal)
+const apronRightExtGeo = new THREE.PlaneGeometry(95, 400);
+const apronRightExt = new THREE.Mesh(apronRightExtGeo, tarmacMat);
+apronRightExt.rotation.x = -Math.PI / 2;
+apronRightExt.position.set(37.5, 0.21, 100);
+apronRightExt.receiveShadow = true;
+scene.add(apronRightExt);
+
+// Gate position ring markers on apron (flat on ground) - raised above overlay
+for (let i = -4; i <= 4; i++) {
+  const markerGeo = new THREE.RingGeometry(10, 12, 16);
   const markerMat = new THREE.MeshBasicMaterial({ color: 0xffcc00, side: THREE.DoubleSide });
   const marker = new THREE.Mesh(markerGeo, markerMat);
   marker.rotation.x = -Math.PI / 2;
-  marker.position.set(i * 55, 0.2, 60);
+  marker.position.set(i * 55, 0.23, 60);
   scene.add(marker);
 }
 
@@ -346,14 +431,7 @@ const terminal = createTerminal(0, -100, 500, 80);
 function createGate(x, z, side, gateIndex) {
   const group = new THREE.Group();
 
-  // Gate position marker on tarmac (circular apron marking)
-  const gateGeo = new THREE.CylinderGeometry(18, 18, 2, 16);
-  const gateMesh = new THREE.Mesh(gateGeo, concreteMat);
-  gateMesh.position.set(x, 1, z);
-  gateMesh.receiveShadow = true;
-  group.add(gateMesh);
-
-  // Gate position circle marking on ground
+  // Gate position marker - flat painted circle on tarmac (no tall cylinder)
   const circleCanvas = document.createElement('canvas');
   circleCanvas.width = 128; circleCanvas.height = 128;
   const cCtx = circleCanvas.getContext('2d');
@@ -507,136 +585,232 @@ for (let i = 0; i < 60; i++) {
 }
 
 // --- Airplane Model Builder ---
+// Build airplane with correct orientation from the start:
+// - Fuselage along +Z axis (nose at +Z end, tail at -Z end)
+// - Wings horizontal (along X axis, left wing +X, right wing -X)
+// - Vertical stabilizer along +Y axis (upward)
 function createAirplane(color, scale) {
   const s = scale || 1;
   const group = new THREE.Group();
 
   // Fuselage (more realistic proportions - narrower body)
+  // Cylinder default: along Y axis. We rotate Z by PI/2 to make it along X, then we'll fix below.
+  // Actually, let's build with fuselage directly along +Z to avoid any rotation issues.
   const fuselageGeo = new THREE.CylinderGeometry(3 * s, 2.5 * s, 50 * s, 12);
   const bodyMat = new THREE.MeshPhongMaterial({ color: 0xeeeeee });
+  // Rotate so cylinder points along Z axis (default is Y)
   const fuselage = new THREE.Mesh(fuselageGeo, bodyMat);
-  fuselage.rotation.z = Math.PI / 2;
+  fuselage.rotation.x = Math.PI / 2;
   group.add(fuselage);
 
   // Color stripe along fuselage (airline livery)
   const stripeGeo = new THREE.CylinderGeometry(3.1 * s, 2.6 * s, 48 * s, 12, 1, true, -0.4, 0.8);
   const stripeMat = new THREE.MeshPhongMaterial({ color: color });
   const stripe = new THREE.Mesh(stripeGeo, stripeMat);
-  stripe.rotation.z = Math.PI / 2;
+  stripe.rotation.x = Math.PI / 2;
   group.add(stripe);
 
-  // Nose cone (pointed front)
+  // Nose cone (pointed front) - nose points along +Z axis
   const noseGeo = new THREE.ConeGeometry(3 * s, 10 * s, 12);
   const nose = new THREE.Mesh(noseGeo, bodyMat);
-  nose.rotation.z = Math.PI;
-  nose.position.x = 30 * s;
+  // Cone default: along Y axis. Rotate X by PI/2 to point along +Z
+  nose.rotation.x = Math.PI / 2;
+  nose.position.z = 30 * s;
   group.add(nose);
 
-  // Tail cone (tapered rear)
+  // Tail cone (tapered rear) - tail points along -Z axis
   const tailConeGeo = new THREE.ConeGeometry(2.5 * s, 8 * s, 12);
   const tailCone = new THREE.Mesh(tailConeGeo, bodyMat);
-  tailCone.rotation.z = -Math.PI / 2;
-  tailCone.position.x = -34 * s;
+  // Rotate X by -PI/2 to point along -Z
+  tailCone.rotation.x = -Math.PI / 2;
+  tailCone.position.z = -29 * s;
   group.add(tailCone);
 
   // Main wings (realistic swept wing shape)
-  const wingShape = new THREE.Shape();
-  wingShape.moveTo(0, 0);
-  wingShape.lineTo(-5 * s, 18 * s);  // Shorter chord, shorter span
-  wingShape.lineTo(-4 * s, 18 * s);
-  wingShape.lineTo(3 * s, 0);
-  const wingExtrudeSettings = { depth: 1.2 * s, bevelEnabled: false };
-  const wingGeo = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
+  // Build wings as proper horizontal surfaces using custom BufferGeometry
+  // Fuselage is along +Z axis, so wings must extend along ±X axis
+  function createWing(side) {
+    // side: 1 = left wing (+X), -1 = right wing (-X)
+    const chord = 6 * s;     // wing chord (front-to-back)
+    const span = 18 * s;     // half-span (outward from body)
+    const thickness = 1.2 * s;
+    const sweepAngle = Math.atan2(5 * s, 18 * s); // swept back
+    const sweepOffset = 5 * s;
 
-  // Left wing (mounted lower on fuselage)
-  const leftWing = new THREE.Mesh(wingGeo, bodyMat);
-  leftWing.position.set(-2 * s, -2.5 * s, 0);
+    const vertices = [];
+    const indices = [];
+
+    // Bottom face (y = -thickness/2)
+    // Front-left corner (near fuselage, swept back)
+    vertices.push(-side * 0.5 * s, -thickness / 2, sweepOffset);      // 0: front inner bottom
+    // Rear-left corner
+    vertices.push(-side * 0.5 * s, -thickness / 2, -sweepOffset);     // 1: rear inner bottom
+    // Rear wingtip
+    vertices.push(side * span, -thickness / 2, -sweepOffset);          // 2: rear outer bottom
+    // Front wingtip
+    vertices.push(side * span, -thickness / 2, sweepOffset);           // 3: front outer bottom
+
+    // Top face (y = +thickness/2)
+    vertices.push(-side * 0.5 * s, thickness / 2, sweepOffset);       // 4: front inner top
+    vertices.push(-side * 0.5 * s, thickness / 2, -sweepOffset);      // 5: rear inner top
+    vertices.push(side * span, thickness / 2, -sweepOffset);           // 6: rear outer top
+    vertices.push(side * span, thickness / 2, sweepOffset);            // 7: front outer top
+
+    // Bottom face triangles
+    indices.push(0, 1, 2); indices.push(0, 2, 3);
+    // Top face triangles
+    indices.push(4, 6, 5); indices.push(4, 7, 6);
+    // Front face (fuselage side to wingtip front)
+    indices.push(0, 3, 7); indices.push(0, 7, 4);
+    // Rear face
+    indices.push(1, 5, 2); indices.push(1, 2, 5);
+    // Inner face (fuselage side)
+    indices.push(0, 4, 1); indices.push(1, 4, 5);
+    // Wingtip face (outer end)
+    indices.push(3, 6, 2); indices.push(3, 7, 6);
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return new THREE.Mesh(geo, bodyMat);
+  }
+
+  const leftWing = createWing(1);   // extends along +X
+  leftWing.position.set(0, -2.5 * s, 8 * s);
   group.add(leftWing);
 
-  // Right wing (mirrored)
-  const rightWingShape = new THREE.Shape();
-  rightWingShape.moveTo(0, 0);
-  rightWingShape.lineTo(-5 * s, -18 * s);
-  rightWingShape.lineTo(-4 * s, -18 * s);
-  rightWingShape.lineTo(3 * s, 0);
-  const rightWingGeo = new THREE.ExtrudeGeometry(rightWingShape, wingExtrudeSettings);
-  const rightWing = new THREE.Mesh(rightWingGeo, bodyMat);
-  rightWing.position.set(-2 * s, -2.5 * s, 0);
+  const rightWing = createWing(-1);  // extends along -X
+  rightWing.position.set(0, -2.5 * s, 8 * s);
   group.add(rightWing);
 
-  // Wing engines (pods) - smaller and better positioned
+  // Wing engines (pods) - mounted below wings
   for (let side of [1, -1]) {
+    // Pylon connecting engine to wing (vertical strut)
+    const pylonGeo = new THREE.BoxGeometry(1.5 * s, 2 * s, 4 * s);
+    const pylon = new THREE.Mesh(pylonGeo, bodyMat);
+    pylon.position.set(side * 6 * s, -3.5 * s, 12 * s);
+    group.add(pylon);
+
+    // Engine (cylinder pointing along Z axis, mounted on pylon)
     const engineGeo = new THREE.CylinderGeometry(2 * s, 1.6 * s, 7 * s, 8);
     const engineMat = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 50 });
     const engine = new THREE.Mesh(engineGeo, engineMat);
-    engine.rotation.z = Math.PI / 2;
-    // Pylon connecting engine to wing
-    const pylonGeo = new THREE.BoxGeometry(4 * s, 1.5 * s, 1.5 * s);
-    const pylon = new THREE.Mesh(pylonGeo, bodyMat);
-    pylon.position.set(-3 * s, -1 * s, side * 12 * s);
-    group.add(pylon);
-    engine.position.set(-3 * s, -4 * s, side * 12 * s);
+    // Engine axis is along Z (default cylinder orientation after rotation)
+    engine.rotation.x = Math.PI / 2;
+    engine.position.set(side * 6 * s, -4.5 * s, 12 * s);
     group.add(engine);
 
-    // Engine exhaust ring
+    // Engine exhaust ring (at rear of engine, which is along -Z)
     const exhaustGeo = new THREE.TorusGeometry(1.5 * s, 0.3 * s, 6, 8);
     const exhaustMat = new THREE.MeshPhongMaterial({ color: 0x444444 });
     const exhaust = new THREE.Mesh(exhaustGeo, exhaustMat);
-    exhaust.position.set(-6.5 * s, -4 * s, side * 12 * s);
-    exhaust.rotation.y = Math.PI / 2;
+    exhaust.position.set(side * 6 * s, -4.5 * s, 8.5 * s);
     group.add(exhaust);
   }
 
-  // Vertical stabilizer (tail fin) - more realistic shape
-  const tailFinShape = new THREE.Shape();
-  tailFinShape.moveTo(0, 0);
-  tailFinShape.lineTo(-3 * s, 10 * s);
-  tailFinShape.lineTo(-8 * s, 9 * s);
-  tailFinShape.lineTo(-6 * s, 0);
-  const tailFinGeo = new THREE.ExtrudeGeometry(tailFinShape, { depth: 1.2 * s, bevelEnabled: false });
-  const tailFinMat = new THREE.MeshPhongMaterial({ color: color });
-  const tailFin = new THREE.Mesh(tailFinGeo, tailFinMat);
-  tailFin.position.set(-24 * s, 0, -0.6 * s);
-  group.add(tailFin);
+  // Vertical stabilizer (tail fin) - proper vertical surface using BufferGeometry
+  // Drawn in YZ plane: Y=height (upward), Z=chord (front-to-back along fuselage)
+  function createVerticalStabilizer(colorMat, s) {
+    const thickness = 1.2 * s;
+    const chordOffset = 3 * s;   // front edge offset
+    const height = 10 * s;
+    const sweepBack = 5 * s;     // rear edge sweeps backward
 
-  // Horizontal stabilizers (smaller, on both sides)
-  for (let side of [1, -1]) {
-    const hStabShape = new THREE.Shape();
-    hStabShape.moveTo(0, 0);
-    hStabShape.lineTo(-3 * s, 6 * s);
-    hStabShape.lineTo(-2.5 * s, 6 * s);
-    hStabShape.lineTo(2 * s, 0);
-    const hStabGeo = new THREE.ExtrudeGeometry(hStabShape, { depth: 0.8 * s, bevelEnabled: false });
-    const hStabMat = new THREE.MeshPhongMaterial({ color: color });
-    const hStab = new THREE.Mesh(hStabGeo, hStabMat);
-    hStab.position.set(-22 * s, 1.5 * s, -0.4 * s);
-    if (side < 0) {
-      hStab.rotation.y = Math.PI;
-    }
-    group.add(hStab);
+    const vertices = [];
+    const indices = [];
+
+    // Front edge (near fuselage)
+    vertices.push(-thickness / 2, 0, chordOffset);       // 0: front bottom
+    vertices.push(-thickness / 2, height, chordOffset);   // 1: front top
+    // Rear edge (swept back, shorter at top)
+    vertices.push(thickness / 2, 0, -chordOffset);        // 2: rear bottom
+    vertices.push(thickness / 2, height * 0.9, -chordOffset - sweepBack); // 3: rear top
+
+    // Front face (fuselage side)
+    indices.push(0, 1, 2); indices.push(1, 3, 2);
+    // Back face
+    indices.push(2, 1, 0); indices.push(2, 3, 1);
+    // Top edge
+    indices.push(1, 3, 0); indices.push(3, 2, 0);
+    // Bottom edge
+    indices.push(0, 2, 1); indices.push(2, 3, 1);
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return new THREE.Mesh(geo, colorMat);
   }
 
-  // Cockpit windows (windshield)
+  // Vertical stabilizer material (needs to be defined before use)
+  const tailFinMat = new THREE.MeshPhongMaterial({ color: color });
+  const tailFin = createVerticalStabilizer(tailFinMat, s);
+  tailFin.position.set(0, 0, -24 * s);
+  group.add(tailFin);
+
+  // Horizontal stabilizers (smaller swept wings on both sides at tail)
+  function createHStab(side) {
+    // side: 1 = left (+X), -1 = right (-X)
+    const chord = 4 * s;
+    const span = 6 * s;
+    const thickness = 0.8 * s;
+    const sweepOffset = 3 * s;
+
+    const vertices = [];
+    const indices = [];
+
+    // Bottom
+    vertices.push(-side * 0.5 * s, -thickness / 2, sweepOffset);      // 0
+    vertices.push(-side * 0.5 * s, -thickness / 2, -sweepOffset);     // 1
+    vertices.push(side * span, -thickness / 2, -sweepOffset);          // 2
+    vertices.push(side * span, -thickness / 2, sweepOffset);           // 3
+    // Top
+    vertices.push(-side * 0.5 * s, thickness / 2, sweepOffset);       // 4
+    vertices.push(-side * 0.5 * s, thickness / 2, -sweepOffset);      // 5
+    vertices.push(side * span, thickness / 2, -sweepOffset);           // 6
+    vertices.push(side * span, thickness / 2, sweepOffset);            // 7
+
+    indices.push(0,1,2, 0,2,3, 4,6,5, 4,7,6, 0,3,7, 0,7,4, 1,5,2, 1,2,5, 0,4,1, 1,4,5, 3,6,2, 3,7,6);
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: color }));
+  }
+
+  const leftHStab = createHStab(1);
+  leftHStab.position.set(0, 1.5 * s, -22 * s);
+  group.add(leftHStab);
+
+  const rightHStab = createHStab(-1);
+  rightHStab.position.set(0, 1.5 * s, -22 * s);
+  group.add(rightHStab);
+
+  // Cockpit windows (windshield) - on top of nose, facing forward (+Z) and to sides
   const cockpitGeo = new THREE.PlaneGeometry(5 * s, 3 * s);
   const cockpitMat = new THREE.MeshPhongMaterial({ color: 0x112244, shininess: 100 });
   for (let i = 0; i < 2; i++) {
     const win = new THREE.Mesh(cockpitGeo, cockpitMat);
-    win.position.set(28 * s, 2.5 * s, (i - 0.5) * 3.5 * s);
+    // Position on sides of nose cone area
+    win.position.set((i - 0.5) * 3.5 * s, 2.5 * s, 25 * s);
     if (i === 0) {
-      win.rotation.y = Math.PI / 2;
+      win.rotation.y = Math.PI / 2;  // Right side faces +X
     } else {
-      win.rotation.y = -Math.PI / 2;
+      win.rotation.y = -Math.PI / 2;  // Left side faces -X
     }
     group.add(win);
   }
 
-  // Passenger windows (small dots along fuselage)
+  // Passenger windows (small dots along fuselage sides)
   const windowMat = new THREE.MeshBasicMaterial({ color: 0xaaddff });
   for (let side of [1, -1]) {
     for (let i = 0; i < 12; i++) {
       const pwGeo = new THREE.CircleGeometry(0.4 * s, 6);
       const pw = new THREE.Mesh(pwGeo, windowMat);
-      pw.position.set(15 * s - i * 3 * s, 2 * s, side * (3.05 * s));
+      // Along fuselage sides at +/-X, from nose to tail
+      pw.position.set(side * (3.05 * s), 2 * s, 15 * s - i * 3 * s);
       if (side < 0) pw.rotation.y = Math.PI;
       group.add(pw);
     }
@@ -645,15 +819,15 @@ function createAirplane(color, scale) {
   // Landing lights (nose gear area)
   const lightGeo = new THREE.SphereGeometry(0.8 * s, 6, 6);
   const noseLight = new THREE.Mesh(lightGeo, new THREE.MeshBasicMaterial({ color: 0xffffcc }));
-  noseLight.position.set(25 * s, -3 * s, 0);
+  noseLight.position.set(0, -3 * s, 25 * s);
   group.add(noseLight);
 
-  // Beacon (rotating red/white on top) - stored with name for reliable access
+  // Beacon (rotating red/white on top of fuselage) - stored with name for reliable access
   const beaconGeo = new THREE.SphereGeometry(1.2 * s, 6, 6);
   const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   const beacon = new THREE.Mesh(beaconGeo, beaconMat);
   beacon.name = 'beacon';
-  beacon.position.set(-8 * s, 3.5 * s, 0);
+  beacon.position.set(0, 3.5 * s, -8 * s);
   group.add(beacon);
 
   // Navigation lights (wingtips) - stored with names
@@ -663,7 +837,8 @@ function createAirplane(color, scale) {
     const navMat = new THREE.MeshBasicMaterial({ color: navColor });
     const navLight = new THREE.Mesh(navLightGeo, navMat);
     navLight.name = side > 0 ? 'navRight' : 'navLeft';
-    navLight.position.set(-5 * s, -1.5 * s, side * 17 * s);
+    // Left wingtip (+X), right wingtip (-X)
+    navLight.position.set(side * 18 * s, -2.5 * s, 12 * s);
     group.add(navLight);
   }
 
@@ -672,14 +847,14 @@ function createAirplane(color, scale) {
   // Nose gear
   const noseGearGeo = new THREE.CylinderGeometry(0.6 * s, 0.6 * s, 5 * s, 6);
   const noseGear = new THREE.Mesh(noseGearGeo, gearMat);
-  noseGear.position.set(18 * s, -4 * s, 0);
+  noseGear.position.set(0, -4 * s, 18 * s);
   group.add(noseGear);
 
   // Main gear struts
   for (let side of [1, -1]) {
     const mainGearGeo = new THREE.CylinderGeometry(0.7 * s, 0.7 * s, 6 * s, 6);
     const mainGear = new THREE.Mesh(mainGearGeo, gearMat);
-    mainGear.position.set(-6 * s, -4 * s, side * 10 * s);
+    mainGear.position.set(side * 6 * s, -4 * s, 10 * s);
     group.add(mainGear);
 
     // Wheels (two per main gear)
@@ -688,7 +863,7 @@ function createAirplane(color, scale) {
       const wheelMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
       const wheel = new THREE.Mesh(wheelGeo, wheelMat);
       wheel.rotation.x = Math.PI / 2;
-      wheel.position.set(-6 * s, -7.5 * s, side * 10 * s + w * 1.2 * s);
+      wheel.position.set(side * 6 * s, -7.5 * s, 10 * s + w * 1.2 * s);
       group.add(wheel);
     }
   }
@@ -697,7 +872,7 @@ function createAirplane(color, scale) {
   const tailLightGeo = new THREE.SphereGeometry(0.8 * s, 6, 6);
   const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   const tailLight = new THREE.Mesh(tailLightGeo, tailLightMat);
-  tailLight.position.set(-28 * s, 1.5 * s, 0);
+  tailLight.position.set(0, 1.5 * s, -28 * s);
   group.add(tailLight);
 
   return group;
@@ -762,10 +937,12 @@ function spawnPlane(state) {
       planeData.taxiInPoint.z - airplane.position.z
     );
   } else {
-    // Start off-screen for landing planes
-    const startZ = -3500 * planeData.direction;
-    airplane.position.set(landingRunway.x, 800, startZ);
-    airplane.rotation.y = planeData.direction * Math.PI / 2;
+    // Start off-screen for landing planes (far in +Z direction, flying toward -Z... no wait)
+    // Landing planes approach from far away and fly along +Z toward the runway threshold
+    const startZ = -3500;
+    airplane.position.set(landingRunway.x, 1500, startZ);
+    // Face +Z direction (forward along approach path)
+    airplane.rotation.y = 0;
     airplane.rotation.x = -planeData.climbAngle;
   }
 
@@ -810,17 +987,18 @@ function updatePlane(plane, dt) {
       const dist = Math.sqrt(dx * dx + dz * dz);
 
       if (dist < 5) {
-        // Reached runway entry, turn onto runway
+        // Reached runway entry, turn onto runway and face direction of travel
         plane.state = PLANE_STATES.ON_RUNWAY_TAKEOFF;
         plane.speed = 0;
-        m.rotation.y = Math.PI / 2;
         m.position.x = plane.taxiInPoint.x;
+        // Face +Z direction (along runway for takeoff)
+        m.rotation.y = 0;
       } else {
         const nx = dx / dist, nz = dz / dist;
         m.position.x += nx * plane.speed * dt * 60;
         m.position.z += nz * plane.speed * dt * 60;
 
-        // Face direction of travel
+        // Face direction of travel (rotation.y: 0=+Z, PI/2=+X, PI=-Z, -PI/2=-X)
         const targetAngle = Math.atan2(nx, nz);
         let angleDiff = targetAngle - m.rotation.y;
         while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
@@ -832,7 +1010,8 @@ function updatePlane(plane, dt) {
 
     case PLANE_STATES.ON_RUNWAY_TAKEOFF: {
       plane.speed = THREE.MathUtils.lerp(plane.speed, 6 + Math.random() * 0.5, dt * 1.5);
-      m.position.z += plane.direction * plane.speed * dt * 60;
+      // Move along +Z (forward in model's local space)
+      m.position.z += plane.speed * dt * 60;
 
       // Slight nose-up rotation as speed increases (rotation simulation)
       if (plane.speed > 3) {
@@ -852,10 +1031,11 @@ function updatePlane(plane, dt) {
         const trailMat = new THREE.MeshBasicMaterial({ color: 0xffaa44, transparent: true, opacity: 0.6 });
         for (let t = -1; t <= 1; t++) {
           const trail = new THREE.Mesh(trailGeo, trailMat);
+          // Trail appears behind the plane (negative local Z)
           trail.position.set(
             m.position.x + (Math.random() - 0.5) * 4 * plane.scale,
             m.position.y - 3 * plane.scale,
-            m.position.z + plane.direction * (-15 * plane.scale)
+            m.position.z + (-15 * plane.scale)
           );
           scene.add(trail);
           setTimeout(() => { if (trail.parent) scene.remove(trail); }, 500);
@@ -866,7 +1046,8 @@ function updatePlane(plane, dt) {
 
     case PLANE_STATES.CLIMBING: {
       m.position.y += plane.climbAngle * plane.speed * dt * 60;
-      m.position.z += plane.direction * plane.speed * dt * 30;
+      // Move forward along +Z
+      m.position.z += plane.speed * dt * 30;
       plane.distanceTraveled += plane.speed * dt * 60;
 
       if (m.position.y >= plane.cruiseAltitude) {
@@ -877,7 +1058,8 @@ function updatePlane(plane, dt) {
     }
 
     case PLANE_STATES.CRUISING: {
-      m.position.z += plane.direction * plane.speed * dt * 60;
+      // Move forward along +Z at cruise altitude
+      m.position.z += plane.speed * dt * 60;
       plane.distanceTraveled += plane.speed * dt * 60;
 
       // Gentle banking turns for visual interest
@@ -902,7 +1084,8 @@ function updatePlane(plane, dt) {
       const targetY = Math.max(2, startY * zProgress);
       m.position.y = THREE.MathUtils.lerp(m.position.y, targetY, dt * 4);
 
-      m.position.z += plane.direction * plane.speed * dt * 30;
+      // Move forward along +Z
+      m.position.z += plane.speed * dt * 30;
       plane.distanceTraveled += plane.speed * dt * 60;
 
       if (m.position.z <= endZ) {
@@ -915,10 +1098,11 @@ function updatePlane(plane, dt) {
     }
 
     case PLANE_STATES.ON_RUNWAY_LANDING: {
-      // Face direction of travel during landing roll
-      m.rotation.y = plane.direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+      // Face +Z direction (forward along runway)
+      m.rotation.y = 0;
       plane.speed = THREE.MathUtils.lerp(plane.speed, 5.5, dt * 1);
-      m.position.z += plane.direction * plane.speed * dt * 60;
+      // Move forward along +Z
+      m.position.z += plane.speed * dt * 60;
       plane.speed *= (1 - dt * 0.3); // Decelerate
 
       // Flare recovery - level out completely
@@ -929,6 +1113,7 @@ function updatePlane(plane, dt) {
         plane.speed = 0;
         const dx = plane.gateX - m.position.x;
         const dz = plane.gateZ - m.position.z;
+        // Face direction of travel to gate
         m.rotation.y = Math.atan2(dx, dz);
       }
       break;
@@ -945,13 +1130,14 @@ function updatePlane(plane, dt) {
         plane.speed = 0;
         m.position.x = plane.gateX;
         m.position.z = plane.gateZ;
-        // Face the terminal
-        m.rotation.y = Math.PI / 2;
+        // Face the terminal (+Z direction toward terminal)
+        m.rotation.y = 0;
       } else {
         const nx = dx / dist, nz = dz / dist;
         m.position.x += nx * plane.speed * dt * 60;
         m.position.z += nz * plane.speed * dt * 60;
 
+        // Face direction of travel (rotation.y: 0=+Z, PI/2=+X)
         const targetAngle = Math.atan2(nx, nz);
         let angleDiff = targetAngle - m.rotation.y;
         while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
@@ -1021,7 +1207,8 @@ function animate() {
     });
 
     newPlane.position.set(landingRunway.x, 1500, startZ);
-    newPlane.rotation.y = Math.PI / 2;
+    // Face +Z direction (forward along approach path)
+    newPlane.rotation.y = 0;
     newPlane.rotation.x = -0.04;
     planeCount++;
   }
