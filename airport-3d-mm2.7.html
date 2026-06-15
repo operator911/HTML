@@ -356,7 +356,7 @@
             straightLength: 400,    // Length of each parallel straight section (north and south)
             radius: 60,             // Radius of semicircles at each end
             altitude: 150,          // Holding pattern altitude
-            speed: 0.02             // Speed along perimeter (radians equivalent) - matches approach speed (~8 units/frame)
+            speed: 0.07             // Speed along perimeter (radians equivalent) - matches entry speed (~8-10 units/frame)
         };
         // Racetrack layout (counter-clockwise when viewed from above):
         // - North semicircle (0 to PI): centered at north end (z=-650), curves from east to west
@@ -556,8 +556,8 @@
                         break;
 
                     case 'takingOff':
-                        // Accelerate along runway
-                        this.speed = Math.min(this.speed + 0.2, 12);
+                        // Accelerate along runway - more gradual acceleration for realistic takeoff
+                        this.speed = Math.min(this.speed + 0.08, 9);
                         
                         // Move down the takeoff runway centerline, opposite the landing direction.
                         this.mesh.position.x = takeoffRunway.x;
@@ -566,10 +566,10 @@
                         
                         // Speed-based lift: gradual takeoff after building speed
                         const runwayProgress = Math.max(0, (takeoffRunway.z + takeoffRunway.length / 2 - this.mesh.position.z) / takeoffRunway.length);
-                        const liftFactor = Math.min(1, this.speed / 10) * runwayProgress;
+                        const liftFactor = Math.min(1, this.speed / 8) * runwayProgress;
                         
-                        if (runwayProgress > 0.3 && this.speed > 6) {
-                            this.mesh.position.y = Math.min(this.mesh.position.y + liftFactor * 0.8, 60);
+                        if (runwayProgress > 0.4 && this.speed > 5) {
+                            this.mesh.position.y = Math.min(this.mesh.position.y + liftFactor * 0.5, 60);
                         }
                         
                         // Transition to flying away once at altitude
@@ -580,10 +580,10 @@
                         break;
 
                     case 'flyingAway':
-                        // Continue straight away from the airport and climb offscreen.
+                        // Continue straight away from the airport and climb offscreen - reduced speed for realistic departure.
                         this.mesh.position.x = takeoffRunway.x;
-                        this.mesh.position.z -= 18;
-                        this.mesh.position.y += 0.4;
+                        this.mesh.position.z -= 10;
+                        this.mesh.position.y += 0.25;
                         this.mesh.rotation.y = Math.PI;
 
                         if (this.mesh.position.z < -1700) {
@@ -612,8 +612,8 @@
                         break;
 
                     case 'approaching':
-                        // Smooth continuous descent using linear interpolation
-                        this.approachProgress += 0.008; // Constant speed along approach path
+                        // Smooth continuous descent using linear interpolation - slightly slower for realistic approach
+                        this.approachProgress += 0.006; // Constant speed along approach path
                         
                         if (this.approachProgress >= 1) {
                             // Find and reserve a gate before landing completes
