@@ -677,11 +677,11 @@ function createAirplane(color, scale) {
   }
 
   const leftWing = createWing(1);   // extends along +X
-  leftWing.position.set(0, -2.5 * s, 8 * s);
+  leftWing.position.set(0, -2.5 * s, 0);
   group.add(leftWing);
 
   const rightWing = createWing(-1);  // extends along -X
-  rightWing.position.set(0, -2.5 * s, 8 * s);
+  rightWing.position.set(0, -2.5 * s, 0);
   group.add(rightWing);
 
   // Wing engines (pods) - mounted below wings
@@ -850,9 +850,9 @@ function createAirplane(color, scale) {
   noseGear.position.set(0, -4 * s, 18 * s);
   group.add(noseGear);
 
-  // Main gear struts
+  // Main gear struts - extended down to connect near wheel axle
   for (let side of [1, -1]) {
-    const mainGearGeo = new THREE.CylinderGeometry(0.7 * s, 0.7 * s, 6 * s, 6);
+    const mainGearGeo = new THREE.CylinderGeometry(0.7 * s, 0.7 * s, 8 * s, 6);
     const mainGear = new THREE.Mesh(mainGearGeo, gearMat);
     mainGear.position.set(side * 6 * s, -4 * s, 10 * s);
     group.add(mainGear);
@@ -877,6 +877,9 @@ function createAirplane(color, scale) {
 
   return group;
 }
+
+// Ground offset: lowest point of model is ~8.7s (wheel bottom), so add 9*s to raise wheels to ground
+const GROUND_OFFSET = 9;
 
 // --- Plane States ---
 const PLANE_STATES = {
@@ -930,7 +933,7 @@ function spawnPlane(state) {
   };
 
   if (isTakeoff) {
-    airplane.position.set(planeData.gateX, 0, planeData.gateZ);
+    airplane.position.set(planeData.gateX, GROUND_OFFSET * scale, planeData.gateZ);
     // Face direction of travel will be handled by TAXI_TO_RUNWAY state
     airplane.rotation.y = Math.atan2(
       planeData.taxiInPoint.x - airplane.position.x,
@@ -981,6 +984,9 @@ function updatePlane(plane, dt) {
 
   switch (plane.state) {
     case PLANE_STATES.TAXI_TO_RUNWAY: {
+      // Maintain ground altitude during taxi to runway
+      const groundY = GROUND_OFFSET * plane.scale;
+      if (m.position.y < groundY) m.position.y = groundY;
       plane.speed = THREE.MathUtils.lerp(plane.speed, plane.targetSpeed, dt * 2);
       const dx = plane.taxiInPoint.x - m.position.x;
       const dz = plane.taxiInPoint.z - m.position.z;
@@ -1010,6 +1016,9 @@ function updatePlane(plane, dt) {
 
     case PLANE_STATES.ON_RUNWAY_TAKEOFF: {
       plane.speed = THREE.MathUtils.lerp(plane.speed, 6 + Math.random() * 0.5, dt * 1.5);
+      // Keep wheels on ground during takeoff roll
+      const groundY = GROUND_OFFSET * plane.scale;
+      if (m.position.y < groundY) m.position.y = groundY;
       // Move along +Z (forward in model's local space)
       m.position.z += plane.speed * dt * 60;
 
@@ -1108,9 +1117,15 @@ function updatePlane(plane, dt) {
       // Flare recovery - level out completely
       m.rotation.x = THREE.MathUtils.lerp(m.rotation.x, 0, dt * 5);
 
+      // Keep wheels on ground during landing roll
+      const groundY = GROUND_OFFSET * plane.scale;
+      if (m.position.y < groundY) m.position.y = groundY;
+
       if (plane.speed < 2) {
         plane.state = PLANE_STATES.TAXI_TO_GATE;
         plane.speed = 0;
+        // Set proper ground altitude for taxiing
+        m.position.y = groundY;
         const dx = plane.gateX - m.position.x;
         const dz = plane.gateZ - m.position.z;
         // Face direction of travel to gate
@@ -1120,6 +1135,9 @@ function updatePlane(plane, dt) {
     }
 
     case PLANE_STATES.TAXI_TO_GATE: {
+      // Maintain ground altitude during taxi
+      const groundY = GROUND_OFFSET * plane.scale;
+      if (m.position.y < groundY) m.position.y = groundY;
       plane.speed = THREE.MathUtils.lerp(plane.speed, plane.targetSpeed * 0.7, dt * 2);
       const dx = plane.gateX - m.position.x;
       const dz = plane.gateZ - m.position.z;
@@ -1148,6 +1166,9 @@ function updatePlane(plane, dt) {
     }
 
     case PLANE_STATES.AT_GATE: {
+      // Maintain ground altitude at gate
+      const groundY = GROUND_OFFSET * plane.scale;
+      if (m.position.y < groundY) m.position.y = groundY;
       // Idle at gate, slight beacon animation only
       break;
     }
