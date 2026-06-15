@@ -101,9 +101,9 @@
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // Concrete apron area: physically separated from grass/taxiways to avoid z-fighting.
-        const concreteArea = new THREE.Mesh(new THREE.BoxGeometry(400, 0.12, 300), concreteMaterial);
-        concreteArea.position.set(-50, 0.06, -20);
+        // Concrete apron area: centered on the terminal/tower/gate pads and ending before the taxiways.
+        const concreteArea = new THREE.Mesh(new THREE.BoxGeometry(230, 0.12, 130), concreteMaterial);
+        concreteArea.position.set(-55, 0.06, -15);
         concreteArea.receiveShadow = true;
         scene.add(concreteArea);
 
@@ -424,14 +424,12 @@
                                 const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
                                 const touchdownZ = runwayEntryZ + 20;
 
-                                this.taxiPath = [
-                                    { x: landingRunway.x, z: runwayEntryZ - 450, y: 90 },
-                                    { x: landingRunway.x, z: runwayEntryZ - 250, y: 60 },
-                                    { x: landingRunway.x, z: runwayEntryZ - 100, y: 30 },
-                                    { x: landingRunway.x, z: touchdownZ, y: 6 }
-                                ];
-                                this.currentPathIndex = 0;
-                                this.mesh.position.set(this.taxiPath[0].x, this.taxiPath[0].y, this.taxiPath[0].z);
+                                // Store approach parameters for smooth continuous descent
+                                this.approachStart = { x: landingRunway.x, z: runwayEntryZ - 450, y: 90 };
+                                this.approachEnd = { x: landingRunway.x, z: touchdownZ, y: 6 };
+                                this.approachProgress = 0;
+
+                                this.mesh.position.set(this.approachStart.x, this.approachStart.y, this.approachStart.z);
                                 this.mesh.visible = true;
                                 this.mesh.rotation.y = 0;
                                 this.state = 'approaching';
@@ -442,16 +440,19 @@
                         break;
 
                     case 'approaching':
-                        this.approachToRunway();
-                        if (this.state === 'landing') break;
-                        const distToRunway = Math.sqrt(
-                            Math.pow(this.mesh.position.x - landingRunway.x, 2) +
-                            Math.pow(this.mesh.position.z - (landingRunway.z - landingRunway.length / 2 + 20), 2)
-                        );
-                        if (distToRunway < 30 && this.mesh.position.y < 20) {
+                        // Smooth continuous descent using linear interpolation
+                        this.approachProgress += 0.008; // Constant speed along approach path
+                        
+                        if (this.approachProgress >= 1) {
                             this.state = 'landing';
                             this.verticalSpeed = 0;
                             this.speed = 6;
+                        } else {
+                            // Interpolate position for smooth glideslope
+                            this.mesh.position.x = this.approachStart.x + (this.approachEnd.x - this.approachStart.x) * this.approachProgress;
+                            this.mesh.position.z = this.approachStart.z + (this.approachEnd.z - this.approachStart.z) * this.approachProgress;
+                            this.mesh.position.y = this.approachStart.y + (this.approachEnd.y - this.approachStart.y) * this.approachProgress;
+                            this.mesh.rotation.y = 0; // Face the runway direction
                         }
                         break;
 
@@ -495,50 +496,6 @@
                 return true;
             }
 
-            approachToRunway() {
-                if (this.currentPathIndex >= this.taxiPath.length - 1) {
-                    if (this.state === 'approaching') {
-                        this.state = 'landing';
-                        this.verticalSpeed = 0;
-                        this.speed = 6;
-                    }
-                    return;
-                }
-
-                const target = this.taxiPath[this.currentPathIndex + 1];
-                if (!target) return;
-
-                const dx = target.x - this.mesh.position.x;
-                const dz = target.z - this.mesh.position.z;
-                const dy = target.y - this.mesh.position.y;
-                const dist = Math.sqrt(dx * dx + dz * dz);
-
-                if (dist < 5) {
-                    if (Math.abs(dy) > 0.5) {
-                        const verticalMove = Math.sign(dy) * Math.min(Math.abs(dy), 0.8);
-                        this.mesh.position.y += verticalMove;
-                    } else {
-                        this.currentPathIndex++;
-                    }
-                } else {
-                    const moveSpeed = Math.min(6, dist);
-                    this.mesh.position.x += (dx / dist) * moveSpeed;
-                    this.mesh.position.z += (dz / dist) * moveSpeed;
-
-                    if (Math.abs(dy) > 0.5 && this.mesh.position.y > 2) {
-                        const verticalMove = Math.sign(dy) * Math.min(Math.abs(dy), 0.8);
-                        this.mesh.position.y += verticalMove;
-                    } else if (this.mesh.position.y > target.y) {
-                        this.mesh.position.y = Math.max(this.mesh.position.y - 0.5, target.y);
-                    }
-
-                    const targetAngle = Math.atan2(dx, dz);
-                    let angleDiff = targetAngle - this.mesh.rotation.y;
-                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-                    this.mesh.rotation.y += angleDiff * 0.1;
-                }
-            }
 
             taxiToTarget() {
                 if (this.currentPathIndex >= this.taxiPath.length - 1) return;
