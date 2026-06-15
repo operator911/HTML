@@ -299,8 +299,8 @@
             // Takeoff departure path (planes fly north from takeoff runway)
             if (Math.abs(x - 200) < approachPathBuffer && z < -400) return false;
             
-            // Landing approach path (planes come from south to landing runway)
-            if (Math.abs(x + 200) < approachPathBuffer && z > 150) return false;
+            // Landing approach path (planes come from north to landing runway)
+            if (Math.abs(x + 200) < approachPathBuffer && z < -150) return false;
             
             // Check taxiways (main parallel taxiway at z=80)
             if (Math.abs(z - 80) < taxiwayBuffer && Math.abs(x) < 250) return false;
@@ -330,6 +330,32 @@
                 createTree(x, z);
             }
         }
+
+        // Global runway clearance tracking - only one plane on approach/landing at a time
+        let runwayOccupied = false;
+        let lastLandingTime = 0;
+        const MIN_LANDING_INTERVAL = 120; // Minimum frames between landings for spacing
+
+        // Holding pattern parameters - elongated oval aligned with landing runway approach
+        // Planes approach from NORTH, flying south toward the runway
+        // Landing runway: x=-200, z from -250 (north end) to 50 (south end/threshold)
+        const holdingPattern = {
+            centerX: -80,           // Center x so approach arm is at x=-200 (aligned with runway)
+            centerZ: -350,          // Center point z - positioned so bottom (north end) is near runway
+            longRadius: 400,        // North-south extent (half-length) - extends to horizon
+            shortRadius: 120,       // East-west width (half-width) - offset for return arm
+            altitude: 150,          // Holding pattern altitude
+            speed: 0.0025           // Angular speed around oval (slower for larger pattern)
+        };
+        // Top of oval (north, near horizon): centerZ - longRadius = -350 - 400 = -750 (spawn point)
+        // Bottom of oval (south, near runway): centerZ + longRadius = -350 + 400 = 50 (near runway threshold)
+        // Approach arm (east side, angle PI/2): x = centerX + shortRadius = -80 + 120 = 40 (return arm)
+        // Wait, let me recalculate for approach from north:
+        // At angle 0: sin=0, cos=1 -> z = -350 + 400 = 50 (south end, near runway)
+        // At angle PI/2: sin=1, cos=0 -> x = -80 + 120 = 40 (east side)
+        // At angle PI: sin=0, cos=-1 -> z = -350 - 400 = -750 (north end, horizon)
+        // At angle 3PI/2: sin=-1, cos=0 -> x = -80 - 120 = -200 (west side, approach arm aligned with runway)
+        // Counter-clockwise orbit: north -> west (approach, flying south toward runway) -> south -> east (return) -> north
 
         class Plane {
             constructor() {
@@ -375,29 +401,100 @@
 
                 scene.add(this.mesh);
 
-                this.state = 'approaching';
+                this.state = 'enteringHolding';
                 this.targetGate = null;
                 this.currentPathIndex = 0;
                 this.speed = 3;
                 this.verticalSpeed = 0;
                 this.waitTime = 0;
                 this.respawnTimer = 200;
-                this.holdingPatternAngle = Math.random() * Math.PI * 2;
-
-                // Start offscreen and approach for landing first
-                const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
                 
-                // Store approach parameters for smooth continuous descent
-                this.approachStart = { x: landingRunway.x, z: runwayEntryZ - 450, y: 90 };
-                this.approachEnd = { x: landingRunway.x, z: runwayEntryZ + 20, y: 6 };
-                this.approachProgress = 0;
-
-                this.mesh.position.set(this.approachStart.x, this.approachStart.y, this.approachStart.z);
-                this.mesh.rotation.y = 0;
+                // Holding pattern state
+                this.holdingAngle = Math.random() * Math.PI * 2; // Start at random position in oval
+                this.holdingTimer = 0;
+                
+                // Spawn from horizon (north side, offscreen) and fly to holding pattern entry
+                // Planes approach from north, flying south toward the airport (same direction as landing)
+                this.spawnPosition = { x: -200, y: 150, z: -850 }; // Far north of airport (beyond oval), high altitude
+                this.holdingEntryPoint = { 
+                    x: -200,  // Enter on the approach arm (aligned with runway at x=-200)
+                    z: holdingPattern.centerZ - holdingPattern.longRadius + 30, // Near north end of oval (close to spawn)
+                    y: holdingPattern.altitude
+                };
+                
+                this.mesh.position.set(this.spawnPosition.x, this.spawnPosition.y, this.spawnPosition.z);
+                this.mesh.rotation.y = Math.PI; // Face south toward holding pattern/runway
             }
 
             update() {
                 switch (this.state) {
+                    case 'enteringHolding':
+                        // Fly from spawn position to holding pattern entry point (north end)
+                        const dx = this.holdingEntryPoint.x - this.mesh.position.x;
+                        const dz = this.holdingEntryPoint.z - this.mesh.position.z;
+                        const dy = this.holdingEntryPoint.y - this.mesh.position.y;
+                        const dist = Math.sqrt(dx * dx + dz * dz);
+                        
+                        if (dist < 10) {
+                            // Reached holding pattern entry, start orbiting on approach arm (west side)
+                            this.state = 'inHolding';
+                            // Position at north end of oval, on approach arm (x=-200)
+                            this.holdingAngle = Math.PI; // North end of oval (near horizon)
+                            this.mesh.position.set(this.holdingEntryPoint.x, this.holdingEntryPoint.y, this.holdingEntryPoint.z);
+                            this.mesh.rotation.y = Math.PI; // Face south (toward runway)
+                        } else {
+                            // Fly toward holding pattern entry (north to south, same direction as landing)
+                            const moveSpeed = 8;
+                            this.mesh.position.x += (dx / dist) * moveSpeed;
+                            this.mesh.position.z += (dz / dist) * moveSpeed;
+                            this.mesh.position.y += dy * 0.02; // Gradual descent to holding altitude
+                            this.mesh.rotation.y = Math.atan2(dx, dz); // Face direction of travel (south)
+                        }
+                        break;
+
+                    case 'inHolding':
+                        // Orbit in elongated oval pattern, waiting for runway clearance
+                        // Counter-clockwise orbit: start at north end (near horizon), go down west side (approach arm aligned with runway, flying south),
+                        // across south end, up east side (return arm offset to east) back to north
+                        this.holdingTimer++;
+                        this.holdingAngle += holdingPattern.speed;
+                        
+                        // Calculate oval position: elongated north-south
+                        const cosAngle = Math.cos(this.holdingAngle);
+                        const sinAngle = Math.sin(this.holdingAngle);
+                        
+                        // Oval parametric equation (counter-clockwise, starting from north at angle PI)
+                        // At angle 0: sin=0, cos=1 -> z = -350 + 400 = 50 (south end, near runway threshold)
+                        // At angle PI/2: sin=1, cos=0 -> x = -80 + 120 = 40 (east side, return arm flying north)
+                        // At angle PI: sin=0, cos=-1 -> z = -350 - 400 = -750 (north end, near horizon)
+                        // At angle 3PI/2: sin=-1, cos=0 -> x = -80 - 120 = -200 (west side, approach arm aligned with runway, flying south)
+                        this.mesh.position.x = holdingPattern.centerX + holdingPattern.shortRadius * sinAngle;
+                        this.mesh.position.z = holdingPattern.centerZ + holdingPattern.longRadius * cosAngle;
+                        this.mesh.position.y = holdingPattern.altitude;
+                        
+                        // Calculate velocity direction for rotation (tangent to oval, counter-clockwise)
+                        // dx/dt = shortRadius * cos(angle), dz/dt = -longRadius * sin(angle)
+                        const velX = holdingPattern.shortRadius * cosAngle;
+                        const velZ = -holdingPattern.longRadius * sinAngle;
+                        this.mesh.rotation.y = Math.atan2(velX, velZ);
+                        
+                        // Check if runway is clear and enough time since last landing
+                        // Only allow exit from west side (approach arm, flying south toward runway)
+                        const framesSinceLanding = Date.now() - lastLandingTime;
+                        // sinAngle < 0 means we're on west side (approach arm at x=-200, flying south toward runway)
+                        // cosAngle > 0 means we're in southern half (approaching runway end)
+                        // Combined: sinAngle < -0.5 && cosAngle > 0 means we're on approach arm in southern half, flying south
+                        if (framesSinceLanding > MIN_LANDING_INTERVAL * 16 && !runwayOccupied && sinAngle < -0.5 && cosAngle > 0) {
+                            // Runway is clear, exit holding pattern and start approach from current position on approach arm
+                            this.state = 'approaching';
+                            const runwayEntryZ = landingRunway.z - landingRunway.length / 2; // North end of runway
+                            this.approachStart = { x: landingRunway.x, z: this.mesh.position.z + 50, y: this.mesh.position.y };
+                            this.approachEnd = { x: landingRunway.x, z: runwayEntryZ - 20, y: 6 };
+                            this.approachProgress = 0;
+                            runwayOccupied = true; // Claim the runway
+                        }
+                        break;
+
                     case 'spawning':
                         this.taxiToTarget();
                         if (this.isAtGate()) {
@@ -484,24 +581,11 @@
                                 this.targetGate = null;
                             }
 
-                            const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
-                            
-                            // Try to get a gate, but if none available we'll still approach and hold after landing
-                            const newGate = this.findAvailableGate();
-                            if (newGate) {
-                                newGate.occupied = true;
-                                this.targetGate = newGate;
-                            }
-
-                            // Store approach parameters for smooth continuous descent
-                            this.approachStart = { x: landingRunway.x, z: runwayEntryZ - 450, y: 90 };
-                            this.approachEnd = { x: landingRunway.x, z: runwayEntryZ + 20, y: 6 };
-                            this.approachProgress = 0;
-
-                            this.mesh.position.set(this.approachStart.x, this.approachStart.y, this.approachStart.z);
+                            // Reset to entering holding pattern from horizon
+                            this.state = 'enteringHolding';
+                            this.mesh.position.set(this.spawnPosition.x, this.spawnPosition.y, this.spawnPosition.z);
                             this.mesh.visible = true;
                             this.mesh.rotation.y = 0;
-                            this.state = 'approaching';
                         }
                         break;
 
@@ -542,6 +626,9 @@
                             this.mesh.position.z += Math.max(this.speed * 0.8, 4);
                             this.speed = Math.max(this.speed * 0.98, 4);
                         } else {
+                            // Landed - release runway and taxi to gate
+                            runwayOccupied = false; // Release the runway
+                            lastLandingTime = Date.now(); // Record landing time for spacing
                             // Landed - taxi to gate if we have one, otherwise wait for one
                             if (this.targetGate) {
                                 this.state = 'taxiingToGate';
@@ -584,25 +671,8 @@
                         break;
 
                     case 'holding':
-                        // Circle in holding pattern waiting for gate - larger, more realistic orbit
+                        // Wait on taxiway holding area for gate to become available
                         this.holdingTimer++;
-                        const holdAngle = this.holdingTimer * 0.015; // Slower orbit
-                        const holdRadius = 200;
-                        const holdCenterX = -100;
-                        const holdCenterZ = 50;
-                        
-                        // Circular path around the holding area
-                        this.mesh.position.x = holdCenterX + Math.sin(holdAngle) * holdRadius;
-                        this.mesh.position.z = holdCenterZ + Math.cos(holdAngle) * holdRadius;
-                        this.mesh.position.y = 80 + Math.sin(holdAngle * 0.5) * 10; // Gentle altitude variation
-                        
-                        // Rotate plane to face direction of travel (tangent to circle)
-                        // Position: x = sin(angle), z = cos(angle) (clockwise orbit)
-                        // Velocity direction: dx/dt = cos(angle), dz/dt = -sin(angle)
-                        this.mesh.rotation.y = Math.atan2(
-                            Math.cos(holdAngle),   // dx/dt - velocity in x direction
-                            -Math.sin(holdAngle)   // dz/dt - velocity in z direction
-                        );
                         
                         // Check for available gate periodically
                         if (this.holdingTimer % 60 === 0) {
@@ -610,15 +680,28 @@
                             if (newGate) {
                                 newGate.occupied = true;
                                 this.targetGate = newGate;
-                                // Set up approach to land again and taxi to gate
-                                const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
-                                this.approachStart = { x: landingRunway.x, z: runwayEntryZ - 200, y: 50 };
-                                this.approachEnd = { x: landingRunway.x, z: runwayEntryZ + 20, y: 6 };
-                                this.approachProgress = 0;
-                                this.mesh.position.set(this.approachStart.x, this.approachStart.y, this.approachStart.z);
-                                this.state = 'approaching';
+                                // Taxi directly to gate from current position (already on ground)
+                                this.state = 'taxiingToGate';
+                                const path = [
+                                    { x: this.mesh.position.x, z: this.mesh.position.z, y: 0.5 },
+                                    { x: -100, z: 80, y: 0.5 },
+                                    { x: -100, z: 55, y: 0.5 },
+                                    { x: this.targetGate.position.x, z: 55, y: 0.5 },
+                                    { x: this.targetGate.position.x, z: this.targetGate.position.z, y: 0.5 }
+                                ];
+                                this.taxiPath = path;
+                                this.currentPathIndex = 0;
+                                this.speed = 3;
                             }
                         }
+                        
+                        // Hold position on taxiway near terminal
+                        const holdAngle = this.holdingTimer * 0.02;
+                        const holdRadius = 30;
+                        this.mesh.position.x = -100 + Math.sin(holdAngle) * holdRadius;
+                        this.mesh.position.z = 80 + Math.cos(holdAngle) * holdRadius;
+                        this.mesh.position.y = 0.5;
+                        this.mesh.rotation.y = Math.atan2(Math.cos(holdAngle), -Math.sin(holdAngle));
                         break;
                 }
 
@@ -700,7 +783,7 @@
         const maxPlanes = 8;
 
         function spawnPlane() {
-            // Spawn planes at staggered intervals - they'll approach and land first
+            // Spawn planes at staggered intervals - they'll approach from north and land first
             // Gate assignment happens during approach, so planes can spawn even if gates are full
             if (planes.length < maxPlanes) {
                 planes.push(new Plane());
