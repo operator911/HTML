@@ -346,24 +346,24 @@
         let lastLandingTime = 0;
         const MIN_LANDING_INTERVAL = 120; // Minimum frames between landings for spacing
 
-        // Holding pattern parameters - elongated oval aligned with landing runway approach
+        // Holding pattern parameters - racetrack shape aligned with landing runway approach
         // Planes approach from NORTH, flying south toward the runway
         // Landing runway: x=-200, z from -250 (north end) to 50 (south end/threshold)
+        // Racetrack: two semicircles connected by parallel straight lines
         const holdingPattern = {
-            centerX: -80,           // Center x so approach arm is at x=-200 (aligned with runway)
-            centerZ: -450,          // Center point z - positioned so bottom (north end) is near runway
-            longRadius: 500,        // North-south extent (half-length) - extends further toward horizon
-            shortRadius: 140,       // East-west width (half-width) - offset for return arm
+            centerX: -140,          // Center of racetrack
+            centerZ: -450,          // Center of racetrack z
+            straightLength: 400,    // Length of each parallel straight section (north and south)
+            radius: 60,             // Radius of semicircles at each end
             altitude: 150,          // Holding pattern altitude
-            speed: 0.018            // Angular speed around oval - matches approach speed (~8 units/frame)
+            speed: 0.02             // Speed along perimeter (radians equivalent) - matches approach speed (~8 units/frame)
         };
-        // Oval positions (counter-clockwise):
-        // At angle 0: sin=0, cos=1 -> x=-80, z=50 (south end, near runway)
-        // At angle PI/2: sin=1, cos=0 -> x=40, z=-350 (east side, return arm)
-        // At angle PI: sin=0, cos=-1 -> x=-80, z=-750 (north end, farthest from runway)
-        // At angle 5PI/4: sin=-0.707, cos=-0.707 -> x≈-165, z≈-633 (northwest corner, facing southwest)
-        // At angle 3PI/2: sin=-1, cos=0 -> x=-200, z=-350 (west side, approach arm aligned with runway, facing south)
-        // Planes enter/exit at northwest corner (angle 5PI/4) where they're already turning south toward runway
+        // Racetrack layout (counter-clockwise when viewed from above):
+        // - North semicircle (0 to PI): centered at north end (z=-650), curves from east to west
+        // - West straight (PI to 2PI): x=-200 (aligned with runway), z from -650 to -250 (flying south toward runway) 
+        // - South semicircle (2PI to 3PI): centered at south end (z=-250), curves from west to east
+        // - East straight (3PI to 4PI): x=-80, z from -250 to -650 (flying north, return arm)
+        // Exit point: start of west straight (angle PI) at northwest corner where plane faces south toward runway
 
         class Plane {
             constructor() {
@@ -417,18 +417,20 @@
                 this.waitTime = 0;
                 this.respawnTimer = 200;
                 
-                // Holding pattern state - entry/exit at northwest corner where plane faces southwest toward runway
-                this.holdingAngle = 5 * Math.PI / 4; // Start at northwest corner (entry point, facing southwest)
+                // Holding pattern state - entry/exit at northwest corner (start of west straight, facing south)
+                // Racetrack angles: 0=start north semicircle (east side), PI=start west straight (northwest corner, exit point),
+                //                   2PI=start south semicircle, 3PI=start east straight (return arm)
+                this.holdingAngle = Math.PI; // Start at west straight beginning (northwest corner, facing south)
                 this.holdingTimer = 0;
                 
-                // Spawn from horizon (northwest side, at ground edge or beyond) and fly to holding pattern entry
-                // Planes approach from northwest, already angled toward the runway direction
-                this.spawnPosition = { x: -200, y: 180, z: -1600 }; // Northwest of airport at ground edge, high altitude
-                // Entry point at northwest corner (angle 5PI/4) where plane is already turning south
-                // sin(5PI/4) ≈ -0.707, cos(5PI/4) ≈ -0.707
+                // Spawn from horizon (north side, at ground edge or beyond) and fly to holding pattern entry
+                // Planes approach from north, already angled toward the runway direction (facing south)
+                this.spawnPosition = { x: -200, y: 180, z: -1600 }; // North of airport at ground edge, high altitude
+                // Entry point at northwest corner (start of west straight, angle PI) where plane faces south toward runway
+                // West straight starts at north end: x = centerX - radius, z = centerZ - straightLength/2
                 this.holdingEntryPoint = { 
-                    x: holdingPattern.centerX + holdingPattern.shortRadius * Math.sin(5 * Math.PI / 4),
-                    z: holdingPattern.centerZ + holdingPattern.longRadius * Math.cos(5 * Math.PI / 4),
+                    x: holdingPattern.centerX - holdingPattern.radius,  // West side of racetrack (x=-200)
+                    z: holdingPattern.centerZ - holdingPattern.straightLength / 2,  // North end (z=-650)
                     y: holdingPattern.altitude
                 };
                 
@@ -442,7 +444,7 @@
             update() {
                 switch (this.state) {
                     case 'enteringHolding':
-                        // Fly from spawn position (at ground edge) to holding pattern entry point (northwest corner)
+                        // Fly from spawn position (north at ground edge) to holding pattern entry point (northwest corner, start of west straight)
                         const dx = this.holdingEntryPoint.x - this.mesh.position.x;
                         const dz = this.holdingEntryPoint.z - this.mesh.position.z;
                         const dy = this.holdingEntryPoint.y - this.mesh.position.y;
@@ -451,60 +453,57 @@
                         if (dist < 10) {
                             // Reached holding pattern entry, seamlessly transition into orbit
                             this.state = 'inHolding';
-                            // Set angle to northwest corner (5PI/4) - already at correct position from entry
-                            this.holdingAngle = 5 * Math.PI / 4; // Northwest corner (facing southwest)
-                            this.mesh.rotation.y = Math.PI * 1.25; // Face southwest (tangent direction)
+                            // Set angle to start of west straight (PI) - already at correct position from entry
+                            this.holdingAngle = Math.PI; // Northwest corner (facing south)
+                            this.mesh.rotation.y = Math.PI; // Face south (toward runway)
                         } else {
-                            // Fly toward holding pattern entry from far distance (northwest to southeast, angled toward runway)
+                            // Fly toward holding pattern entry from far distance (north to south, facing runway direction)
                             const moveSpeed = 10; // Slightly faster for longer approach
                             this.mesh.position.x += (dx / dist) * moveSpeed;
                             this.mesh.position.z += (dz / dist) * moveSpeed;
                             this.mesh.position.y += dy * 0.015; // Gradual descent to holding altitude
-                            this.mesh.rotation.y = Math.atan2(dx, dz); // Face direction of travel
+                            this.mesh.rotation.y = Math.atan2(dx, dz); // Face direction of travel (south)
                         }
                         break;
 
                     case 'inHolding':
+                        // Racetrack pattern: two semicircles connected by parallel straight lines
+                        // Counter-clockwise: north semicircle (0 to PI), west straight (PI to 2PI - approach arm),
+                        //                    south semicircle (2PI to 3PI), east straight (3PI to 4PI - return arm)
+                        // West straight is aligned with runway at x = centerX - radius = -200, flying south toward runway
+                        // Exit point: start of west straight (angle PI) where plane faces south at northwest corner
+                        
                         // Store current position before updating for smooth approach transition
-                        const prevCosAngle = Math.cos(this.holdingAngle);
-                        const prevSinAngle = Math.sin(this.holdingAngle);
-                        this.prevHoldingX = holdingPattern.centerX + holdingPattern.shortRadius * prevSinAngle;
-                        this.prevHoldingZ = holdingPattern.centerZ + holdingPattern.longRadius * prevCosAngle;
+                        const prevPos = this.getRacetrackPosition(this.holdingAngle);
+                        this.prevHoldingX = prevPos.x;
+                        this.prevHoldingZ = prevPos.z;
                         this.prevHoldingY = holdingPattern.altitude;
                         
-                        // Orbit in elongated oval pattern, waiting for runway clearance
-                        // Counter-clockwise orbit: start at north end (farthest from runway), go down west side 
-                        // (approach arm aligned with runway, flying south), across south end, up east side 
-                        // (return arm offset to east) back to north
+                        // Advance along racetrack perimeter
                         this.holdingTimer++;
                         this.holdingAngle += holdingPattern.speed;
                         
-                        // Calculate oval position: elongated north-south
-                        const cosAngle = Math.cos(this.holdingAngle);
-                        const sinAngle = Math.sin(this.holdingAngle);
+                        // Normalize angle to [0, 4PI) range for consistent racetrack calculation
+                        this.holdingAngle = this.holdingAngle % (4 * Math.PI);
                         
-                        // Oval parametric equation (counter-clockwise, starting from north at angle PI)
-                        // At angle 0: sin=0, cos=1 -> z = -350 + 400 = 50 (south end, near runway threshold)
-                        // At angle PI/2: sin=1, cos=0 -> x = -80 + 120 = 40 (east side, return arm flying north)
-                        // At angle PI: sin=0, cos=-1 -> z = -350 - 400 = -750 (north end, farthest from runway)
-                        // At angle 3PI/2: sin=-1, cos=0 -> x = -80 - 120 = -200 (west side, approach arm aligned with runway)
-                        this.mesh.position.x = holdingPattern.centerX + holdingPattern.shortRadius * sinAngle;
-                        this.mesh.position.z = holdingPattern.centerZ + holdingPattern.longRadius * cosAngle;
+                        // Calculate position on racetrack
+                        const pos = this.getRacetrackPosition(this.holdingAngle);
+                        this.mesh.position.x = pos.x;
+                        this.mesh.position.z = pos.z;
                         this.mesh.position.y = holdingPattern.altitude;
                         
-                        // Calculate velocity direction for rotation (tangent to oval, counter-clockwise)
-                        // dx/dt = shortRadius * cos(angle), dz/dt = -longRadius * sin(angle)
-                        const velX = holdingPattern.shortRadius * cosAngle;
-                        const velZ = -holdingPattern.longRadius * sinAngle;
-                        this.mesh.rotation.y = Math.atan2(velX, velZ);
+                        // Set rotation based on current segment
+                        this.mesh.rotation.y = pos.rotation;
                         
                         // Check if runway is clear and enough time since last landing
-                        // Exit from northwest corner where plane is already facing southwest toward runway
+                        // Exit ONLY from northwest corner (start of west straight, angle PI) where plane faces south toward runway
                         const framesSinceLanding = Date.now() - lastLandingTime;
-                        // Allow exit at northwest corner: angle near 5PI/4 (sin≈-0.707, cos≈-0.707)
-                        // This is where plane is already angled toward the runway direction
-                        const nearNorthwest = sinAngle < -0.5 && sinAngle > -0.9 && cosAngle < -0.5 && cosAngle > -0.9;
-                        if (framesSinceLanding > MIN_LANDING_INTERVAL * 16 && !runwayOccupied && nearNorthwest) {
+                        const normalizedAngle = this.holdingAngle % (4 * Math.PI);
+                        // Only allow exit at the very start of west straight (northwest corner, angle PI)
+                        // Use a small window around PI to catch the exact exit point
+                        const atNorthwestCorner = Math.abs(normalizedAngle - Math.PI) < 0.15;
+                        
+                        if (framesSinceLanding > MIN_LANDING_INTERVAL * 16 && !runwayOccupied && atNorthwestCorner) {
                             // Runway is clear, exit holding pattern and start approach from CURRENT position
                             // This ensures smooth continuous transition with no sudden jumps
                             this.state = 'approaching';
@@ -794,6 +793,72 @@
                     return available[Math.floor(Math.random() * available.length)];
                 }
                 return null;
+            }
+
+            // Calculate position and rotation on racetrack pattern given an angle
+            // Racetrack layout (counter-clockwise when viewed from above):
+            // - North semicircle (0 to PI): centered at north end, curves from east to west
+            // - West straight (PI to 2PI): x = centerX - radius, z goes from north to south (approach arm toward runway)
+            // - South semicircle (2PI to 3PI): centered at south end, curves from west to east  
+            // - East straight (3PI to 4PI): x = centerX + radius, z goes from south to north (return arm)
+            // Exit point: start of west straight (angle PI) where plane faces south toward runway at x=-200
+            getRacetrackPosition(angle) {
+                const hp = holdingPattern;
+                const halfLength = hp.straightLength / 2;
+                
+                // Normalize angle to [0, 4PI) range
+                let a = angle % (4 * Math.PI);
+                if (a < 0) a += 4 * Math.PI;
+                
+                let x, z, rotation;
+                
+                if (a >= 0 && a < Math.PI) {
+                    // North semicircle: centered at (centerX, centerZ - halfLength), curves from east to west
+                    // At a=0: x=centerX+radius, z=centerZ-halfLength (east side, start from east straight)
+                    // At a=PI/2: x=centerX, z=centerZ-halfLength-radius (northmost point)
+                    // At a=PI: x=centerX-radius, z=centerZ-halfLength (west side, start of west straight)
+                    const semicircleAngle = a; // 0 to PI, going counter-clockwise from east
+                    x = hp.centerX + hp.radius * Math.cos(semicircleAngle);
+                    z = (hp.centerZ - halfLength) - hp.radius * Math.sin(semicircleAngle);
+                    // Tangent direction using derivative: dx/da = -radius*sin(a), dz/da = -radius*cos(a)
+                    // rotation = atan2(dx, dz) for Three.js where 0=north/+z, PI=south/-z
+                    const dx = -hp.radius * Math.sin(semicircleAngle);
+                    const dz = -hp.radius * Math.cos(semicircleAngle);
+                    rotation = Math.atan2(dx, dz);
+                } else if (a >= Math.PI && a < 2 * Math.PI) {
+                    // West straight (approach arm): x = centerX - radius, z goes from north to south (flying toward runway)
+                    // At a=PI: z = centerZ - halfLength (north end, just after north semicircle)
+                    // At a=2PI: z = centerZ + halfLength (south end, start of south semicircle)
+                    const progress = (a - Math.PI) / Math.PI; // 0 to 1
+                    x = hp.centerX - hp.radius;  // West side (aligned with runway at x=-200)
+                    z = (hp.centerZ - halfLength) + progress * hp.straightLength;  // Going north to south (increasing z)
+                    rotation = 0;  // Facing south (toward positive z, toward runway) - Three.js: 0 = +z direction
+                } else if (a >= 2 * Math.PI && a < 3 * Math.PI) {
+                    // South semicircle: centered at (centerX, centerZ + halfLength), curves from west to east
+                    // At a=2PI (semicircleAngle=0): x=centerX-radius, z=centerZ+halfLength (west side, from west straight)
+                    // At a=2.5PI (semicircleAngle=PI/2): x=centerX, z=centerZ+halfLength+radius (southmost point)
+                    // At a=3PI (semicircleAngle=PI): x=centerX+radius, z=centerZ+halfLength (east side, to east straight)
+                    const semicircleAngle = a - 2 * Math.PI; // 0 to PI
+                    // Parametric equation for semicircle from west to east (counter-clockwise):
+                    // x goes from centerX-radius to centerX+radius as angle goes 0 to PI
+                    // z goes center -> south (higher z) -> center
+                    x = hp.centerX - hp.radius * Math.cos(semicircleAngle);  // -cos(0)=-1 -> west, -cos(PI)=1 -> east
+                    z = (hp.centerZ + halfLength) + hp.radius * Math.sin(semicircleAngle);  // sin goes 0 -> 1 -> 0
+                    // Tangent direction using derivative: dx/da = radius*sin(a), dz/da = radius*cos(a)
+                    const dx = hp.radius * Math.sin(semicircleAngle);
+                    const dz = hp.radius * Math.cos(semicircleAngle);
+                    rotation = Math.atan2(dx, dz);
+                } else {
+                    // East straight (return arm): x = centerX + radius, z goes from south to north (flying away)
+                    // At a=3PI: z = centerZ + halfLength (south end, just after south semicircle)
+                    // At a=4PI: z = centerZ - halfLength (north end, back to start)
+                    const progress = (a - 3 * Math.PI) / Math.PI; // 0 to 1
+                    x = hp.centerX + hp.radius;  // East side (return arm)
+                    z = (hp.centerZ + halfLength) - progress * hp.straightLength;  // Going south to north (decreasing z)
+                    rotation = Math.PI;  // Facing north (toward negative z) - Three.js: PI = -z direction
+                }
+                
+                return { x, z, rotation };
             }
 
             destroy() {
