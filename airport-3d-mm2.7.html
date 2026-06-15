@@ -612,8 +612,15 @@
                         break;
 
                     case 'approaching':
-                        // Smooth continuous descent using linear interpolation - slightly slower for realistic approach
-                        this.approachProgress += 0.006; // Constant speed along approach path
+                        // Smooth continuous descent with very gentle deceleration - maintains speed closer to holding pattern pace
+                        // Start faster (near holding pattern speed) and slow down slightly as plane descends toward landing
+                        if (!this.approachSpeed) {
+                            this.approachSpeed = 0.012; // Initial approach speed (matches holding pattern exit speed)
+                        }
+                        
+                        // Apply very gentle deceleration during approach - minimal slowdown to maintain realistic speed
+                        this.approachSpeed = Math.max(this.approachSpeed - 0.00004, 0.005);
+                        this.approachProgress += this.approachSpeed;
                         
                         if (this.approachProgress >= 1) {
                             // Find and reserve a gate before landing completes
@@ -625,7 +632,7 @@
                             }
                             this.state = 'landing';
                             this.verticalSpeed = 0;
-                            this.speed = 6;
+                            this.speed = 4; // Landing speed matches approach end speed (slightly faster than taxiing)
                         } else {
                             // Interpolate position for smooth glideslope
                             this.mesh.position.x = this.approachStart.x + (this.approachEnd.x - this.approachStart.x) * this.approachProgress;
@@ -645,8 +652,9 @@
                         }
 
                         if (this.mesh.position.z < landingRunway.z + landingRunway.length / 2) {
-                            this.mesh.position.z += Math.max(this.speed * 0.8, 4);
-                            this.speed = Math.max(this.speed * 0.98, 4);
+                            // Continue decelerating on runway - slower than approach end speed for realistic rollout
+                            this.mesh.position.z += Math.max(this.speed, 2.5);
+                            this.speed = Math.max(this.speed * 0.97, 2.5); // Gradual slowdown on runway
                         } else {
                             // Landed - release runway and taxi to gate
                             runwayOccupied = false; // Release the runway
