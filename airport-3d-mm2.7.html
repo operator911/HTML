@@ -36,7 +36,8 @@
     <script>
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x1a1a2e);
-        scene.fog = new THREE.Fog(0x1a1a2e, 500, 20000);
+        // Enhanced fog for smoother horizon transition - starts closer, extends further
+        scene.fog = new THREE.Fog(0x1a1a2e, 300, 2500);
 
         // Use a tighter depth range to reduce flickering/z-fighting on thin pavement slabs.
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
@@ -94,6 +95,8 @@
         });
         const buildingMaterial = new THREE.MeshStandardMaterial({ color: 0x5a6a7a, roughness: 0.7 });
         const jetBridgeMaterial = new THREE.MeshStandardMaterial({ color: 0xb0b8c0, roughness: 0.6 });
+        const treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.9 });
+        const treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0x1a4a1a, roughness: 0.8 });
 
         // Ground plane at y=0. Keep paved surfaces slightly above it to avoid z-fighting.
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), grassMaterial);
@@ -256,6 +259,78 @@
         towerTop.position.set(-10, 45, -60);
         scene.add(towerTop);
 
+        // Tree creation function - only places trees on valid grass areas
+        function createTree(x, z) {
+            const treeGroup = new THREE.Group();
+            
+            // Trunk
+            const trunkGeom = new THREE.CylinderGeometry(0.8, 1.2, 6, 6);
+            const trunk = new THREE.Mesh(trunkGeom, treeTrunkMaterial);
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+            
+            // Leaves (cone shape)
+            const leavesGeom = new THREE.ConeGeometry(5, 12, 6);
+            const leaves = new THREE.Mesh(leavesGeom, treeLeavesMaterial);
+            leaves.position.y = 9;
+            leaves.castShadow = true;
+            treeGroup.add(leaves);
+            
+            treeGroup.position.set(x, 0.5, z);
+            scene.add(treeGroup);
+            return treeGroup;
+        }
+
+        // Define no-tree zones (runways, taxiways, gates, approach paths)
+        function isValidTreeLocation(x, z) {
+            // Buffer zones around airport infrastructure
+            const runwayBuffer = 60;
+            const taxiwayBuffer = 40;
+            const gateBuffer = 50;
+            const approachPathBuffer = 80;
+            
+            // Check takeoff runway (at x=200, extending in z direction)
+            if (Math.abs(x - 200) < runwayBuffer && Math.abs(z + 100) < 250) return false;
+            
+            // Check landing runway (at x=-200, extending in z direction)  
+            if (Math.abs(x + 200) < runwayBuffer && Math.abs(z + 100) < 250) return false;
+            
+            // Check approach/departure paths (in front of runways - where planes fly)
+            // Takeoff departure path (planes fly north from takeoff runway)
+            if (Math.abs(x - 200) < approachPathBuffer && z < -400) return false;
+            
+            // Landing approach path (planes come from south to landing runway)
+            if (Math.abs(x + 200) < approachPathBuffer && z > 150) return false;
+            
+            // Check taxiways (main parallel taxiway at z=80)
+            if (Math.abs(z - 80) < taxiwayBuffer && Math.abs(x) < 250) return false;
+            
+            // Check gate/terminal area
+            if (Math.abs(z) < gateBuffer && x > -200 && x < 100) return false;
+            
+            // Check tower area
+            if (Math.abs(x + 10) < 40 && Math.abs(z + 60) < 40) return false;
+            
+            return true;
+        }
+
+        // Spawn trees randomly on valid grass areas
+        const treeCount = 150;
+        const treeSpread = 1400;
+        
+        for (let i = 0; i < treeCount; i++) {
+            let x, z, attempts = 0;
+            do {
+                x = (Math.random() - 0.5) * treeSpread;
+                z = (Math.random() - 0.5) * treeSpread;
+                attempts++;
+            } while (!isValidTreeLocation(x, z) && attempts < 10);
+            
+            if (attempts < 10) {
+                createTree(x, z);
+            }
+        }
+
         class Plane {
             constructor() {
                 this.mesh = new THREE.Group();
@@ -300,7 +375,7 @@
 
                 scene.add(this.mesh);
 
-                this.state = 'atGate';
+                this.state = 'approaching';
                 this.targetGate = null;
                 this.currentPathIndex = 0;
                 this.speed = 3;
@@ -309,28 +384,16 @@
                 this.respawnTimer = 200;
                 this.holdingPatternAngle = Math.random() * Math.PI * 2;
 
-                let startGate = null;
-                for (let attempt = 0; attempt < 100; attempt++) {
-                    const g = gates[Math.floor(Math.random() * gates.length)];
-                    if (!g.occupied) {
-                        startGate = g;
-                        break;
-                    }
-                }
+                // Start offscreen and approach for landing first
+                const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
+                
+                // Store approach parameters for smooth continuous descent
+                this.approachStart = { x: landingRunway.x, z: runwayEntryZ - 450, y: 90 };
+                this.approachEnd = { x: landingRunway.x, z: runwayEntryZ + 20, y: 6 };
+                this.approachProgress = 0;
 
-                if (!startGate) return;
-
-                startGate.occupied = true;
-                this.targetGate = startGate;
-
-                this.taxiPath = [
-                    { x: startGate.position.x, z: startGate.position.z, y: 0.5 }
-                ];
-                this.currentPathIndex = 0;
-
-                this.mesh.position.set(startGate.position.x, 0.5, startGate.position.z);
+                this.mesh.position.set(this.approachStart.x, this.approachStart.y, this.approachStart.z);
                 this.mesh.rotation.y = 0;
-                this.waitTime = Math.random() * 160;
             }
 
             update() {
@@ -415,27 +478,30 @@
                     case 'respawning':
                         this.respawnTimer--;
                         if (this.respawnTimer <= 0) {
+                            // Release old gate if we had one
+                            if (this.targetGate) {
+                                this.targetGate.occupied = false;
+                                this.targetGate = null;
+                            }
+
+                            const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
+                            
+                            // Try to get a gate, but if none available we'll still approach and hold after landing
                             const newGate = this.findAvailableGate();
                             if (newGate) {
-                                if (this.targetGate) this.targetGate.occupied = false;
                                 newGate.occupied = true;
                                 this.targetGate = newGate;
-
-                                const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
-                                const touchdownZ = runwayEntryZ + 20;
-
-                                // Store approach parameters for smooth continuous descent
-                                this.approachStart = { x: landingRunway.x, z: runwayEntryZ - 450, y: 90 };
-                                this.approachEnd = { x: landingRunway.x, z: touchdownZ, y: 6 };
-                                this.approachProgress = 0;
-
-                                this.mesh.position.set(this.approachStart.x, this.approachStart.y, this.approachStart.z);
-                                this.mesh.visible = true;
-                                this.mesh.rotation.y = 0;
-                                this.state = 'approaching';
-                            } else {
-                                this.respawnTimer = 50;
                             }
+
+                            // Store approach parameters for smooth continuous descent
+                            this.approachStart = { x: landingRunway.x, z: runwayEntryZ - 450, y: 90 };
+                            this.approachEnd = { x: landingRunway.x, z: runwayEntryZ + 20, y: 6 };
+                            this.approachProgress = 0;
+
+                            this.mesh.position.set(this.approachStart.x, this.approachStart.y, this.approachStart.z);
+                            this.mesh.visible = true;
+                            this.mesh.rotation.y = 0;
+                            this.state = 'approaching';
                         }
                         break;
 
@@ -444,6 +510,13 @@
                         this.approachProgress += 0.008; // Constant speed along approach path
                         
                         if (this.approachProgress >= 1) {
+                            // Find and reserve a gate before landing completes
+                            if (!this.targetGate) {
+                                this.targetGate = this.findAvailableGate();
+                                if (this.targetGate) {
+                                    this.targetGate.occupied = true;
+                                }
+                            }
                             this.state = 'landing';
                             this.verticalSpeed = 0;
                             this.speed = 6;
@@ -469,6 +542,7 @@
                             this.mesh.position.z += Math.max(this.speed * 0.8, 4);
                             this.speed = Math.max(this.speed * 0.98, 4);
                         } else {
+                            // Landed - taxi to gate if we have one, otherwise wait for one
                             if (this.targetGate) {
                                 this.state = 'taxiingToGate';
                                 const path = [
@@ -483,11 +557,66 @@
                                 this.currentPathIndex = 0;
                                 this.speed = 3;
                             } else {
+                                // No gate available - keep waiting on runway (shouldn't happen often)
                                 const newGate = this.findAvailableGate();
                                 if (newGate) {
                                     newGate.occupied = true;
                                     this.targetGate = newGate;
+                                    this.state = 'taxiingToGate';
+                                    const path = [
+                                        { x: landingRunway.x, z: landingRunway.z + landingRunway.length / 2, y: 0.5 },
+                                        { x: landingRunway.x, z: 80, y: 0.5 },
+                                        { x: -100, z: 80, y: 0.5 },
+                                        { x: -100, z: 55, y: 0.5 },
+                                        { x: this.targetGate.position.x, z: 55, y: 0.5 },
+                                        { x: this.targetGate.position.x, z: this.targetGate.position.z, y: 0.5 }
+                                    ];
+                                    this.taxiPath = path;
+                                    this.currentPathIndex = 0;
+                                    this.speed = 3;
+                                } else {
+                                    // Still no gate - move to holding area off runway to avoid blocking
+                                    this.state = 'holding';
+                                    this.holdingTimer = 0;
                                 }
+                            }
+                        }
+                        break;
+
+                    case 'holding':
+                        // Circle in holding pattern waiting for gate - larger, more realistic orbit
+                        this.holdingTimer++;
+                        const holdAngle = this.holdingTimer * 0.015; // Slower orbit
+                        const holdRadius = 200;
+                        const holdCenterX = -100;
+                        const holdCenterZ = 50;
+                        
+                        // Circular path around the holding area
+                        this.mesh.position.x = holdCenterX + Math.sin(holdAngle) * holdRadius;
+                        this.mesh.position.z = holdCenterZ + Math.cos(holdAngle) * holdRadius;
+                        this.mesh.position.y = 80 + Math.sin(holdAngle * 0.5) * 10; // Gentle altitude variation
+                        
+                        // Rotate plane to face direction of travel (tangent to circle)
+                        // Position: x = sin(angle), z = cos(angle) (clockwise orbit)
+                        // Velocity direction: dx/dt = cos(angle), dz/dt = -sin(angle)
+                        this.mesh.rotation.y = Math.atan2(
+                            Math.cos(holdAngle),   // dx/dt - velocity in x direction
+                            -Math.sin(holdAngle)   // dz/dt - velocity in z direction
+                        );
+                        
+                        // Check for available gate periodically
+                        if (this.holdingTimer % 60 === 0) {
+                            const newGate = this.findAvailableGate();
+                            if (newGate) {
+                                newGate.occupied = true;
+                                this.targetGate = newGate;
+                                // Set up approach to land again and taxi to gate
+                                const runwayEntryZ = landingRunway.z - landingRunway.length / 2;
+                                this.approachStart = { x: landingRunway.x, z: runwayEntryZ - 200, y: 50 };
+                                this.approachEnd = { x: landingRunway.x, z: runwayEntryZ + 20, y: 6 };
+                                this.approachProgress = 0;
+                                this.mesh.position.set(this.approachStart.x, this.approachStart.y, this.approachStart.z);
+                                this.state = 'approaching';
                             }
                         }
                         break;
@@ -571,15 +700,20 @@
         const maxPlanes = 8;
 
         function spawnPlane() {
-            if (planes.length < maxPlanes && gates.some(g => !g.occupied)) {
+            // Spawn planes at staggered intervals - they'll approach and land first
+            // Gate assignment happens during approach, so planes can spawn even if gates are full
+            if (planes.length < maxPlanes) {
                 planes.push(new Plane());
             }
         }
 
+        // Initial spawn with staggered timing for realistic spacing
         spawnPlane();
-        setTimeout(spawnPlane, 3000);
-        setTimeout(spawnPlane, 6000);
-        setInterval(spawnPlane, 10000);
+        setTimeout(spawnPlane, 4000);
+        setTimeout(spawnPlane, 8000);
+        setTimeout(spawnPlane, 12000);
+        // Continue spawning periodically to maintain traffic
+        setInterval(spawnPlane, 15000);
 
         function updateUI() {
             document.getElementById('planeCount').textContent = planes.length;
