@@ -715,26 +715,33 @@
         // LIGHTING
         // ============================================================
         function setupLighting() {
-            const ambient = new THREE.AmbientLight(0x445566, 0.5);
+            // Stronger ambient for daytime visibility
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambient);
 
-            const sun = new THREE.DirectionalLight(0xfff8e7, 2.5);
-            sun.position.set(500, 1000, 300);
+            // Bright sun for daytime
+            const sun = new THREE.DirectionalLight(0xfff8e7, 3.0);
+            sun.position.set(500, 1200, 400);
             sun.castShadow = true;
             sun.shadow.mapSize.width = 4096;
             sun.shadow.mapSize.height = 4096;
             sun.shadow.camera.near = 100;
-            sun.shadow.camera.far = 3000;
-            sun.shadow.camera.left = -1500;
-            sun.shadow.camera.right = 1500;
-            sun.shadow.camera.top = 1500;
-            sun.shadow.camera.bottom = -1500;
+            sun.shadow.camera.far = 3500;
+            sun.shadow.camera.left = -2000;
+            sun.shadow.camera.right = 2000;
+            sun.shadow.camera.top = 2000;
+            sun.shadow.camera.bottom = -2000;
             sun.shadow.bias = -0.0005;
             scene.add(sun);
 
-            const fill = new THREE.DirectionalLight(0x88aaff, 0.4);
-            fill.position.set(-500, 400, -300);
+            // Fill light for softer shadows
+            const fill = new THREE.DirectionalLight(0x88aaff, 0.6);
+            fill.position.set(-500, 600, -400);
             scene.add(fill);
+
+            // Hemisphere light for natural sky/ground bounce
+            const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3a5f2a, 0.5);
+            scene.add(hemi);
 
             addRunwayEdgeLights(CONFIG.runways.landing, 0xffffff, 0xff6600);
             addRunwayEdgeLights(CONFIG.runways.takeoff, 0xffffff, 0xff6600);
@@ -1457,6 +1464,8 @@
             if (isPaused) {
                 controls.update();
                 renderer.render(scene, camera);
+                // Reset lastTime when paused so we don't get a huge delta on resume
+                lastTime = time;
                 return;
             }
             
@@ -1465,7 +1474,9 @@
             
             simTime += deltaTime * 1000 * timeScale;
             
-            if (simTime - lastSpawnTime > CONFIG.aircraft.spawnInterval) {
+            // Spawn timing should use real-time intervals scaled by timeScale
+            // so spawn rate is consistent regardless of time scale
+            if (simTime - lastSpawnTime > CONFIG.aircraft.spawnInterval / timeScale) {
                 spawnAircraft();
                 lastSpawnTime = simTime;
             }
