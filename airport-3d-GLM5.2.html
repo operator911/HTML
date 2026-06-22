@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Airport 3D - GLM5.2</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;background:#1a2a3a}
+#canvas-container{width:100vw;height:100vh}
+#info{position:absolute;top:15px;left:15px;color:#fff;background:rgba(10,20,40,.78);padding:14px 18px;border-radius:10px;font-size:12px;line-height:1.7;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);max-width:340px;z-index:10}
+#info h2{font-size:15px;margin-bottom:6px;color:#4FC3F7}
+#info .row{display:flex;justify-content:space-between;margin:2px 0}
+#info .lbl{color:#90A4AE} #info .val{color:#81C784;font-weight:bold}
+#info hr{border:none;border-top:1px solid rgba(255,255,255,.15);margin:8px 0}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#4FC3F7;font-size:28px;text-shadow:0 0 20px rgba(79,195,247,.6);z-index:20}
+#legend{position:absolute;bottom:15px;right:15px;color:#fff;background:rgba(10,20,40,.78);padding:10px 14px;border-radius:8px;font-size:11px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);z-index:10}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div id="loading">✈ Loading Airport 3D…</div>
+<div id="info" style="display:none">
+<h2>✈ Airport 3D Simulation</h2>
+<div class="row"><span class="lbl">🖱️ Controls</span><span class="val">Drag · Scroll</span></div>
+<hr>
+<div id="stats"></div>
+</div>
+<div id="legend" style="display:none">
+<div><span class="dot" style="background:#ff4444"></span>Holding</div>
+<div><span class="dot" style="background:#44ff44"></span>Approach/Landing</div>
+<div><span class="dot" style="background:#44aaff"></span>Taxiing</div>
+<div><span class="dot" style="background:#ffaa44"></span>At Gate</div>
+<div><span class="dot" style="background:#aa44ff"></span>Takeoff/Climb</div>
+</div>
+<div id="canvas-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// ============================================================
+// CONSTANTS & CONFIGURATION
+// ============================================================
+const RUNWAY_LEN = 500, RUNWAY_W = 32;
+const TAXIWAY_Z = 55, TERMINAL_Z = 115, GATE_Z = 92;
+const RUNWAY_EXITS = [-150, 0, 150];
+const HOLDING_CENTER = { x: 0, z: -380 };
+const HOLDING_SIZE = 220;
+const HOLDING_ALTITUDES = [140, 175, 210];
+
+const GATES = [
+    {id:0,x:-120,occupied:false},{id:1,x:-72,occupied:false},
+    {id:2,x:-24,occupied:false},{id:3,x:24,occupied:false},
+    {id:4,x:72,occupied:false},{id:5,x:120,occupied:false}
+];
+
+const LIVERIES = [
+    {name:'SkyBlue',body:0xf5f5f5,tail:0x1565C0,accent:0x42A5F5},
+    {name:'Sunset',body:0xfafafa,tail:0xE65100,accent:0xFFB74D},
+    {name:'Emerald',body:0xffffff,tail:0x00695C,accent:0x26A69A},
+    {name:'Crimson',body:0xfafafa,tail:0xB71C1C,accent:0xE53935},
+    {name:'Royal',body:0xffffff,tail:0x4A148C,accent:0xBA68C8},
+    {name:'Golden',body:0xfffde7,tail:0xF57F17,accent:0xFFD54F}
+];
+
+// ============================================================
+// GLOBALS
+// ============================================================
+let scene, camera, renderer, controls;
+let aircraftList = [];
+let trafficController;
+let frameCount = 0;
+
+// ============================================================
+// SCENE INITIALIZATION
+// ============================================================
+function init() {
+    scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x1a2a3a, 450, 1400);
+
+    camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 4000);
+    camera.position.set(-180, 200, 380);
+
+    renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 60;
+    controls.maxDistance = 900;
+    controls.maxPolarAngle = Math.PI/2 - 0.04;
+    controls.target.set(0, 0, 20);
+
+    setupLighting();
+    createSky();
+    createGround();
+    createRunway();
+    createTaxiways();
+    createApron();
+    createTerminal();
+    createJetBridges();
+    createControlTower();
+    createTrees();
+    createRunwayLights();
+
+    trafficController = new TrafficController();
+    createInitialAircraft();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('info').style.display = 'block';
+    document.getElementById('legend').style.display = 'block';
+
+    addEventListener('resize', onResize);
+    animate(0);
+}
+
+function setupLighting() {
+    scene.add(new THREE.AmbientLight(0x4a5a6a, 0.55));
+    scene.add(new THREE.HemisphereLight(0x88aaff, 0x223344, 0.45));
+
+    const sun = new THREE.DirectionalLight(0xffd699, 1.3);
+    sun.position.set(-350, 450, 250);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 10;
+    sun.shadow.camera.far = 1600;
+    sun.shadow.camera.left = -600;
+    sun.shadow.camera.right = 600;
+    sun.shadow.camera.top = 600;
+    sun.shadow.camera.bottom = -600;
+    sun.shadow.bias = -0.0004;
+    scene.add(sun);
+}
+
+function createSky() {
+    const skyGeo = new THREE.SphereGeometry(2500, 32, 16);
+    const skyMat = new THREE.ShaderMaterial({
+        uniforms: {
+            topColor: {value: new THREE.Color(0x0a1530)},
+            midColor: {value: new THREE.Color(0x2a4070)},
+            bottomColor: {value: new THREE.Color(0x8898b8)}
+        },
+        vertexShader: `varying vec3 vWorldPos; void main(){ vec4 wp = modelMatrix * vec4(position,1.0); vWorldPos = wp.xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+        fragmentShader: `uniform vec3 topColor; uniform vec3 midColor; uniform vec3 bottomColor; varying vec3 vWorldPos;
+            void main(){ float h = normalize(vWorldPos).y; vec3 c = h > 0.0 ? mix(midColor, topColor, pow(h, 0.5)) : mix(midColor, bottomColor, -h*2.0);
+            gl_FragColor = vec4(c, 1.0); }`,
+        side: THREE.BackSide
+    });
+    scene.add(new THREE.Mesh(skyGeo, skyMat));
+}
+
+function createGround() {
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(3000, 3000),
+        new THREE.MeshStandardMaterial({color: 0x3a5a3a, roughness: 0.9, metalness: 0})
+    );
+    ground.rotation.x = -Math.PI/2;
+    ground.position.y = -0.1;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Concrete base under airport
+    const concrete = new THREE.Mesh(
+        new THREE.PlaneGeometry(700, 350),
+        new THREE.MeshStandardMaterial({color: 0x555560, roughness: 0.85})
+    );
+    concrete.rotation.x = -Math.PI/2;
+    concrete.position.set(0, 0, 50);
+    concrete.receiveShadow = true;
+    scene.add(concrete);
+}
+
+// ============================================================
+// RUNWAY
+// ============================================================
+function createRunway() {
+    const runway = new THREE.Mesh(
+        new THREE.PlaneGeometry(RUNWAY_LEN, RUNWAY_W),
+        new THREE.MeshStandardMaterial({color: 0x2a2a2e, roughness: 0.7})
+    );
+    runway.rotation.x = -Math.PI/2;
+    runway.position.y = 0.01;
+    runway.receiveShadow = true;
+    scene.add(runway);
+
+    // Centerline dashes
+    const dashMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+    for (let i = -220; i <= 220; i += 20) {
+        const dash = new THREE.Mesh(new THREE.PlaneGeometry(10, 0.8), dashMat);
+        dash.rotation.x = -Math.PI/2;
+        dash.position.set(i, 0.02, 0);
+        scene.add(dash);
+    }
+
+    // Threshold markings (zebra stripes) at both ends
+    for (let end of [-240, 240]) {
+        const dir = end < 0 ? -1 : 1;
+        for (let i = 0; i < 6; i++) {
+            const stripe = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 3), dashMat);
+            stripe.rotation.x = -Math.PI/2;
+            stripe.position.set(end + dir * (i * 4 + 3), 0.02, (i - 2.5) * 3);
+            scene.add(stripe);
+        }
+    }
+
+    // Runway numbers (text texture)
+    addRunwayNumber(-215, '09');
+    addRunwayNumber(215, '27');
+
+    // Edge lines
+    for (let z of [-RUNWAY_W/2 + 1, RUNWAY_W/2 - 1]) {
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(RUNWAY_LEN, 0.6), dashMat);
+        line.rotation.x = -Math.PI/2;
+        line.position.set(0, 0.02, z);
+        scene.add(line);
+    }
+}
+
+function addRunwayNumber(x, num) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 200px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(num, 128, 128);
+    const tex = new THREE.CanvasTexture(canvas);
+    const sign = new THREE.Mesh(
+        new THREE.PlaneGeometry(20, 20),
+        new THREE.MeshBasicMaterial({map: tex, transparent: true})
+    );
+    sign.rotation.x = -Math.PI/2;
+    sign.position.set(x, 0.03, 0);
+    scene.add(sign);
+}
+
+// ============================================================
+// TAXIWAYS
+// ============================================================
+function createTaxiways() {
+    // Main parallel taxiway
+    const taxi = new THREE.Mesh(
+        new THREE.PlaneGeometry(RUNWAY_LEN + 50, 18),
+        new THREE.MeshStandardMaterial({color: 0x3a3a40, roughness: 0.8})
+    );
+    taxi.rotation.x = -Math.PI/2;
+    taxi.position.set(0, 0.01, TAXIWAY_Z);
+    taxi.receiveShadow = true;
+    scene.add(taxi);
+
+    // Taxiway centerline (yellow dashes)
+    const yellowMat = new THREE.MeshBasicMaterial({color: 0xffcc00});
+    for (let i = -240; i <= 240; i += 16) {
+        const dash = new THREE.Mesh(new THREE.PlaneGeometry(8, 0.6), yellowMat);
+        dash.rotation.x = -Math.PI/2;
+        dash.position.set(i, 0.02, TAXIWAY_Z);
+        scene.add(dash);
+    }
+
+    // Connectors from runway exits to taxiway
+    for (let exitX of RUNWAY_EXITS) {
+        const conn = new THREE.Mesh(
+            new THREE.PlaneGeometry(18, TAXIWAY_Z),
+            new THREE.MeshStandardMaterial({color: 0x3a3a40, roughness: 0.8})
+        );
+        conn.rotation.x = -Math.PI/2;
+        conn.position.set(exitX, 0.01, TAXIWAY_Z/2);
+        scene.add(conn);
+
+        // Yellow centerline on connector
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.6, TAXIWAY_Z - 2), yellowMat);
+        line.rotation.x = -Math.PI/2;
+        line.position.set(exitX, 0.02, TAXIWAY_Z/2);
+        scene.add(line);
+    }
+
+    // Gate connectors (from taxiway to gates)
+    for (let gate of GATES) {
+        const conn = new THREE.Mesh(
+            new THREE.PlaneGeometry(18, GATE_Z - TAXIWAY_Z),
+            new THREE.MeshStandardMaterial({color: 0x4a4a50, roughness: 0.8})
+        );
+        conn.rotation.x = -Math.PI/2;
+        conn.position.set(gate.x, 0.01, (GATE_Z + TAXIWAY_Z)/2);
+        scene.add(conn);
+
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.6, GATE_Z - TAXIWAY_Z - 2), yellowMat);
+        line.rotation.x = -Math.PI/2;
+        line.position.set(gate.x, 0.02, (GATE_Z + TAXIWAY_Z)/2);
+        scene.add(line);
+    }
+}
+
+function createApron() {
+    const apron = new THREE.Mesh(
+        new THREE.PlaneGeometry(320, 50),
+        new THREE.MeshStandardMaterial({color: 0x4a4a52, roughness: 0.8})
+    );
+    apron.rotation.x = -Math.PI/2;
+    apron.position.set(0, 0.005, GATE_Z + 15);
+    apron.receiveShadow = true;
+    scene.add(apron);
+
+    // Gate numbers
+    for (let gate of GATES) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = 'bold 90px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('G' + (gate.id + 1), 64, 64);
+        const tex = new THREE.CanvasTexture(canvas);
+        const sign = new THREE.Mesh(
+            new THREE.PlaneGeometry(10, 10),
+            new THREE.MeshBasicMaterial({map: tex, transparent: true})
+        );
+        sign.rotation.x = -Math.PI/2;
+        sign.position.set(gate.x, 0.03, GATE_Z + 5);
+        scene.add(sign);
+    }
+}
+
+// ============================================================
+// TERMINAL BUILDING
+// ============================================================
+function createTerminal() {
+    const glassMat = new THREE.MeshStandardMaterial({
+        color: 0x223344, metalness: 0.7, roughness: 0.15,
+        emissive: 0x112233, emissiveIntensity: 0.5
+    });
+    const wallMat = new THREE.MeshStandardMaterial({color: 0x666670, roughness: 0.7});
+
+    // Main terminal body
+    const main = new THREE.Mesh(new THREE.BoxGeometry(320, 28, 40), wallMat);
+    main.position.set(0, 14, TERMINAL_Z + 10);
+    main.castShadow = true;
+    main.receiveShadow = true;
+    scene.add(main);
+
+    // Glass facade (front face)
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(310, 22, 2), glassMat);
+    glass.position.set(0, 14, TERMINAL_Z - 9);
+    scene.add(glass);
+
+    // Glass facade (back)
+    const glassBack = new THREE.Mesh(new THREE.BoxGeometry(310, 22, 2), glassMat);
+    glassBack.position.set(0, 14, TERMINAL_Z + 29);
+    scene.add(glassBack);
+
+    // Roof
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(324, 2, 44), wallMat);
+    roof.position.set(0, 29, TERMINAL_Z + 10);
+    roof.castShadow = true;
+    scene.add(roof);
+
+    // Window strips (emissive)
+    const winMat = new THREE.MeshStandardMaterial({color: 0x88aacc, emissive: 0x446688, emissiveIntensity: 0.8});
+    for (let i = -140; i <= 140; i += 20) {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(14, 10, 0.5), winMat);
+        win.position.set(i, 16, TERMINAL_Z - 8);
+        scene.add(win);
+    }
+
+    // Entrance canopy
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(40, 2, 12), wallMat);
+    canopy.position.set(0, 6, TERMINAL_Z - 15);
+    canopy.castShadow = true;
+    scene.add(canopy);
+
+    // Support pillars
+    for (let x of [-15, 15]) {
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 6, 1.5), wallMat);
+        pillar.position.set(x, 3, TERMINAL_Z - 18);
+        scene.add(pillar);
+    }
+}
+
+// ============================================================
+// JET BRIDGES
+// ============================================================
+function createJetBridges() {
+    for (let gate of GATES) {
+        const bridgeMat = new THREE.MeshStandardMaterial({color: 0x888890, roughness: 0.5, metalness: 0.3});
+        
+        // Bridge body (angled tube)
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 28), bridgeMat);
+        bridge.position.set(gate.x, 5, GATE_Z + 8);
+        bridge.rotation.x = Math.atan2(GATE_Z - TERMINAL_Z + 15, 0) * 0.3;
+        bridge.castShadow = true;
+        scene.add(bridge);
+
+        // Bridge connection to terminal
+        const conn = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 4), bridgeMat);
+        conn.position.set(gate.x, 6, TERMINAL_Z - 5);
+        scene.add(conn);
+
+        // Bridge wheels/legs
+        for (let z of [GATE_Z + 2, GATE_Z + 14]) {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(1, 5, 1), bridgeMat);
+            leg.position.set(gate.x - 2, 2.5, z);
+            scene.add(leg);
+            const leg2 = new THREE.Mesh(new THREE.BoxGeometry(1, 5, 1), bridgeMat);
+            leg2.position.set(gate.x + 2, 2.5, z);
+            scene.add(leg2);
+        }
+    }
+}
+
+// ============================================================
+// CONTROL TOWER
+// ============================================================
+function createControlTower() {
+    const towerMat = new THREE.MeshStandardMaterial({color: 0x888890, roughness: 0.6});
+    const glassMat = new THREE.MeshStandardMaterial({color: 0x223344, emissive: 0x446688, emissiveIntensity: 0.6, metalness: 0.5});
+
+    // Tower shaft
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(4, 5, 45, 12), towerMat);
+    shaft.position.set(-180, 22, -30);
+    shaft.castShadow = true;
+    scene.add(shaft);
+
+    // Tower cab
+    const cab = new THREE.Mesh(new THREE.CylinderGeometry(7, 5, 8, 12), towerMat);
+    cab.position.set(-180, 48, -30);
+    cab.castShadow = true;
+    scene.add(cab);
+
+    // Glass ring
+    const glass = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 6.5, 5, 12), glassMat);
+    glass.position.set(-180, 48, -30);
+    scene.add(glass);
+
+    // Roof
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(7, 4, 12), towerMat);
+    roof.position.set(-180, 54, -30);
+    scene.add(roof);
+
+    // Antenna
+    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 8), towerMat);
+    antenna.position.set(-180, 60, -30);
+    scene.add(antenna);
+
+    // Warning light on top
+    const light = new THREE.Mesh(new THREE.SphereGeometry(0.8), new THREE.MeshBasicMaterial({color: 0xff0000}));
+    light.position.set(-180, 64, -30);
+    scene.add(light);
+}
+
+// ============================================================
+// TREES & LANDSCAPING
+// ============================================================
+function createTrees() {
+    const trunkMat = new THREE.MeshStandardMaterial({color: 0x4a3a2a, roughness: 0.9});
+    const leafMat = new THREE.MeshStandardMaterial({color: 0x2a4a2a, roughness: 0.8});
+
+    const positions = [
+        [-280, -100], [-290, -50], [-270, 80], [-300, 150],
+        [280, -100], [290, 0], [270, 80], [300, 150],
+        [-200, -120], [200, -120], [-100, -130], [100, -130],
+        [-350, -80], [350, -80], [-360, 50], [360, 50],
+        [0, -140], [50, -135], [-50, -135]
+    ];
+
+    for (let [x, z] of positions) {
+        const tree = new THREE.Group();
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 5), trunkMat);
+        trunk.position.y = 2.5;
+        tree.add(trunk);
+        const leaves = new THREE.Mesh(new THREE.ConeGeometry(4, 10), leafMat);
+        leaves.position.y = 9;
+        leaves.castShadow = true;
+        tree.add(leaves);
+        const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(3, 7), leafMat);
+        leaves2.position.y = 14;
+        tree.add(leaves2);
+        tree.position.set(x, 0, z);
+        scene.add(tree);
+    }
+}
+
+// ============================================================
+// RUNWAY LIGHTS
+// ============================================================
+function createRunwayLights() {
+    const lightMat = new THREE.MeshBasicMaterial({color: 0xffeeaa});
+    const blueMat = new THREE.MeshBasicMaterial({color: 0x44aaff});
+
+    // Runway edge lights
+    for (let i = -240; i <= 240; i += 10) {
+        for (let z of [-RUNWAY_W/2 + 0.5, RUNWAY_W/2 - 0.5]) {
+            const light = new THREE.Mesh(new THREE.SphereGeometry(0.3), lightMat);
+            light.position.set(i, 0.3, z);
+            scene.add(light);
+        }
+    }
+
+    // Taxiway edge lights (blue)
+    for (let i = -240; i <= 240; i += 12) {
+        for (let z of [TAXIWAY_Z - 9, TAXIWAY_Z + 9]) {
+            const light = new THREE.Mesh(new THREE.SphereGeometry(0.25), blueMat);
+            light.position.set(i, 0.3, z);
+            scene.add(light);
+        }
+    }
+}
+
+// ============================================================
+// AIRCRAFT MODEL BUILDER
+// ============================================================
+function createAircraftModel(livery) {
+    const g = new THREE.Group();
+    const bodyMat = new THREE.MeshStandardMaterial({color: livery.body, metalness: 0.5, roughness: 0.3});
+    const tailMat = new THREE.MeshStandardMaterial({color: livery.tail, metalness: 0.4, roughness: 0.4});
+    const accentMat = new THREE.MeshStandardMaterial({color: livery.accent, metalness: 0.4, roughness: 0.4});
+    const darkMat = new THREE.MeshStandardMaterial({color: 0x333333, metalness: 0.8, roughness: 0.2});
+    const glassMat = new THREE.MeshStandardMaterial({color: 0x111133, emissive: 0x223366, metalness: 0.9, roughness: 0.1});
+
+    // Fuselage
+    const fus = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 32, 16), bodyMat);
+    fus.rotation.z = Math.PI/2;
+    fus.castShadow = true;
+    g.add(fus);
+
+    // Nose cone
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(2.5, 5, 16), bodyMat);
+    nose.position.x = 18.5;
+    nose.rotation.z = -Math.PI/2;
+    g.add(nose);
+
+    // Tail cone
+    const tailCone = new THREE.Mesh(new THREE.ConeGeometry(2.5, 4, 16), bodyMat);
+    tailCone.position.x = -18;
+    tailCone.rotation.z = Math.PI/2;
+    g.add(tailCone);
+
+    // Main wings (swept)
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(9, 0.4, 28), bodyMat);
+    wing.position.set(-2, -1.5, 0);
+    wing.castShadow = true;
+    g.add(wing);
+
+    // Winglets
+    for (let s of [-1, 1]) {
+        const wl = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3, 0.3), accentMat);
+        wl.position.set(-5, 0, s * 14);
+        wl.rotation.z = -0.3;
+        g.add(wl);
+    }
+
+    // Vertical stabilizer
+    const vStab = new THREE.Mesh(new THREE.BoxGeometry(5, 7, 0.5), tailMat);
+    vStab.position.set(-14, 4, 0);
+    vStab.castShadow = true;
+    g.add(vStab);
+
+    // Horizontal stabilizer
+    const hStab = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, 11), bodyMat);
+    hStab.position.set(-15, 1, 0);
+    g.add(hStab);
+
+    // Engines
+    for (let s of [1, -1]) {
+        const eng = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1, 4, 12), darkMat);
+        eng.position.set(0, -2.5, s * 8);
+        eng.rotation.z = Math.PI/2;
+        g.add(eng);
+        const intake = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.4, 12), darkMat);
+        intake.position.set(2, -2.5, s * 8);
+        intake.rotation.z = Math.PI/2;
+        g.add(intake);
+        // Engine exhaust glow
+        const exhaust = new THREE.Mesh(new THREE.SphereGeometry(0.6), new THREE.MeshBasicMaterial({color: 0xff6600}));
+        exhaust.position.set(-2, -2.5, s * 8);
+        exhaust.scale.set(0.5, 0.8, 0.8);
+        g.add(exhaust);
+    }
+
+    // Windows
+    for (let i = 0; i < 12; i++) {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.2), glassMat);
+        win.position.set(8 - i * 1.5, 2, 2.5);
+        g.add(win);
+        const win2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.2), glassMat);
+        win2.position.set(8 - i * 1.5, 2, -2.5);
+        g.add(win2);
+    }
+
+    // Cockpit windows
+    const cockpit = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.2), glassMat);
+    cockpit.position.set(15, 2, 0);
+    g.add(cockpit);
+
+    // Navigation lights
+    const navL = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color: 0xff0000}));
+    navL.position.set(-5, -1, -14);
+    g.add(navL);
+    const navR = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color: 0x00ff00}));
+    navR.position.set(-5, -1, 14);
+    g.add(navR);
+    const navT = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    navT.position.set(-18, 0, 0);
+    g.add(navT);
+
+    // Beacons
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.35), new THREE.MeshBasicMaterial({color: 0xff0000}));
+    beacon.position.set(0, 3, 0);
+    beacon.name = 'beacon';
+    g.add(beacon);
+    const bellyBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.35), new THREE.MeshBasicMaterial({color: 0xff0000}));
+    bellyBeacon.position.set(0, -2.5, 0);
+    bellyBeacon.name = 'bellyBeacon';
+    g.add(bellyBeacon);
+
+    // Landing gear
+    const gearMat = new THREE.MeshStandardMaterial({color: 0x222222, metalness: 0.7});
+    // Nose gear
+    const noseGear = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 3), gearMat);
+    noseGear.position.set(12, -3, 0);
+    g.add(noseGear);
+    // Main gear
+    for (let s of [1, -1]) {
+        const mg = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 3.5), gearMat);
+        mg.position.set(-2, -3.5, s * 4);
+        g.add(mg);
+    }
+
+    // Colored stripe on tail
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.3, 6, 0.6), accentMat);
+    stripe.position.set(-14, 4, 0);
+    g.add(stripe);
+
+    return g;
+}
+
+// ============================================================
+// AIRCRAFT CLASS
+// ============================================================
+class Aircraft {
+    constructor(id, livery, initialState, initData) {
+        this.id = id;
+        this.livery = livery;
+        this.model = createAircraftModel(livery);
+        
+        // Position & orientation
+        this.position = new THREE.Vector3();
+        this.heading = 0; // 0 = +X (east)
+        this.bankAngle = 0;
+        this.pitchAngle = 0;
+        this.speed = 0;
+        
+        // State
+        this.state = initialState;
+        this.gateId = null;
+        this.waypoints = [];
+        this.stateTimer = 0;
+        this.holdingCorner = 0;
+        this.holdingAltitude = HOLDING_ALTITUDES[0];
+        this.beaconTimer = 0;
+        this.targetSpeed = 0;
+        
+        // Group structure
+        this.group = new THREE.Group();
+        this.innerGroup = new THREE.Group();
+        this.innerGroup.add(this.model);
+        this.group.add(this.innerGroup);
+        scene.add(this.group);
+
+        // Initialize based on state
+        if (initData) {
+            this.position.set(initData.x, initData.y || 0, initData.z);
+            this.heading = initData.heading || 0;
+            this.speed = initData.speed || 0;
+        }
+        
+        if (initialState === 'HOLDING') {
+            this.holdingAltitude = initData.altitude || HOLDING_ALTITUDES[0];
+            this.position.y = this.holdingAltitude;
+            this.speed = 45;
+            this.holdingCorner = initData.corner || 0;
+        }
+        
+        this.updateModel();
+    }
+
+    getHoldingCorners() {
+        const cx = HOLDING_CENTER.x, cz = HOLDING_CENTER.z;
+        const s = HOLDING_SIZE / 2;
+        return [
+            {x: cx - s, z: cz - s}, // NW
+            {x: cx + s, z: cz - s}, // NE
+            {x: cx + s, z: cz + s}, // SE
+            {x: cx - s, z: cz + s}  // SW
+        ];
+    }
+
+    update(dt, tc) {
+        this.beaconTimer += dt;
+        const beacon = this.model.getObjectByName('beacon');
+        const bellyBeacon = this.model.getObjectByName('bellyBeacon');
+        const beaconOn = Math.sin(this.beaconTimer * 4) > 0;
+        if (beacon) beacon.visible = beaconOn;
+        if (bellyBeacon) bellyBeacon.visible = beaconOn;
+
+        switch (this.state) {
+            case 'HOLDING': this.updateHolding(dt, tc); break;
+            case 'APPROACH': this.updateApproach(dt, tc); break;
+            case 'LANDING': this.updateLanding(dt, tc); break;
+            case 'TAXI_TO_GATE': this.updateTaxiToGate(dt, tc); break;
+            case 'AT_GATE': this.updateAtGate(dt, tc); break;
+            case 'TAXI_TO_RUNWAY': this.updateTaxiToRunway(dt, tc); break;
+            case 'TAKEOFF': this.updateTakeoff(dt, tc); break;
+            case 'CLIMBOUT': this.updateClimbout(dt, tc); break;
+        }
+
+        // Smooth bank return
+        this.bankAngle *= 0.92;
+        
+        this.updateModel();
+    }
+
+    updateModel() {
+        this.group.position.copy(this.position);
+        this.group.rotation.y = -this.heading;
+        this.innerGroup.rotation.x = this.bankAngle;
+        this.innerGroup.rotation.z = this.pitchAngle;
+    }
+
+    moveToward(target, speed, dt) {
+        const dx = target.x - this.position.x;
+        const dz = target.z - this.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        
+        if (dist < 4) return true;
+
+        const desiredHeading = Math.atan2(dz, dx);
+        let diff = desiredHeading - this.heading;
+        while (diff > Math.PI) diff -= 2 * Math.PI;
+        while (diff < -Math.PI) diff += 2 * Math.PI;
+
+        const turnRate = this.state === 'HOLDING' || this.state === 'APPROACH' || this.state === 'CLIMBOUT' ? 0.6 : 0.8;
+        const maxTurn = turnRate * dt;
+        
+        if (Math.abs(diff) > maxTurn) {
+            this.heading += Math.sign(diff) * maxTurn;
+            this.bankAngle = Math.sign(diff) * 0.35;
+        } else {
+            this.heading = desiredHeading;
+        }
+
+        this.position.x += Math.cos(this.heading) * speed * dt;
+        this.position.z += Math.sin(this.heading) * speed * dt;
+        return false;
+    }
+
+    checkGroundCollision() {
+        for (let other of aircraftList) {
+            if (other === this) continue;
+            if (['HOLDING','APPROACH','CLIMBOUT','TAKEOFF'].includes(other.state) && other.altitude > 5) continue;
+            const dx = other.position.x - this.position.x;
+            const dz = other.position.z - this.position.z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+            if (dist > 35) continue;
+            // Check if ahead
+            const fx = Math.cos(this.heading), fz = Math.sin(this.heading);
+            const dot = dx * fx + dz * fz;
+            if (dot > 0 && dist < 30) return true;
+        }
+        return false;
+    }
+
+    // --- HOLDING ---
+    updateHolding(dt, tc) {
+        this.targetSpeed = 45;
+        // Check if we should get cleared for approach
+        if (tc.isRunwayFree() && tc.landingQueue[0] === this) {
+            tc.occupyRunway();
+            tc.landingQueue.shift();
+            tc.releaseHoldingAltitude(this.holdingAltitude);
+            this.state = 'APPROACH';
+            this.waypoints = [];
+            return;
+        }
+
+        // Fly holding pattern
+        const corners = this.getHoldingCorners();
+        if (this.waypoints.length === 0) {
+            this.waypoints = [corners[this.holdingCorner]];
+        }
+
+        const reached = this.moveToward(this.waypoints[0], 45, dt);
+        if (reached) {
+            this.holdingCorner = (this.holdingCorner + 1) % 4;
+            this.waypoints = [corners[this.holdingCorner]];
+        }
+        this.position.y = this.holdingAltitude;
+    }
+
+    // --- APPROACH ---
+    updateApproach(dt, tc) {
+        const target = {x: -240, z: 0};
+        const dx = target.x - this.position.x;
+        const dz = target.z - this.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+
+        // Descent
+        const startDescent = 500, groundDist = 50;
+        if (dist > startDescent) {
+            this.position.y = this.holdingAltitude;
+        } else if (dist > groundDist) {
+            const t = (dist - groundDist) / (startDescent - groundDist);
+            this.position.y = t * this.holdingAltitude;
+        } else {
+            this.position.y = 0;
+        }
+
+        this.targetSpeed = 50;
+        const reached = this.moveToward(target, 50, dt);
+        
+        if (reached || (dist < 15 && this.position.y < 3)) {
+            this.state = 'LANDING';
+            this.position.y = 0;
+            this.waypoints = [];
+            // Choose exit
+            this.exitX = RUNWAY_EXITS[1]; // Middle exit at x=0
+        }
+    }
+
+    // --- LANDING ---
+    updateLanding(dt, tc) {
+        this.targetSpeed = Math.max(12, this.speed - 20 * dt);
+        
+        // Move east along runway
+        this.position.x += Math.cos(this.heading) * this.speed * dt;
+        this.position.z += Math.sin(this.heading) * this.speed * dt;
+
+        // Check if we've reached the exit
+        if (this.position.x >= this.exitX - 5 && this.speed <= 20) {
+            // Turn south toward taxiway
+            const target = {x: this.exitX, z: TAXIWAY_Z};
+            const reached = this.moveToward(target, 12, dt);
+            if (reached || (Math.abs(this.position.x - this.exitX) < 3 && Math.abs(this.position.z - TAXIWAY_Z) < 3)) {
+                tc.releaseRunway();
+                // Assign gate
+                const gate = tc.assignGate();
+                if (gate) {
+                    this.gateId = gate.id;
+                    this.state = 'TAXI_TO_GATE';
+                    this.waypoints = [
+                        {x: this.exitX, z: TAXIWAY_Z},
+                        {x: gate.x, z: TAXIWAY_Z},
+                        {x: gate.x, z: GATE_Z}
+                    ];
+                } else {
+                    // No gate available, wait on taxiway
+                    this.state = 'TAXI_TO_GATE';
+                    this.waypoints = [{x: this.exitX, z: TAXIWAY_Z}];
+                }
+            }
+        } else {
+            // Keep moving east, decelerating
+            this.position.x += this.speed * dt;
+        }
+    }
+
+    // --- TAXI TO GATE ---
+    updateTaxiToGate(dt, tc) {
+        this.targetSpeed = 14;
+        
+        if (this.checkGroundCollision()) {
+            this.speed = 0;
+            return;
+        }
+
+        if (this.waypoints.length > 0) {
+            const reached = this.moveToward(this.waypoints[0], 14, dt);
+            if (reached) {
+                this.waypoints.shift();
+                if (this.waypoints.length === 0) {
+                    // Arrived at gate
+                    this.state = 'AT_GATE';
+                    this.stateTimer = 0;
+                    this.heading = Math.PI; // Face north (toward terminal)
+                }
+            }
+        }
+    }
+
+    // --- AT GATE ---
+    updateAtGate(dt, tc) {
+        this.stateTimer += dt;
+        this.speed = 0;
+        
+        if (this.stateTimer > 12) {
+            // Time to leave - taxi to runway
+            tc.releaseGate(this.gateId);
+            this.gateId = null;
+            this.state = 'TAXI_TO_RUNWAY';
+            this.waypoints = [
+                {x: this.position.x, z: TAXIWAY_Z},
+                {x: -240, z: TAXIWAY_Z},
+                {x: -245, z: 0}
+            ];
+        }
+    }
+
+    // --- TAXI TO RUNWAY ---
+    updateTaxiToRunway(dt, tc) {
+        this.targetSpeed = 14;
+        
+        if (this.checkGroundCollision()) {
+            this.speed = 0;
+            return;
+        }
+
+        if (this.waypoints.length > 0) {
+            const reached = this.moveToward(this.waypoints[0], 14, dt);
+            if (reached) {
+                this.waypoints.shift();
+                if (this.waypoints.length === 0) {
+                    // At runway threshold, wait for clearance
+                    if (tc.isRunwayFree()) {
+                        tc.occupyRunway();
+                        this.state = 'TAKEOFF';
+                        this.heading = 0; // Face east
+                        this.position.set(-245, 0, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    // --- TAKEOFF ---
+    updateTakeoff(dt, tc) {
+        this.targetSpeed = 65;
+        
+        // Accelerate
+        this.speed = Math.min(this.targetSpeed, this.speed + 15 * dt);
+        
+        // Move east along runway
+        this.position.x += this.speed * dt;
+        
+        // Rotate and lift off
+        if (this.position.x > 30) {
+            this.pitchAngle = -0.15; // Nose up
+            this.position.y += 8 * dt;
+        }
+
+        if (this.position.y > 5) {
+            // Airborne - release runway
+            tc.releaseRunway();
+            this.state = 'CLIMBOUT';
+            this.waypoints = [];
+        }
+    }
+
+    // --- CLIMBOUT ---
+    updateClimbout(dt, tc) {
+        this.targetSpeed = 55;
+        this.speed = Math.min(this.targetSpeed, this.speed + 5 * dt);
+        
+        // Climb
+        const targetAlt = HOLDING_ALTITUDES[0];
+        if (this.position.y < targetAlt) {
+            this.position.y += 6 * dt;
+        }
+        
+        // Continue east, then turn north toward holding pattern
+        this.position.x += Math.cos(this.heading) * this.speed * dt;
+        this.position.z += Math.sin(this.heading) * this.speed * dt;
+
+        if (this.position.x > 200 && this.heading < Math.PI/2) {
+            // Turn north toward holding pattern
+            const target = {x: HOLDING_CENTER.x + 100, z: HOLDING_CENTER.z};
+            const reached = this.moveToward(target, this.speed, dt);
+        }
+
+        // When close to holding pattern, enter holding
+        const dx = HOLDING_CENTER.x - this.position.x;
+        const dz = HOLDING_CENTER.z - this.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        
+        if (dist < 250 && this.position.y >= targetAlt - 5) {
+            // Enter holding pattern
+            const alt = tc.assignHoldingAltitude();
+            this.holdingAltitude = alt;
+            this.position.y = alt;
+            this.holdingCorner = 0;
+            this.waypoints = [];
+            tc.joinLandingQueue(this);
+            this.state = 'HOLDING';
+        }
+    }
+
+    getStateColor() {
+        const colors = {
+            'HOLDING': '#ff4444',
+            'APPROACH': '#44ff44',
+            'LANDING': '#44ff44',
+            'TAXI_TO_GATE': '#44aaff',
+            'AT_GATE': '#ffaa44',
+            'TAXI_TO_RUNWAY': '#44aaff',
+            'TAKEOFF': '#aa44ff',
+            'CLIMBOUT': '#aa44ff'
+        };
+        return colors[this.state] || '#ffffff';
+    }
+
+    getStateText() {
+        const texts = {
+            'HOLDING': 'Holding',
+            'APPROACH': 'Approaching',
+            'LANDING': 'Landing',
+            'TAXI_TO_GATE': 'Taxi→Gate',
+            'AT_GATE': 'At Gate',
+            'TAXI_TO_RUNWAY': 'Taxi→Runway',
+            'TAKEOFF': 'Takeoff',
+            'CLIMBOUT': 'Climbing'
+        };
+        return texts[this.state] || this.state;
+    }
+}
+
+// ============================================================
+// TRAFFIC CONTROLLER
+// ============================================================
+class TrafficController {
+    constructor() {
+        this.runwayOccupied = false;
+        this.landingQueue = [];
+        this.gates = GATES.map(g => ({...g}));
+        this.usedHoldingAltitudes = new Set();
+    }
+
+    isRunwayFree() {
+        return !this.runwayOccupied;
+    }
+
+    occupyRunway() {
+        this.runwayOccupied = true;
+    }
+
+    releaseRunway() {
+        this.runwayOccupied = false;
+    }
+
+    joinLandingQueue(aircraft) {
+        if (!this.landingQueue.includes(aircraft)) {
+            this.landingQueue.push(aircraft);
+        }
+    }
+
+    assignGate() {
+        for (let g of this.gates) {
+            if (!g.occupied) {
+                g.occupied = true;
+                return g;
+            }
+        }
+        return null;
+    }
+
+    releaseGate(gateId) {
+        const g = this.gates.find(g => g.id === gateId);
+        if (g) g.occupied = false;
+    }
+
+    assignHoldingAltitude() {
+        for (let alt of HOLDING_ALTITUDES) {
+            if (!this.usedHoldingAltitudes.has(alt)) {
+                this.usedHoldingAltitudes.add(alt);
+                return alt;
+            }
+        }
+        return HOLDING_ALTITUDES[0];
+    }
+
+    releaseHoldingAltitude(alt) {
+        this.usedHoldingAltitudes.delete(alt);
+    }
+}
+
+// ============================================================
+// INITIALIZE AIRCRAFT
+// ============================================================
+function createInitialAircraft() {
+    // Aircraft 1: On approach (about to land)
+    const a1 = new Aircraft(0, LIVERIES[0], 'APPROACH', {
+        x: -100, y: 80, z: -200, heading: Math.PI * 0.7, speed: 50
+    });
+    a1.holdingAltitude = HOLDING_ALTITUDES[0];
+    trafficController.occupyRunway();
+    aircraftList.push(a1);
+
+    // Aircraft 2: In holding pattern
+    const a2 = new Aircraft(1, LIVERIES[1], 'HOLDING', {
+        x: HOLDING_CENTER.x - 100, y: HOLDING_ALTITUDES[1], z: HOLDING_CENTER.z - 100,
+        heading: Math.PI/2, speed: 45, altitude: HOLDING_ALTITUDES[1], corner: 1
+    });
+    trafficController.usedHoldingAltitudes.add(HOLDING_ALTITUDES[1]);
+    trafficController.joinLandingQueue(a2);
+    aircraftList.push(a2);
+
+    // Aircraft 3: At gate
+    const gate = trafficController.assignGate();
+    const a3 = new Aircraft(2, LIVERIES[2], 'AT_GATE', {
+        x: gate.x, y: 0, z: GATE_Z, heading: Math.PI
+    });
+    a3.gateId = gate.id;
+    a3.stateTimer = 5; // Will leave in ~7 seconds
+    aircraftList.push(a3);
+
+    // Aircraft 4: In holding pattern (higher altitude)
+    const a4 = new Aircraft(3, LIVERIES[3], 'HOLDING', {
+        x: HOLDING_CENTER.x + 100, y: HOLDING_ALTITUDES[2], z: HOLDING_CENTER.z + 100,
+        heading: -Math.PI/2, speed: 45, altitude: HOLDING_ALTITUDES[2], corner: 3
+    });
+    trafficController.usedHoldingAltitudes.add(HOLDING_ALTITUDES[2]);
+    trafficController.joinLandingQueue(a4);
+    aircraftList.push(a4);
+
+    // Aircraft 5: Taxiing to runway
+    const a5 = new Aircraft(4, LIVERIES[4], 'TAXI_TO_RUNWAY', {
+        x: 0, y: 0, z: TAXIWAY_Z, heading: Math.PI
+    });
+    a5.waypoints = [
+        {x: 0, z: TAXIWAY_Z},
+        {x: -240, z: TAXIWAY_Z},
+        {x: -245, z: 0}
+    ];
+    aircraftList.push(a5);
+}
+
+// ============================================================
+// ANIMATION LOOP
+// ============================================================
+function animate(time) {
+    requestAnimationFrame(animate);
+    const dt = Math.min((time - (animate.lastTime || time)) / 1000, 0.05);
+    animate.lastTime = time;
+    frameCount++;
+
+    // Update aircraft
+    for (let a of aircraftList) {
+        // Smooth speed changes
+        a.speed += (a.targetSpeed - a.speed) * Math.min(dt * 1.5, 1);
+        if (a.targetSpeed === 0) a.speed = Math.max(0, a.speed - 30 * dt);
+        a.update(dt, trafficController);
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+
+    // Update info panel every 10 frames
+    if (frameCount % 10 === 0) updateInfoPanel();
+}
+
+function updateInfoPanel() {
+    let inAir = 0, onGround = 0;
+    let html = '';
+    for (let a of aircraftList) {
+        if (['HOLDING','APPROACH','CLIMBOUT'].includes(a.state)) inAir++;
+        else onGround++;
+        html += `<div class="row"><span class="lbl">✈${a.id+1} ${a.livery.name}</span><span class="val" style="color:${a.getStateColor()}">${a.getStateText()}</span></div>`;
+    }
+    html = `<div class="row"><span class="lbl">In Air / Ground</span><span class="val">${inAir} / ${onGround}</span></div><hr>` + html;
+    document.getElementById('stats').innerHTML = html;
+}
+
+function onResize() {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+}
+
+// Start
+init();
+</script>
+</body>
+</html>
