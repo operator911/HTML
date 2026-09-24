@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branches of Chinese — An Interactive Atlas of the Sinitic Languages</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1220;--panel:#141b2d;--panel-2:#1a2338;--line:#2a3550;--ink:#e9e4d6;--ink-dim:#a7adc0;--ink-faint:#6d7590;--gold:#d4a94f;--gold-soft:rgba(212,169,79,.14);--sans:"Inter","Helvetica Neue",Arial,sans-serif;--serif:"EB Garamond",Georgia,serif;--cjk:"Noto Serif SC","Songti SC","SimSun",serif}
+.c-anc{--c:#e8dcc0}.c-gu{--c:#e0b558}.c-jin{--c:#ef8354}.c-wu{--c:#4fc3d9}.c-xiang{--c:#b07de0}.c-gan{--c:#e2657a}.c-hak{--c:#5a8fe8}.c-min{--c:#4ecf8f}.c-yue{--c:#e64f5e}.c-hui{--c:#a9be5c}.c-ping{--c:#d98cc4}.c-unc{--c:#8b94a8}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 75% -10%,rgba(79,195,217,.07),transparent 60%),radial-gradient(900px 500px at 10% 110%,rgba(212,169,79,.06),transparent 60%),var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+header{flex:0 0 auto;padding:.85rem 1.4rem .8rem;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1.6rem;background:linear-gradient(180deg,rgba(212,169,79,.05),transparent)}
+header h1{margin:0;font-family:var(--serif);font-weight:600;font-size:clamp(1.25rem,2.2vw,1.7rem);letter-spacing:.02em}
+header h1 .zh{font-family:var(--cjk);color:var(--gold);font-weight:700;margin-right:.5rem}
+.tagline{color:var(--ink-dim);font-size:.85rem}
+.stats{margin-left:auto;display:flex;gap:1.2rem;color:var(--ink-faint);font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
+.stats b{color:var(--gold);font-weight:600}
+.app{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(320px,380px) minmax(0,1fr) minmax(340px,420px)}
+.pane{min-height:0;display:flex;flex-direction:column}
+.tree-pane{border-right:1px solid var(--line);background:var(--panel)}
+.info-pane{border-left:1px solid var(--line);background:var(--panel)}
+.tree-head{flex:0 0 auto;padding:.8rem .9rem .6rem;border-bottom:1px solid var(--line)}
+.tree-head label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:.35rem}
+#filter{width:100%;padding:.45rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:.9rem}
+#filter::placeholder{color:var(--ink-faint)}
+#tree{flex:1 1 auto;overflow:auto;padding:.6rem .7rem 1.2rem;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+#tree ul{list-style:none;margin:0;padding:0}
+#tree ul ul{margin-left:.95rem;border-left:1px solid var(--line);padding-left:.55rem}
+#tree li{margin:.1rem 0}
+.tnode{width:100%;display:flex;align-items:center;gap:.45rem;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:.28rem .45rem;border-radius:7px;cursor:pointer;border-left:3px solid transparent}
+.tnode:hover,.tnode:focus-visible{background:var(--panel-2)}
+.tnode.lvl1{border-left-color:var(--c)}
+.tnode.lvl2,.tnode.lvl3{border-left-color:color-mix(in srgb,var(--c) 40%,transparent)}
+.tnode.active{background:color-mix(in srgb,var(--c) 16%,var(--panel-2));border-left-color:var(--c)}
+.tnode.active .t-en{color:var(--c)}
+.caret{flex:0 0 1rem;display:inline-flex;justify-content:center;color:var(--ink-faint);font-size:.7rem;transition:transform .18s ease}
+li.open>.tnode .caret{transform:rotate(90deg)}
+.t-zh{font-family:var(--cjk);font-weight:700;color:var(--c);width:1.3em;text-align:center;flex:0 0 auto}
+.t-en{font-size:.92rem}
+.t-sp{margin-left:auto;font-size:.7rem;color:var(--ink-faint);flex:0 0 auto;padding-left:.4rem}
+li.hidden{display:none}
+mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1px}
+.legend{flex:0 0 auto;padding:.6rem .9rem .7rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.3rem .85rem}
+.legend span{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--ink-dim)}
+.legend i{width:.65rem;height:.65rem;border-radius:50%;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 60%,transparent)}
+.map-pane{position:relative}
+#map{position:absolute;inset:0;background:#0a0f1c}
+.leaflet-container{font-family:var(--sans)}
+.leaflet-control-zoom a{background:var(--panel-2)!important;color:var(--ink)!important;border-color:var(--line)!important}
+.leaflet-control-attribution{background:rgba(13,18,32,.75)!important;color:var(--ink-faint)!important;font-size:10px!important}
+.leaflet-control-attribution a{color:var(--ink-dim)!important}
+.leaflet-tooltip.tip{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:.15rem .55rem;font-size:.78rem;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.leaflet-tooltip.tip::before{display:none}
+.tip .zh{font-family:var(--cjk);color:var(--gold)}
+.dia{border-radius:50%;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 30%,transparent);box-shadow:0 0 10px color-mix(in srgb,var(--c) 45%,transparent)}
+.dia.hot{background:color-mix(in srgb,var(--c) 60%,transparent)}
+@media (prefers-reduced-motion: no-preference){.dia.sel{animation:pulse 1.8s ease-out infinite}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 60%,transparent)}70%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.map-note{position:absolute;top:.6rem;right:.6rem;z-index:500;max-width:280px;background:rgba(20,27,45,.88);border:1px solid var(--line);border-radius:8px;padding:.45rem .7rem;font-size:.74rem;color:var(--ink-dim);margin:0}
+.map-note b{color:var(--gold)}
+#info{flex:1 1 auto;overflow:auto;padding:1.2rem 1.3rem 2.5rem;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.empty{color:var(--ink-faint);font-family:var(--serif);font-size:1.05rem;font-style:italic;padding-top:2rem;text-align:center}
+#info h2{margin:0;font-family:var(--serif);font-weight:600;font-size:1.55rem;line-height:1.2;color:var(--c)}
+#info .zh-big{font-family:var(--cjk);font-size:1.15rem;color:var(--ink-dim);font-weight:500;margin-top:.1rem}
+#info .py{color:var(--ink-faint);font-size:.85rem;font-style:italic}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.85rem 0 1rem}
+.chip{font-size:.72rem;padding:.2rem .6rem;border-radius:99px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim)}
+.chip.sp{border-color:color-mix(in srgb,var(--c) 55%,transparent);color:var(--c)}
+#info h3{margin:1.4rem 0 .5rem;font-size:.74rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:.6rem}
+#info h3::after{content:"";flex:1;height:1px;background:var(--line)}
+#info p{margin:.55rem 0;font-size:.92rem}
+#info p em{color:var(--ink-dim)}
+#info .lead{font-family:var(--serif);font-size:1.06rem}
+#info .lead::first-letter{font-size:2.2em;float:left;line-height:.9;padding:.06em .12em 0 0;color:var(--c);font-weight:600}
+ol.timeline{margin:.4rem 0 0;padding:0 0 0 .2rem;list-style:none;border-left:2px solid color-mix(in srgb,var(--c) 40%,transparent)}
+ol.timeline li{margin:0 0 .7rem;padding:0 0 0 1rem;position:relative}
+ol.timeline li::before{content:"";position:absolute;left:-.41rem;top:.42rem;width:.6rem;height:.6rem;border-radius:50%;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 55%,transparent)}
+ol.timeline .yr{display:block;font-family:var(--serif);font-weight:600;color:var(--c);font-size:.95rem}
+ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
+@media (max-width:1180px){body{overflow:auto;height:auto}.app{display:block}.tree-pane{order:2;border-right:0;border-top:1px solid var(--line)}.map-pane{order:1;height:52vh;min-height:340px}#tree{max-height:46vh}.info-pane{position:fixed;inset:auto 0 0 0;z-index:1200;max-height:78dvh;border-left:0;border-top:1px solid var(--gold);box-shadow:0 -18px 40px rgba(0,0,0,.55);transform:translateY(102%);transition:transform .28s ease;border-radius:14px 14px 0 0;background:var(--panel)}body.sheet .info-pane{transform:translateY(0)}.sheet-handle{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--line)}.sheet-handle button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.3rem .8rem;font:inherit;font-size:.82rem;cursor:pointer}}
+@media (min-width:1181px){.sheet-handle{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="zh">汉语</span>Branches of Chinese</h1>
+  <span class="tagline">An interactive atlas of the Sinitic languages — family tree, geography, and history</span>
+  <div class="stats"><span><b>10</b> branches</span><span><b>~1.4B</b> speakers</span><span><b>3,000</b> yrs attested</span></div>
+</header>
+<main class="app">
+  <aside class="pane tree-pane" aria-label="Classification of Chinese languages">
+    <div class="tree-head">
+      <label for="filter">Filter varieties</label>
+      <input id="filter" type="search" placeholder="e.g. Teochew, Wu, Hakka…" autocomplete="off">
+    </div>
+    <nav id="tree" aria-label="Language family tree"></nav>
+    <div class="legend" id="legend" aria-hidden="true"></div>
+  </aside>
+  <section class="pane map-pane" aria-label="Map of present-day distribution">
+    <div id="map"></div>
+    <p class="map-note">● Markers show <b>representative cities</b> where the selected variety is spoken today; diaspora points appear for overseas communities.</p>
+  </section>
+  <aside class="pane info-pane" id="infoPane" aria-live="polite" aria-label="History of the selected language">
+    <div class="sheet-handle"><span id="sheetTitle" style="font-family:var(--serif)"></span><button id="closeSheet" type="button">Close</button></div>
+    <div id="info"><p class="empty">Hover or tap a variety in the tree to read its history.</p></div>
+  </aside>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/* Classification follows the Language Atlas of China (1987/2012),
+   Norman《Chinese》and Campbell《Chinese: A Linguistic Atlas》.
+   Speaker figures are approximations (Ethnologue, 2021-era counts). */
+const DATA = {
+ id:"sinitic", en:"Chinese (Sinitic)", zh:"汉语", py:"Hànyǔ", sp:"~1.4 billion",
+ region:"China, Taiwan, Singapore and overseas Chinese communities worldwide", cls:"c-anc", mk:[],
+ h:[`Chinese — the <em>Sinitic</em> branch of the Sino-Tibetan family — is one of the world's great language lineages, with roughly 1.4 billion native speakers. What are popularly called "dialects" are in reality a spectrum of languages as mutually unintelligible as those of Romance: a Beijing speaker cannot understand Wenzhounese or Taishanese without study.`,
+   `The writing system, continuous since the oracle bones of ca. 1250 BCE, historically unified these varieties: for two millennia, literate speakers of mutually unintelligible speech read the same classics. The standard scholarly map — the <em>Language Atlas of China</em> (1987, revised 2012) — recognises ten main branches, preceded here by the three attested ancestral stages from which they descend.`],
+ t:[["c. 1250 BCE","Earliest attested Chinese: Shang oracle-bone inscriptions"],
+    ["601 CE","Qieyun rhyme dictionary fixes the Middle Chinese reading"],
+    ["1932 / 1955","Beijing-based standard national language promulgated"]],
+ kids:[
+  { id:"ancient", en:"Ancestral stages", zh:"古", py:"", sp:"attested & reconstructed", region:"The historical record", cls:"c-anc", mk:[],
+    h:[`Not living varieties, but the attested ancestors and reconstructions behind every branch below.`], kids:[
+   { id:"old", en:"Old Chinese", zh:"上古", py:"Shànggǔ Hànyǔ", sp:"—", region:"Yellow River basin, Zhou through Han dynasties", cls:"c-anc",
+     mk:[[34.34,108.94,"Wei valley – Qinling heartland"]],
+     h:[`Old Chinese — the language of the Zhou court, the <em>Book of Songs</em> and the earliest classics — is reconstructed from <em>Shijing</em> rhymes, character phonetics and Sino-Tibetan comparison (Baxter–Sagart; Zhengzhang Shangfang). It differs radically from any living variety: consonant clusters (*kl-, *pl-), prefix syllables, and — in most current theories — <em>no lexical tones at all</em>. The tones of every modern variety later arose by "tonogenesis" (Mei Tsu-lin 1970) from the loss of finals such as *-s and *-ʔ.`,
+       `Under Qin and Han (221 BCE onward) this ancestral speech first moved south of the Yangtze: Qin sent hundreds of thousands of conscripts into Lingnan after 214 BCE (the moment the Lingqu Canal was cut), and Han armies extinguished Minyue (110 BCE) and Nanyue (111 BCE). Those garrisons planted Chinese in Fujian and Guangdong — where their descendants, isolated from later northern changes, became the deep strata of Min and Yue.`],
+     t:[["c. 1250 BCE","Oracle-bone inscriptions of the Shang"],
+        ["214 BCE","Qin conquest of Lingnan; garrisons settle the far south"],
+        ["110 BCE","Han destroy Minyue; Chinese foothold established in Fujian"]]},
+   { id:"middle", en:"Middle Chinese", zh:"中古", py:"Zhōnggǔ Hànyǔ", sp:"—", region:"Sui–Tang literary standard, exported across East Asia", cls:"c-anc",
+     mk:[[34.34,108.94,"Chang'an"],[34.62,112.45,"Luoyang"],[32.06,118.8,"Jiankang (Nanjing)"]],
+     h:[`Middle Chinese is the reading tradition of the Sui and Tang, captured with famous precision in the rhyme dictionary 《切韻》 <em>Qieyun</em> (601 CE), compiled in Chang'an by Lu Fayan and eight colleagues who reconciled the literary readings of the northern and southern courts. Its sound system — four tone classes, full sets of voiced obstruents, and finals <em>-p, -t, -k, -m</em> — is documented in rhyme tables like the <em>Yunjing</em> and survives in the "Sino-Xenic" strata of Japanese, Korean and Vietnamese, and in the checked tones of modern Cantonese.`,
+       `Most modern branches descend from the regional spoken Middle Chinese of their area, and their innovations are predictable: northern varieties devoiced the stops and lost the checked tones; southern ones kept them wholly or partly. The great exception is <em>Min</em>, whose everyday layer split off before the Qieyun synthesis existed.`],
+     t:[["601 CE","Lu Fayan compiles the Qieyun"],
+        ["7th–9th c.","Tang koine spreads; readings borrowed into Japanese, Korean, Vietnamese"],
+        ["1127","Fall of the Northern Song drives the prestige standard south to Hangzhou"]]},
+   { id:"oldmand", en:"Old Mandarin", zh:"早期官话", py:"", sp:"—", region:"North China, Jin–Yuan period", cls:"c-gu",
+     mk:[[39.9,116.4,"Dadu (Beijing)"],[34.75,113.6,"Kaifeng"]],
+     h:[`The ancestor of today's Mandarin was forged after 1127, when the Jurchen Jin and then the Mongol Yuan ruled a north cut off from the southern court. Northern speech changed swiftly: voiced obstruents devoiced, the entering tone vanished, *-m merged into *-n. The rhyme book 《中原音韻》 <em>Zhongyuan Yinyun</em> (1324, Zhou Deqing) already records this "Old Mandarin" — four tones, no checked tone — the language of Yuan <em>zaju</em> drama and of the Mongol-era capital Dadu. The Ming and Qing koines of Nanjing and Beijing descend from it.`],
+     t:[["1127","North China passes to Jurchen Jin rule"],
+        ["1324","Zhongyuan Yinyun records Old Mandarin phonology"],
+        ["1368 / 1644","Nanjing, then Beijing, become dynastic capitals"]]},
+  ]},
+ { id:"guanhua", en:"Mandarin", zh:"官", py:"Guānhuà", sp:"≈920 million L1",
+    region:"Northern, central & southwestern China — ~70% of all Chinese speakers", cls:"c-gu",
+    mk:[[39.9,116.4,"Beijing"],[34.75,113.6,"Zhengzhou"],[30.57,104.07,"Chengdu"]],
+    h:[`Mandarin (官话 <em>guānhuà</em>, "officials' speech") is the largest Sinitic branch: its eight subgroups cover the North China plain, the Northwest, the Yangtze corridor and the southwest — about 70% of all Chinese speakers. Its name records its history: it spread as the koinè of imperial bureaucracy, exam candidates, military colonies and long-distance trade, while the sedentary south preserved older, more fragmented lineages.`,
+      `Two innovations unite it: the voiced stops of Middle Chinese devoiced, and the entering tone (入声) vanished, its words scattered among the surviving tones. Standard Chinese (Putonghua / Guoyu) is simply one variety of one subgroup — Beijing Mandarin — elevated in the 20th century. The map of Mandarin's subgroups is largely a map of dynastic history: old capitals in the central plains, Ming garrisons in the southwest, and 19th-century pioneers in Manchuria.`],
+    t:[["1324","Zhongyuan Yinyun records the northern koinè"],
+       ["1368–1644","Mandarin spreads south with Ming officialdom and garrisons"],
+       ["1932 / 1956","Beijing-based standard adopted in China and Taiwan"]],
+    kids:[
+     { id:"beifang", en:"Northern group", zh:"北", py:"Běifāng Guānhuà", sp:"≈230 million", region:"Manchuria, Hebei, Shandong, Tianjin", cls:"c-gu", mk:[],
+       h:[`Four subgroups — Northeastern, Beijing, Ji–Lu and Jiaoliao — form the homogeneous north: big plains, constant movement, recent settlement. Differences are shallow and mutual intelligibility near-total.`], kids:[
+      { id:"dongbei", en:"Northeastern", zh:"东", py:"Dōngběi Guānhuà", sp:"≈90 million", region:"Heilongjiang, Jilin, NE Inner Mongolia, N Liaoning", cls:"c-gu",
+        mk:[[45.75,126.65,"Harbin"],[43.88,125.32,"Changchun"],[41.8,123.43,"Shenyang"]],
+        h:[`The youngest dialect zone in China. The Qing reserved Manchuria behind the "Willow Palisade", barring most Han settlement until the ban eroded after 1860. Tens of millions then flooded north from overpopulated Shandong and Zhili in the migration remembered as <em>Chuang Guandong</em> (闯关东, "crashing into Guandong").`,
+          `Because settlement is barely a century old and mixed speakers from many northern origins, Northeastern Mandarin is remarkably homogeneous. Manchu left traces in vocabulary (e.g. 邋遢 <em>lathe</em> "slovenly", toponyms like Jilin), and the Russian- and Japanese-built cities of Harbin and Dalian absorbed small loan layers.`],
+        t:[["1668–1860","Qing closure of Manchuria to Han settlement"],
+           ["1860–1930","Chuang Guandong mass migration from Shandong/Hebei"]]},
+      { id:"beijingmd", en:"Beijing", zh:"京", py:"Jīngxiāng", sp:"≈35 million", region:"Beijing, Tianjin, surrounding Hebei", cls:"c-gu",
+        mk:[[39.9,116.4,"Beijing"],[39.13,117.2,"Tianjin"],[40.97,117.94,"Chengde"]],
+        h:[`The prestige variety of modern China. Beijing's speech rose with the city: Jurchen Jin capital from 1153, Mongol Dadu, Ming–Qing Beijing. Conquest dynasties, garrisons and the court layered its speech; contacts with Mongol and Manchu speakers are popularly credited with pervasive <em>erhua</em> (儿化) and light syllables, though scholars debate how deep that influence really was.`,
+          `In 1913 China's Commission on Unification of Reading met to settle a national standard; after years of dispute, the 1932 <em>Guoyin Zidian</em> dictionary conceded living Beijing phonology outright. The PRC's 1955 definition of Putonghua — "Beijing pronunciation as the standard" — sealed its global reach: it is now a second language for nearly every Chinese person.`],
+        t:[["1153 / 1267","Jin Zhongdu, then Yuan Dadu, established at Beijing"],
+           ["1913","Commission on Unification of Reading convenes"],
+           ["1932","Guoyin Zidian adopts Beijing phonology"],
+           ["1956","Putonghua promotion campaign launched"]]},
+      { id:"jiaoliao", en:"Jiaoliao", zh:"胶", py:"Jiāoliáo Guānhuà", sp:"≈25 million", region:"Shandong peninsula & Liaodong peninsula across the Bohai", cls:"c-gu",
+        mk:[[37.54,121.39,"Yantai"],[37.51,122.12,"Weihai"],[38.91,121.61,"Dalian"],[39.998,123.429,"Dandong"]],
+        h:[`A dialect split in two by a sea. Jiaoliao Mandarin spans the Shandong Peninsula (Jiao) and the Liaodong (Liao) peninsula opposite, because the Bohai Strait was a highway, not a barrier: centuries of fishing and the great Shandong-to-Manchuria boat migrations carried peninsula speech to ports like Dalian and Dandong.`,
+          `Its tone patterns and vocabulary diverge noticeably from the Ji–Lu plain behind it, marking it as a coastal bridge between the north China plain and the new dialect frontier of Manchuria.`],
+        t:[["1850s–1930","Mass boat migration carries Shandong speech to Liaodong"]]},
+      { id:"jilu", en:"Ji–Lu", zh:"冀鲁", py:"Jìlǔ Guānhuà", sp:"≈110 million", region:"Hebei & Shandong plains, Tianjin hinterland", cls:"c-gu",
+        mk:[[36.65,117,"Jinan"],[38.04,114.51,"Shijiazhuang"],[38.87,115.46,"Baoding"]],
+        h:[`The speech of the North China plain proper — Hebei (Ji) and Shandong (Lu), named for their old provincial abbreviations. It shades into Beijing Mandarin (Tianjin's famous comic cadence is Ji–Lu-flavoured) and into Zhongyuan Mandarin to the south. Peasant, dense and ancient: this population was repeatedly crushed and replenished — Yellow River floods, the 14th-century Hongdong resettlement legends, the 1942 Henan famine — yet its dialect remained the placid centre of gravity from which Northeastern and Jiaoliao speech were cast.`],
+        t:[["1368–1417","Ming resettlements from Shanxi repopulate the plain"]]}
+     ]},
+     { id:"zhongyuan", en:"Zhongyuan", zh:"中原", py:"Zhōngyuán Guānhuà", sp:"≈150 million", region:"Middle & lower Yellow River: Henan, Shaanxi, Gansu, Qinghai, Ningxia, Xinjiang", cls:"c-gu",
+       mk:[[34.75,113.6,"Zhengzhou"],[34.62,112.45,"Luoyang"],[34.34,108.94,"Xi'an"],[36.06,103.83,"Lanzhou"],[43.83,87.6,"Urumqi"],[36.62,101.77,"Xining"]],
+       h:[`The largest Mandarin subgroup by area — and the oldest heartland. The central plains (Zhongyuan, "the middle districts") between Xi'an and Luoyang were the capital zone of Western Han, Sui and Tang; the prestige spoken standard of the Tang poets was essentially the speech of this corridor. When the north fell in 1127 the court left, but the land's speech kept its gravity: today Zhongyuan Mandarin runs from Henan and southern Shanxi west along the Silk Road through Lanzhou and Xining to the garrisons of Xinjiang.`,
+         `Its varieties are conservative within Mandarin, and its western reaches reached Xinjiang with 18th–19th-century Qing garrison colonies — Zuo Zongtang's Hunan army reconquered the region in 1876–79, and soldiers' descendants still speak southern-flavoured enclaves around Hutubi.`],
+       t:[["202 BCE–904 CE","Chang'an/Luoyang capital zone sets the northern standard"],
+          ["1876–79","Zuo Zongtang's reconquest of Xinjiang plants colonial Mandarin enclaves"]]},
+     { id:"lanyin", en:"Lan–Yin", zh:"兰银", py:"Lányín Guānhuà", sp:"≈35 million", region:"Gansu, Ningxia, N Shaanxi, N Qinghai & Xinjiang — and Chüi in Kyrgyzstan", cls:"c-gu",
+       mk:[[36.06,103.83,"Lanzhou"],[38.49,106.2,"Yinchuan"],[34.58,105.72,"Tianshui"],[42.87,74.59,"Bishkek (Dungan)"]],
+       h:[`Named for Lanzhou and Yinchuan, Lan–Yin Mandarin is the Chinese of the dry northwestern corridor — the old Hexi relay road to Central Asia, home to Han and Hui Muslim farming frontiers. Its tones and vocabulary preserve the speech of successive Ming–Qing garrison-agriculture colonies that pushed Chinese up the Silk Road.`,
+         `Its most remarkable offshoot is the <strong>Dungan language</strong>. After the crushed Muslim revolts of 1862–77, tens of thousands of Chinese-speaking Hui fled into Russian Central Asia. Their descendants — some 100,000 in Kyrgyzstan and Kazakhstan — still speak a Lan–Yin variety written in Cyrillic with Russian and Arabic loan layers: northwestern Mandarin preserved in nineteenth-century amber under a different alphabet.`],
+       t:[["1368–1785","Ming–Qing garrison colonies spread Chinese through Gansu–Ningxia"],
+          ["1878","Dungan refugees reach Russia; today written in Cyrillic"]]},
+     { id:"xinan", en:"Southwestern", zh:"西南", py:"Xīnán Guānhuà", sp:"≈270 million", region:"Sichuan, Chongqing, Yunnan, Guizhou, Hubei, parts of Hunan & Guangxi", cls:"c-gu",
+       mk:[[30.57,104.07,"Chengdu"],[29.56,106.55,"Chongqing"],[25.04,102.71,"Kunming"],[26.65,106.63,"Guiyang"],[25.27,110.29,"Guilin"],[30.59,114.3,"Wuhan"]],
+       h:[`Southwestern Mandarin — among the largest Sinitic varieties on earth — covers the entire upper and middle Yangtze basin and the southwest plateau. Its spread is a story of state-engineered colonisation: Yunnan received Han garrisons under the Mongols (governor Sayyid Ajall, 1270s) and Ming military settlers whose families claimed Nanjing ancestry, memorialised in the "Great Poplar Tree of Zhuji Hut" origin legends of Guizhou and Yunnan clans.`,
+         `Sichuan, catastrophically depopulated in the wars of the 1640s, was repopulated by the great <em>Huguang fills Sichuan</em> (湖广填四川) migration from Hubei, Hunan and Guangdong — the mingling of those groups produced modern Sichuanese's striking homogeneity, with the checked tone merged wholesale into yang-ping, the region's calling card. Guilin's Mandarin enclave dates to Ming garrisons; Wuhan's speech links the whole river together.`],
+       t:[["1270s","Mongol garrisons settle Yunnan"],
+          ["1380s–1600s","Ming military colonies populate Guizhou and Yunnan"],
+          ["1660–1770","Huguang fills Sichuan repopulates the basin"]]},
+     { id:"jianghuai", en:"Jianghuai (Lower Yangtze)", zh:"江淮", py:"Jiānghuái Guānhuà", sp:"≈45 million", region:"Anhui & Jiangsu along the lower Yangtze — Nanjing, Yangzhou, Hefei", cls:"c-gu",
+       mk:[[32.06,118.8,"Nanjing"],[32.4,119.42,"Yangzhou"],[31.82,117.22,"Hefei"],[31.98,120.86,"Nantong"]],
+       h:[`Jianghuai Mandarin is the meeting-edge of north and south: a Mandarin system laid over the Yangtze delta's southern linguistic terrain, keeping partial traces the north lost — some varieties retain an entering-tone class, and n/l are often distinguished. Its frontier character was forged by population turnover at the eastern capital Jiankang/Nanjing, which received northern elites in 317 and 1127, superstrating northern speech onto local Jiangdong Chinese.`,
+         `Nanjing Mandarin was the Ming koine after 1368 and stayed influential in Qing officialdom long after Beijing took over; much of the "Mandarin" of early Western phrasebooks is Nanjing-flavoured. The Taiping devastation of the lower Yangtze (1864) emptied Nanjing itself, which was then repopulated by immigrants from Hubei and Yangzhou — levelling the city once more.`],
+       t:[["317 / 1127","Northern courts at Jiankang/Lin'an reshape Jiangdong speech"],
+          ["1368","Ming capital makes Nanjing Mandarin the court koine"],
+          ["1864","Fall of Taiping Nanjing; immigration re-levels the city"]}
+    ]},
+/*@REST1@*/
+ ]
+};
+/*@APP@*/
+</script>
+</body>
+</html>
+
+
