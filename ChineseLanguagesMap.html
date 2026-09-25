@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d1220;--panel:#141b2d;--panel-2:#1a2338;--line:#2a3550;--ink:#e9e4d6;--ink-dim:#a7adc0;--ink-faint:#6d7590;--gold:#d4a94f;--gold-soft:rgba(212,169,79,.14);--sans:"Inter","Helvetica Neue",Arial,sans-serif;--serif:"EB Garamond",Georgia,serif;--cjk:"Noto Serif SC","Songti SC","SimSun",serif}
+:root{--bg:#0d1220;--panel:#141b2d;--panel-2:#1a2338;--line:#2a3550;--ink:#e9e4d6;--ink-dim:#a7adc0;--ink-faint:#6d7590;--gold:#d4a94f;--gold-soft:rgba(212,169,79,.14);--sans:"Inter","Helvetica Neue",Arial,sans-serif;--serif:"EB Garamond",Georgia,serif;--cjk:"Noto Serif SC","Songti SC","SimSun",serif;--tw:360px;--iw:390px}
 .c-anc{--c:#e8dcc0}.c-gu{--c:#e0b558}.c-jin{--c:#ef8354}.c-wu{--c:#4fc3d9}.c-xiang{--c:#b07de0}.c-gan{--c:#e2657a}.c-hak{--c:#5a8fe8}.c-min{--c:#4ecf8f}.c-yue{--c:#e64f5e}.c-hui{--c:#a9be5c}.c-ping{--c:#d98cc4}.c-unc{--c:#8b94a8}
 *{box-sizing:border-box}html,body{margin:0;padding:0}
 body{background:radial-gradient(1200px 600px at 75% -10%,rgba(79,195,217,.07),transparent 60%),radial-gradient(900px 500px at 10% 110%,rgba(212,169,79,.06),transparent 60%),var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
@@ -20,7 +20,10 @@ header h1 .zh{font-family:var(--cjk);color:var(--gold);font-weight:700;margin-ri
 .tagline{color:var(--ink-dim);font-size:.85rem}
 .stats{margin-left:auto;display:flex;gap:1.2rem;color:var(--ink-faint);font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
 .stats b{color:var(--gold);font-weight:600}
-.app{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(320px,380px) minmax(0,1fr) minmax(340px,420px)}
+.app{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:var(--tw) 6px minmax(0,1fr) 6px var(--iw)}
+.grip{cursor:col-resize;position:relative;z-index:600;touch-action:none;user-select:none;background:transparent}
+.grip::after{content:"";position:absolute;inset:0 2px;background:var(--line);transition:background .15s}
+.grip:hover::after,.grip:focus-visible::after{background:var(--gold)}
 .pane{min-height:0;display:flex;flex-direction:column}
 .tree-pane{border-right:1px solid var(--line);background:var(--panel)}
 .info-pane{border-left:1px solid var(--line);background:var(--panel)}
@@ -32,7 +35,8 @@ header h1 .zh{font-family:var(--cjk);color:var(--gold);font-weight:700;margin-ri
 #tree ul{list-style:none;margin:0;padding:0}
 #tree ul ul{margin-left:.95rem;border-left:1px solid var(--line);padding-left:.55rem}
 #tree li{margin:.1rem 0}
-.tnode{width:100%;display:flex;align-items:center;gap:.45rem;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:.28rem .45rem;border-radius:7px;cursor:pointer;border-left:3px solid transparent}
+#tree li:not(.open)>ul{display:none}
+.tnode{width:100%;display:flex;align-items:center;gap:.45rem;background:none;border:0;color:inherit;font:inherit;font-family:var(--serif);text-align:left;padding:.28rem .45rem;border-radius:7px;cursor:pointer;border-left:3px solid transparent}
 .tnode:hover,.tnode:focus-visible{background:var(--panel-2)}
 .tnode.lvl1{border-left-color:var(--c)}
 .tnode.lvl2,.tnode.lvl3{border-left-color:color-mix(in srgb,var(--c) 40%,transparent)}
@@ -41,8 +45,8 @@ header h1 .zh{font-family:var(--cjk);color:var(--gold);font-weight:700;margin-ri
 .caret{flex:0 0 1rem;display:inline-flex;justify-content:center;color:var(--ink-faint);font-size:.7rem;transition:transform .18s ease}
 li.open>.tnode .caret{transform:rotate(90deg)}
 .t-zh{font-family:var(--cjk);font-weight:700;color:var(--c);width:1.3em;text-align:center;flex:0 0 auto}
-.t-en{font-size:.92rem}
-.t-sp{margin-left:auto;font-size:.7rem;color:var(--ink-faint);flex:0 0 auto;padding-left:.4rem}
+.t-en{font-size:.97rem}
+.t-sp{margin-left:auto;font-size:.7rem;color:var(--ink-faint);flex:0 0 auto;padding-left:.4rem;font-family:var(--sans)}
 li.hidden{display:none}
 mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1px}
 .legend{flex:0 0 auto;padding:.6rem .9rem .7rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.3rem .85rem}
@@ -81,7 +85,7 @@ mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1
 .chip.sp{border-color:color-mix(in srgb,var(--c) 55%,transparent);color:var(--c)}
 #info h3{margin:1.4rem 0 .5rem;font-size:.74rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:.6rem}
 #info h3::after{content:"";flex:1;height:1px;background:var(--line)}
-#info p{margin:.55rem 0;font-size:.92rem}
+#info p{margin:.55rem 0;font-size:.92rem;font-family:var(--serif)}
 #info p em{color:var(--ink-dim)}
 #info .lead{font-family:var(--serif);font-size:1.06rem}
 #info .lead::first-letter{font-size:2.2em;float:left;line-height:.9;padding:.06em .12em 0 0;color:var(--c);font-weight:600}
@@ -90,7 +94,7 @@ ol.timeline li{margin:0 0 .7rem;padding:0 0 0 1rem;position:relative}
 ol.timeline li::before{content:"";position:absolute;left:-.41rem;top:.42rem;width:.6rem;height:.6rem;border-radius:50%;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 55%,transparent)}
 ol.timeline .yr{display:block;font-family:var(--serif);font-weight:600;color:var(--c);font-size:.95rem}
 ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
-@media (max-width:1180px){body{overflow:auto;height:auto}.app{display:block}.tree-pane{order:2;border-right:0;border-top:1px solid var(--line)}.map-pane{order:1;height:52vh;min-height:340px}#tree{max-height:46vh}.info-pane{position:fixed;inset:auto 0 0 0;z-index:1200;max-height:78dvh;border-left:0;border-top:1px solid var(--gold);box-shadow:0 -18px 40px rgba(0,0,0,.55);transform:translateY(102%);transition:transform .28s ease;border-radius:14px 14px 0 0;background:var(--panel)}body.sheet .info-pane{transform:translateY(0)}.sheet-handle{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--line)}.sheet-handle button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.3rem .8rem;font:inherit;font-size:.82rem;cursor:pointer}}
+@media (max-width:1180px){.grip{display:none}body{overflow:auto;height:auto}.app{display:block}.tree-pane{order:2;border-right:0;border-top:1px solid var(--line)}.map-pane{order:1;height:52vh;min-height:340px}#tree{max-height:46vh}.info-pane{position:fixed;inset:auto 0 0 0;z-index:1200;max-height:78dvh;border-left:0;border-top:1px solid var(--gold);box-shadow:0 -18px 40px rgba(0,0,0,.55);transform:translateY(102%);transition:transform .28s ease;border-radius:14px 14px 0 0;background:var(--panel)}body.sheet .info-pane{transform:translateY(0)}.sheet-handle{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--line)}.sheet-handle button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.3rem .8rem;font:inherit;font-size:.82rem;cursor:pointer}}
 @media (min-width:1181px){.sheet-handle{display:none}}
 </style>
 </head>
@@ -109,12 +113,14 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
     <nav id="tree" aria-label="Language family tree"></nav>
     <div class="legend" id="legend" aria-hidden="true"></div>
   </aside>
+  <div class="grip" id="gripTree" role="separator" aria-orientation="vertical" aria-label="Resize tree panel (double-click resets)" tabindex="0"></div>
   <section class="pane map-pane" aria-label="Map of present-day distribution">
     <div id="map"></div>
     <p class="map-note">● Markers show <b>representative cities</b> where the selected variety is spoken today; diaspora points appear for overseas communities.</p>
     <button id="mapToggle" class="map-toggle" type="button" aria-pressed="false">Next: 🔤 English labels</button>
     <p class="sketch-cap"><b style="color:var(--gold)">Schematic map</b> — simplified coastline &amp; borders drawn from memory of the geography; city markers sit at true coordinates. Works fully offline.</p>
   </section>
+  <div class="grip" id="gripInfo" role="separator" aria-orientation="vertical" aria-label="Resize history panel (double-click resets)" tabindex="0"></div>
   <aside class="pane info-pane" id="infoPane" aria-live="polite" aria-label="History of the selected language">
     <div class="sheet-handle"><span id="sheetTitle" style="font-family:var(--serif)"></span><button id="closeSheet" type="button">Close</button></div>
     <div id="info"><p class="empty">Hover or tap a variety in the tree to read its history.</p></div>
@@ -549,13 +555,14 @@ function buildNode(n, depth){
   btn.addEventListener('mouseenter', preview);
   btn.addEventListener('focus', preview);
   btn.addEventListener('mouseleave', ()=>{ if(wide.matches && selectedId && byId[selectedId]!==n){ renderInfo(byId[selectedId]); showMarkers(byId[selectedId], true, false);} });
-  btn.addEventListener('click', ()=>{
-    const had = li.classList.contains('open');
+  btn.addEventListener('click', e=>{
+    if(n.kids&&n.kids.length&&e.target.closest('.caret')){ li.classList.toggle('open'); return; }
     select(n);
-    if (n.kids && n.kids.length && !had) li.classList.add('open');
+    if (n.kids && n.kids.length) li.classList.add('open');
   });
   li.appendChild(btn);
   if (n.kids && n.kids.length){
+    li.classList.add('open');
     const ul = document.createElement('ul');
     n.kids.forEach(k=>ul.appendChild(buildNode(k, depth+1)));
     li.appendChild(ul);
@@ -625,6 +632,31 @@ document.getElementById('mapToggle').addEventListener('click', function(){
     [500,1500,3000,6000,10000].forEach(t=>setTimeout(ensureOverlay,t));      // + timed safety net
   }
 });
+
+/* ---------- resizable column dividers ---------- */
+function makeResizable(el, side){
+  const varName = side==='left' ? '--tw' : '--iw';
+  const dflt    = side==='left' ? 360 : 390;
+  const get = ()=>parseFloat(getComputedStyle(document.documentElement).getPropertyValue(varName))||dflt;
+  const set = w=>{ document.documentElement.style.setProperty(varName, Math.min(760,Math.max(260,w))+'px'); if(map) map.resize(); };
+  el.addEventListener('pointerdown', e=>{
+    e.preventDefault(); el.setPointerCapture(e.pointerId);
+    const startX=e.clientX, w0=get();
+    const dir = side==='left' ? 1 : -1;
+    const move = ev=>set(w0 + dir*(ev.clientX-startX));
+    const up = ()=>{ el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); el.removeEventListener('pointercancel',up); };
+    el.addEventListener('pointermove',move); el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up);
+  });
+  el.addEventListener('dblclick', ()=>set(dflt));
+  el.addEventListener('keydown', e=>{
+    if(e.key!=='ArrowLeft' && e.key!=='ArrowRight') return;
+    e.preventDefault();
+    const step = e.shiftKey?40:10, dir = e.key==='ArrowRight'?1:-1;
+    set(get() + dir*step*(side==='left'?1:-1));
+  });
+}
+makeResizable(document.getElementById('gripTree'),'left');
+makeResizable(document.getElementById('gripInfo'),'right');
 
 /* ---------- init ---------- */
 select(byId['sinitic'], false);
