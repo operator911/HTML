@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Branches of Chinese — An Interactive Atlas of the Sinitic Languages</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
@@ -50,19 +50,27 @@ mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1
 .legend i{width:.65rem;height:.65rem;border-radius:50%;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 60%,transparent)}
 .map-pane{position:relative}
 #map{position:absolute;inset:0;background:#0a0f1c}
-.leaflet-container{font-family:var(--sans)}
-.leaflet-control-zoom a{background:var(--panel-2)!important;color:var(--ink)!important;border-color:var(--line)!important}
-.leaflet-control-attribution{background:rgba(13,18,32,.75)!important;color:var(--ink-faint)!important;font-size:10px!important}
-.leaflet-control-attribution a{color:var(--ink-dim)!important}
-.leaflet-tooltip.tip{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:.15rem .55rem;font-size:.78rem;box-shadow:0 4px 14px rgba(0,0,0,.5)}
-.leaflet-tooltip.tip::before{display:none}
-.tip .zh{font-family:var(--cjk);color:var(--gold)}
-.dia{border-radius:50%;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 30%,transparent);box-shadow:0 0 10px color-mix(in srgb,var(--c) 45%,transparent)}
-.dia.hot{background:color-mix(in srgb,var(--c) 60%,transparent)}
-@media (prefers-reduced-motion: no-preference){.dia.sel{animation:pulse 1.8s ease-out infinite}}
-@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 60%,transparent)}70%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.maplibregl-map{font-family:var(--sans)}
+.maplibregl-ctrl-attrib{background:rgba(13,18,32,.75)!important;color:var(--ink-faint)!important;font-size:10px!important}
+.maplibregl-ctrl-attrib a{color:var(--ink-dim)!important}
+.maplibregl-ctrl-group{background:var(--panel-2)!important}
+.maplibregl-ctrl-group button+button{border-top:1px solid var(--line)}
+.maplibregl-ctrl-group button{filter:invert(.8)}
+.maplibregl-popup-content{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.3rem .7rem;font-size:.8rem;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip{border-bottom-color:var(--panel-2)}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--panel-2)}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--panel-2)}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--panel-2)}
+.maplibregl-popup-close-button{color:var(--ink-dim)}
+.popup .zh{font-family:var(--cjk);color:var(--gold)}
 .map-note{position:absolute;top:.6rem;right:.6rem;z-index:500;max-width:280px;background:rgba(20,27,45,.88);border:1px solid var(--line);border-radius:8px;padding:.45rem .7rem;font-size:.74rem;color:var(--ink-dim);margin:0}
 .map-note b{color:var(--gold)}
+.map-toggle{position:absolute;bottom:1.8rem;right:.6rem;z-index:600;background:rgba(20,27,45,.92);border:1px solid var(--line);color:var(--ink-dim);border-radius:99px;padding:.35rem .8rem;font:inherit;font-size:.74rem;cursor:pointer;letter-spacing:.02em}
+.map-toggle:hover,.map-toggle:focus-visible{border-color:var(--gold);color:var(--gold)}
+.map-toggle[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:rgba(212,169,79,.12)}
+.sketch-cap{position:absolute;top:.6rem;left:.6rem;z-index:500;background:rgba(20,27,45,.88);border:1px solid var(--line);border-radius:8px;padding:.35rem .7rem;font-size:.72rem;color:var(--ink-faint);margin:0;display:none;max-width:220px}
+.map-pane.sketch .sketch-cap{display:block}
+.map-pane.sketch .map-note{display:none}
 #info{flex:1 1 auto;overflow:auto;padding:1.2rem 1.3rem 2.5rem;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .empty{color:var(--ink-faint);font-family:var(--serif);font-size:1.05rem;font-style:italic;padding-top:2rem;text-align:center}
 #info h2{margin:0;font-family:var(--serif);font-weight:600;font-size:1.55rem;line-height:1.2;color:var(--c)}
@@ -104,13 +112,15 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
   <section class="pane map-pane" aria-label="Map of present-day distribution">
     <div id="map"></div>
     <p class="map-note">● Markers show <b>representative cities</b> where the selected variety is spoken today; diaspora points appear for overseas communities.</p>
+    <button id="mapToggle" class="map-toggle" type="button" aria-pressed="false">Next: 🔤 English labels</button>
+    <p class="sketch-cap"><b style="color:var(--gold)">Schematic map</b> — simplified coastline &amp; borders drawn from memory of the geography; city markers sit at true coordinates. Works fully offline.</p>
   </section>
   <aside class="pane info-pane" id="infoPane" aria-live="polite" aria-label="History of the selected language">
     <div class="sheet-handle"><span id="sheetTitle" style="font-family:var(--serif)"></span><button id="closeSheet" type="button">Close</button></div>
     <div id="info"><p class="empty">Hover or tap a variety in the tree to read its history.</p></div>
   </aside>
 </main>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
 /* Classification follows the Language Atlas of China (1987/2012),
    Norman《Chinese》and Campbell《Chinese: A Linguistic Atlas》.
@@ -207,12 +217,418 @@ const DATA = {
          `Nanjing Mandarin was the Ming koine after 1368 and stayed influential in Qing officialdom long after Beijing took over; much of the "Mandarin" of early Western phrasebooks is Nanjing-flavoured. The Taiping devastation of the lower Yangtze (1864) emptied Nanjing itself, which was then repopulated by immigrants from Hubei and Yangzhou — levelling the city once more.`],
        t:[["317 / 1127","Northern courts at Jiankang/Lin'an reshape Jiangdong speech"],
           ["1368","Ming capital makes Nanjing Mandarin the court koine"],
-          ["1864","Fall of Taiping Nanjing; immigration re-levels the city"]}
+          ["1864","Fall of Taiping Nanjing; immigration re-levels the city"]]}
     ]},
-/*@REST1@*/
+  { id:"jin", en:"Jin", zh:"晋", py:"Jìnyǔ", sp:"≈48 million",
+    region:"Shanxi, central Inner Mongolia, parts of Hebei, Henan, Shaanxi", cls:"c-jin",
+    mk:[[37.87,112.55,"Taiyuan"],[40.08,113.3,"Datong"],[40.84,111.75,"Hohhot"],[36.09,111.5,"Linfen"],[37.52,111.14,"Lüliang"]],
+    h:[`Jin broke away from the Mandarin mainstream — and stayed broken off. Enclosed by the Taihang and Lüliang mountains and the Ordos loop, the Shanxi plateau preserved the Middle Chinese <em>entering tone</em>, reduced today to a tight glottal catch (Taiyuan <em>yaq</em> 一 "one", <em>laq</em> 六 "six"), while the plains around it lost it entirely. On this criterion the linguist Li Rong won, in the 1985–87 Language Atlas, Jin's promotion from "Mandarin dialect" to a branch of its own — one of the 20th century's most consequential reclassifications.`,
+      `Jin's geography is the map of Shanxi's history: a dry, fortified frontier whose men served as soldiers on the Ming's Nine Borders and as the <em>Shanxi merchants</em> (晋商) who ran the salt and tea trades and, from the Pingyao banking houses of the 1820s, the Qing draft-trade. Jin-speaking farming colonies dot Inner Mongolia beyond the Great Wall, following routes the merchant caravans first opened.`],
+    t:[["c. 600–1300","Jin's ancestors keep the Middle Chinese entering tone as plains lose it"],
+       ["1368–1644","Ming border garrisons; rise of Shanxi merchant networks"],
+       ["1823","Rishengchang exchange bank founded in Pingyao"],
+       ["1987","Language Atlas recognises Jin as a separate branch"]]},
+  { id:"wu", en:"Wu", zh:"吴", py:"Wúyǔ", sp:"≈83 million",
+    region:"Shanghai, Zhejiang, southern Jiangsu; fringe in Anhui & Jiangxi", cls:"c-wu",
+    mk:[[31.23,121.47,"Shanghai"],[31.3,120.62,"Suzhou"],[30.27,120.16,"Hangzhou"],[29.87,121.55,"Ningbo"],[28.0,120.67,"Wenzhou"],[29.08,119.65,"Jinhua"],[30.95,118.76,"Xuancheng"]],
+    h:[`Wu is the speech of the Yangtze delta — the rice-and-silk heartland that made China rich from the Tang onward — and a living archive of every southern migration. Its substratum is non-Chinese: the ancient kingdoms of Wu and Yue spoke a different language, leaving words like Shanghainese <em>luosu</em> 落苏 "eggplant" and a famously "soft," voiced-initial aesthetic Chinese poets praised for a thousand years.`,
+      `The Chinese layer arrived in waves — the Yongjia catastrophe (311), the Hou Jing rebellion (548), the An Lushan and Huang Chao wars (755, 879), and the Northern Song collapse (1127, when Hangzhou became the Southern Song capital Lin'an) — each replenishing Jiangdong with northern families who merged with local speakers. The result: double literary/colloquial readings, Middle Chinese's voiced series preserved (Shanghainese <em>bo</em> 爬 "climb"), and an east–west split between innovative Northern Wu and conservative Southern Wu.`,
+      `The modern era has been brutal. Suzhou — language of Kunqu opera and the gentry — yielded prestige to treaty-port Shanghai (1843+), which tripled its population on immigration from Suzhou, Ningbo and Canton, levelling its own koine. Since the 1990s, Putonghua schooling and internal migration have collapsed transmission: 2010s surveys found Shanghai children far less fluent than their grandparents. Wenzhounese, locked in mountain pockets, remains the most resilient.`],
+    t:[["311 / 317","Yongjia catastrophe: northern elite floods south of the Yangtze"],
+       ["1127–1276","Southern Song capital at Lin'an (Hangzhou)"],
+       ["1843","Shanghai opens; Wu prestige shifts to Shanghai"],
+       ["1990s–now","Putonghua schooling and migration sharply reduce transmission"]],
+    kids:[
+     { id:"nwu", en:"Northern Wu", zh:"北吴", py:"", sp:"≈70 million", region:"Shanghai, S Jiangsu, N & E Zhejiang plain", cls:"c-wu",
+       mk:[[31.23,121.47,"Shanghai"],[31.3,120.62,"Suzhou"],[30.0,120.58,"Shaoxing"],[29.87,121.55,"Ningbo"],[32.48,119.92,"Changzhou"]],
+       h:[`The plain varieties — Shanghai, Suzhou, Wuxi, Shaoxing, Ningbo — form a tightly knit, sharply innovative family: checked tones eroded to glottal stops, tone systems streamlined into pitch-accent sandhi chains. Their shared innovations make Northern Wu best described as a <em>language family in miniature</em> — varieties closer to each other than Dutch is to German — and the delta's canal-and-market economy has kept them in constant contact ever since.`], kids:[
+       { id:"shanghainese", en:"Shanghainese", zh:"沪", py:"Hù", sp:"≈14 million", region:"Shanghai metro & satellite districts", cls:"c-wu",
+         mk:[[31.23,121.47,"Shanghai"]],
+         h:[`A hybrid city-dialect born almost overnight. Before 1843 Shanghai was a modest walled county town; as the treaty port exploded it swallowed waves from Suzhou (the old prestige, still audible in "elegant" readings), Ningbo (the commercial backbone) and a dozen other homelands. The merged koine kept an elaborate tone-sandhi system and a cosmopolitan vocabulary (<em>delegon</em> 得律风 "telephone," from English, before 电话 took over).`,
+           `Western lexicons of the 1850s–1940s treated Shanghainese as <em>the</em> Wu variety, and Republican popular culture — shidiao song, the first dialect cinema — spread it across the delta. Today its speakers are ageing: of the city's 24 million residents, many children grow up in Putonghua or migrant Mandarin.`] },
+       { id:"suzhounese", en:"Suzhounese", zh:"苏", py:"Sūzhōuhuà", sp:"≈8 million", region:"Suzhou, Wuxi, Changshu, Kunshan", cls:"c-wu",
+         mk:[[31.3,120.62,"Suzhou"],[31.49,120.31,"Wuxi"]],
+         h:[`For a millennium the prestige of Jiangnan: the gentry's "elegant" speech and the stage language of Kunqu opera, mother of Chinese theatre, built on Suzhou norms; 19th-century Western philologists likewise took Suzhou as refined Wu. It conserves Northern Wu's elaborate sandhi chains more fully than Shanghai and remains the vehicle of pinghua storytelling and guqin vocal music.`] },
+       { id:"ningbomd", en:"Ningbo", zh:"甬", py:"Yǒnghuà", sp:"≈8 million", region:"Ningbo, Zhoushan, Hangzhou-bay ports", cls:"c-wu",
+         mk:[[29.87,121.55,"Ningbo"],[30.01,122.11,"Zhoushan"]],
+         h:[`Harbour-city speech of the Ningbo plain — homeland of the traders, shipbuilders and bankers who dominated Republican-era commerce and ran Shanghai's workshops. Ningbo preserves the checked-tone contrasts of coastal Wu and odd conservatisms lost upriver, and its colonies survived for generations in old Shanghai neighbourhoods.`] }
+     ]},
+     { id:"swu", en:"Southern Wu", zh:"南吴", py:"", sp:"≈13 million", region:"Zhejiang interior: Wenzhou (Oujiang), Quzhou (Chu–Qu), Jinhua basin", cls:"c-wu",
+       mk:[[28.0,120.67,"Wenzhou"],[29.08,117.33,"Quzhou"],[29.08,119.65,"Jinhua"]],
+       h:[`Beyond the delta's canals the mountains begin, and Wu turns conservative and fragmented: the Oujiang (Wenzhou) and Chu–Qu varieties keep checked tones and voiced series that Shanghai smoothed away, and valley-to-valley divergence makes neighbouring counties mutually opaque.`,
+         `This is the Wu closest to the lost speech of medieval Jiangdong — which is why Wenzhou earned its reputation as the "devil's language" Japanese intelligence reportedly failed to code-break in the 1930s–40s, and why Wenzhou and Qingtian merchants turned that unintelligibility into diaspora network capital.`] }
+    ]},
+  { id:"xiang", en:"Xiang", zh:"湘", py:"Xiāngyǔ", sp:"≈38 million",
+    region:"Central & SW Hunan, parts of Guangxi, Guizhou, Sichuan, Jiangxi, Hubei", cls:"c-xiang",
+    mk:[[28.23,112.94,"Changsha"],[27.47,111.67,"Shuangfeng"],[27.7,111.99,"Loudi"],[26.9,112.57,"Hengyang"],[26.42,111.61,"Yongzhou"],[27.55,109.998,"Huaihua"]],
+    h:[`Hunan — south of the mountains, along the Xiang River — was the land of Chu, a rival civilization that absorbed into the Han world only after 278 BCE, and stayed thinly settled until the Tang–Song expansions. Modern Xiang descends largely from Song–Ming colonization of the middle Yangtze, layered by the <em>Jiangxi fills Hunan</em> migrations of the 14th–17th centuries, which flooded eastern Hunan with Gan-speaking families — hence Xiang's encirclement by, and shared vocabulary with, Gan and Mandarin.`,
+      `Its celebrated fact is <strong>Old Xiang</strong> (Loudi–Shuangfeng): among the very few Chinese varieties anywhere that still pronounce Middle Chinese's voiced stops as true voiced initials, preserving a three-way contrast the north lost 800 years ago. New Xiang (Changsha), pressed by Mandarin, has devoiced. The five recognised subgroups — Chang–Yi (New), Lou–Shao (Old), Hengzhou, Chen–Xu and Yong–Quan — form one of the most debated patchworks in Sinitic linguistics.`,
+      `Xiang speakers punch above their weight: Zeng Guofan's Xiang Army and Mao Zedong's deep-Hunanese speech reshaped modern China, and near Jiangyong women devised <em>Nüshu</em> 女书, the world's only known script invented and used by women, written for a local Xiang variety.`],
+    t:[["278 BCE","Qin conquers Chu; slow Chinese settlement of Hunan begins"],
+       ["1368–1644","Jiangxi fills Hunan: Gan-speakers pour into eastern Hunan"],
+       ["1850s","Xiang Army era spreads Hunanese prestige"],
+       ["20th c.","Old Xiang retreats before New Xiang and Putonghua"]],
+    kids:[
+     { id:"nxiang", en:"New Xiang", zh:"新湘", py:"Xīn Xiāng", sp:"≈20 million", region:"Changsha, Xiangtan, Yiyang — the Chang–Yi plain", cls:"c-xiang",
+       mk:[[28.23,112.94,"Changsha"],[27.83,112.94,"Xiangtan"]],
+       h:[`Changsha-centred, Mandarin-leaning, expanding. New Xiang has devoiced its ancient voiced initials like the north, but keeps an entering-tone class and signature pronoun and demonstrative systems that mark it unmistakably. As Changsha's economy grows, New Xiang is swallowing Old Xiang county by county.`] },
+     { id:"oxiang", en:"Old Xiang", zh:"老湘", py:"Lǎo Xiāng", sp:"≈15 million", region:"Loudi, Shuangfeng, Xiangxiang, Wugang (Lou–Shao)", cls:"c-xiang",
+       mk:[[27.7,111.99,"Loudi"],[27.47,111.67,"Shuangfeng"],[27.74,112.53,"Xiangxiang"]],
+       h:[`The living fossil. In Shuangfeng and Loudi, Middle Chinese *b-, *d-, *g- are still voiced — a distinction lost in every Mandarin variety and surviving, among major branches, only here and in Wu. A Beijing speaker understands nothing of it: dense sandhi and vowel systems make Old Xiang one of the most phonologically complex varieties in the family, fossilized in the inland rice country imperial settlement reached last.`] }
+    ]},
+  { id:"gan", en:"Gan", zh:"赣", py:"Gànyǔ", sp:"≈22 million",
+    region:"Central & N Jiangxi; parts of Hunan, Hubei, Anhui, Fujian borderlands", cls:"c-gan",
+    mk:[[28.68,115.88,"Nanchang"],[29.71,116.0,"Jiujiang"],[27.8,114.39,"Yichun"],[28.23,117.07,"Yingtan"],[30.1,114.96,"Daye"]],
+    h:[`Gan is the speech of Jiangxi, the corridor province linking the Yangtze to Guangdong through the Gan River and Meiguan pass — the highway every southbound army, exile and merchant used. Refugees fleeing the An Lushan and later wars settled its valleys in mass; by the Song, Jiangxi was among China's most populous and cultured regions — Ouyang Xiu, Wang Anshi and Zeng Gong, three of the Eight Great Prose Masters, were all Gan men, and its kilns (Jingdezhen) supplied the world.`,
+      `Then it emptied. The 1448–49 Chen Huawan uprising's suppression scattered thousands of Jiangxi families into Guangdong and Fujian — many merging into the Hakka world ("those who followed Chen Huawan were scattered across prefectures"). Ming–Qing "Jiangxi fills Hunan (and Sichuan)" migrations spread Gan settlers onward, leaving Gan today as a diminished core — Nanchang, the Poyang lakeshore, the Yi and Xin river basins (subgroups Chang–Du, Ji–Yin, Fu–Guang, Yi–Liu, Ying–Yi, Da–Tong) ringed by Hakka, Xiang and Mandarin.`],
+    t:[["755–880s","War-refugee settlement fills Gan river valleys"],
+       ["11th c.","Song-era Jiangxi: demographic and literary zenith"],
+       ["1449","Chen Huawan revolt crushed; families scattered into Hakka country"],
+       ["1660s–18th c.","Jiangxi fills Hunan/Sichuan disperses Gan speakers"]]},
+  { id:"hakka", en:"Hakka", zh:"客", py:"Kèjiāhuà", sp:"≈44 million",
+    region:"NE Guangdong, S Fujian, S Jiangxi; Taiwan; Hainan, Guangxi; overseas", cls:"c-hak",
+    mk:[[24.29,116.12,"Meizhou"],[23.74,114.7,"Heyuan"],[25.83,114.93,"Ganzhou"],[25.83,116.36,"Changting"],[23.11,114.42,"Huizhou"],[24.56,120.82,"Miaoli, Taiwan"],[22.87,120.56,"Meinong, Taiwan"],[22.55,114.11,"Shenzhen/New Territories"],[5.84,118.12,"Sandakan, Sabah"]],
+    h:[`<em>Hakka</em> 客家 means "guest families" — the name their Cantonese neighbours gave them, and the key to their history. Hakka historiography tells of families driven south in waves from the war-torn North-West (the Yongjia collapse of 311, the Tang–Song transition, the Mongol conquest), taking up residence in the mountainous corner where Guangdong, Fujian and Jiangxi meet. Modern linguistics tempers the legend — the genealogies were glorified by Qing compilers, and Hakka's closest relative is <em>Gan</em>, marking a long shared history in the Gan–Zhe–Min highlands — but the language itself confirms a layered, migratory origin.`,
+      `Pressure from established "landed" (本地) lineages pushed Hakka further: into Sichuan with the Qing repopulation, into Taiwan after the 1747 Wu Shamia uprising granted them frontier land, and south. The Punti–Hakka clan wars of 1854–67 in the Pearl Delta — among the deadliest conflicts few textbooks mention, hundreds of thousands dead — ended with displaced Hakka communities, some resettled by decree, others emigrating as labourers to the Straits Settlements, Borneo's gold fields (Sandakan's Hakka still call it "the Hakka town"), California and Australia.`,
+      `Meizhou speech became the Hakka prestige standard. In Taiwan, Hakka (Sixian and Hailu dialects, spoken by roughly one in five islanders) was suppressed under martial law, rehabilitated by the 1988 <em>Hakka Round Our Tongue</em> movement, given a basic-language law in 2010, and in 2018 made an official <em>national language</em> — train and subway announcements include it today.`],
+    t:[["4th–13th c.","North-to-south migrations into the Gan–Yue–Min highlands (as remembered & debated)"],
+       ["1747","Wu Shamia uprising: Hakka granted Taiwan frontier land"],
+       ["1854–67","Punti–Hakka clan wars in the Pearl Delta; diaspora accelerates"],
+       ["1988 / 2018","Taiwan Hakka language movement; national-language status"]]},
+  { id:"min", en:"Min", zh:"闽", py:"Mǐnyǔ", sp:"≈75 million",
+    region:"Fujian, Hainan, Leizhou, parts of Zhejiang & Jiangxi; Taiwan, SE Asia", cls:"c-min",
+    mk:[[26.07,119.3,"Fuzhou"],[27.03,118.12,"Jian'ou"],[25.43,119.01,"Putian"],[24.87,118.67,"Quanzhou"],[24.51,117.65,"Zhangzhou"],[23.35,116.68,"Shantou"],[20.04,110.34,"Haikou"]],
+    h:[`Min is the family's deep outlier. Almost all Chinese varieties descend from the Middle Chinese of the Qieyun era — Min's everyday layer does not. Its ancestors split from the family earlier, in the spoken Chinese of the Han expansion into Fujian, and linguists reconstruct a <strong>Proto-Min</strong> (with its own tonal and consonantal system) that predates the Tang: Min keeps <em>m-</em> initials where Middle Chinese had <em>b-</em> (Hokkien <em>bai</em> 马 "horse", <em>bin</em> 面 "noodles"), relics linking it to Old Chinese itself.`,
+      `Fujian — "the eight provinces facing the mountains, one facing the sea" — received its first Chinese garrisons after 110 BCE, but its decisive Sinification came in two great entries from Guangshan (固始) in Henan: General Chen Zheng and his son Chen Yuanguang, who pacified the region for the Tang in 669 and settled an army there, and in 885 the five Wang brothers who backed the founder of Min kingdom (Wang Shenzhi), bringing hundreds of named clans — "the eighteen surnames that followed Wang to open Min" still figures in temple genealogies from Taipei to Penang. Each entry laid a new literary stratum over the older colloquial one, giving Min its famous double (文读/白读) readings.`,
+      `Mountain fragmentation then did the rest, shattering Min into five mutually unintelligible branches — Northern (Jian'ou), Eastern (Fuzhou), Central (Shaowu), Pu-Xian (Putian) and Southern (Hokkien/Teochew) — of which the coastal south, through the seafaring peoples of Quanzhou, Zhangzhou and Chaozhou, became the most globally dispersed Chinese speech of all.`],
+    t:[["110 BCE","Han destroy Minyue; first Chinese garrisons in Fujian"],
+       ["669","Chen Zheng & Chen Yuanguang settle a Tang garrison army"],
+       ["885","The Wang brothers' entry; medieval stratum of 18-surname genealogies"],
+       ["1661–1683","Zheng Chenggong's conquest opens mass Hokkien settlement of Taiwan"]],
+    kids:[
+     { id:"nmin", en:"Northern Min", zh:"北", py:"Běimǐnyǔ", sp:"≈1 million", region:"Jian'ou, Jianyang, Chaogang — the Jian valley, N Fujian", cls:"c-min",
+       mk:[[27.03,118.12,"Jian'ou"],[27.33,118.12,"Jianyang"],[26.8,117.4,"Chaogang"]],
+       h:[`The most archaic Min, and arguably the most archaic Chinese of the east: spoken in the Jian (建) valley that medieval book-printers made one of China's publishing capitals ("Jian editions" of the classics), it keeps Proto-Min distinctions lost everywhere else — ancient *l- initials surviving in words like "foot" and "bamboo", and tone maps that match reconstructions better than any coastal variety. Its isolation behind the Wuyi mountains also made it the only Min with significant contact with Gan and Hakka neighbours.`] },
+     { id:"emin", en:"Eastern Min", zh:"东", py:"Dōngmǐnyǔ", sp:"≈10 million", region:"Fuzhou, Fuqing, Changle, Fu–Ning coast, Matsu", cls:"c-min",
+       mk:[[26.07,119.3,"Fuzhou"],[25.72,119.36,"Fuqing"],[26.16,119.93,"Matsu"],[26.66,119.55,"Ningde"]],
+       h:[`The speech of Fujian's capital — Fuzhou (Fu) state since the early 4th century, treaty port from 1844 — and of the indented Fu–Ning coast behind it. Eastern Min is famous for ferocious tone sandhi (a whole phrase fuses into one pitch contour) and five-tone systems with a checked-tone pair; its 1840s–1940s emigration gave Singapore a large Hokchhia community and, from the 1980s, Fuzhou's Changle and Fuqing towns America's "Little Fuzhous" in Manhattan's East Village and Queens.`] },
+     { id:"cmin", en:"Central Min", zh:"中", py:"Zhōngmǐnyǔ", sp:"several hundred thousand", region:"Shaowu, Jiangle, Taikou — NW Fujian basins", cls:"c-min",
+       mk:[[27.34,117.49,"Shaowu"],[26.8,117.4,"Jiangle"]],
+       h:[`Min's quiet interior: the Jinsha River (沙溪) basin speech, a patchwork transitional between Northern Min, Gan and neighbouring Southern Min colonies, with the smallest speaker base of the five branches and the least-studied.`] },
+     { id:"pxmin", en:"Pu–Xian Min", zh:"莆仙", py:"Púxiān Mǐnyǔ", sp:"≈4 million", region:"Putian & Xianyou (old Xinghua prefecture)", cls:"c-min",
+       mk:[[25.43,119.01,"Putian"],[25.36,118.68,"Xianyou"]],
+       h:[`The speech of Xinghua prefecture (兴化), between Fuzhou and Quanzhou: neither one nor the other — its own branch, with vowels that broke diphthongs apart in ways unique in Min, and a dramatic, archaic opera tradition of its own. Putian's compact plains and clan solidarity made its migrants — in Singapore, Malaysia and now Europe — a distinct and tightly networked community. Putian merchants famously founded the shoe-and-timber empires of Putian-ville enclaves abroad.`] },
+     { id:"smin", en:"Southern Min", zh:"闽南", py:"Mǐnnányǔ", sp:"≈48 million", region:"Quanzhou–Zhangzhou–Chaozhou coast, Leizhou, Hainan, Taiwan, SE Asia", cls:"c-min",
+       mk:[[24.87,118.67,"Quanzhou"],[24.51,117.65,"Zhangzhou"],[24.48,118.08,"Xiamen"],[22.99,120.2,"Tainan"],[23.35,116.68,"Shantou"],[21.27,110.36,"Zhanjiang"],[20.04,110.34,"Haikou"]],
+       h:[`Southern Min (Min Nan) is Min of the sea. From the ports of Quanzhou, Zhangzhou and Chaozhou its speakers became Southeast Asia's Chinese — and after 1661, Taiwan's. Its dialect continuum runs southwest along the coast from Quanzhou and Zhangzhou (the Hokkien heartland) through the Teochew delta, onto the Leizhou peninsula and across the strait to Hainan, with Zhenan Min islands stranded in Zhejiang.`,
+         `Quanzhou was the great port of the Maritime Silk Road — Zayton, where Marco Polo embarked homeward in 1291 and Ibn Battuta marvelled at the great ships two generations later; its Maritime Trade Supervisory Bureau dates to 1087. When the Ming sea-bans and 16th-century pirate wars hardened, its people went underground or overseas; when the Qing lifted the bans in 1684, they colonised Taiwan and the Straits in force.`],
+       t:[["1087","Quanzhou gets a Maritime Trade Supervisory Bureau"],
+          ["1291 / 1345","Marco Polo and Ibn Battuta describe Zayton (Quanzhou)"],
+          ["1684","Qing lifts sea ban; explosion of Hokkien emigration"]],
+       kids:[
+        { id:"hokkien", en:"Hokkien", zh:"闽南", py:"Bân-lâm-gí", sp:"≈35 million (incl. Taiwan & SE Asia)", region:"Quanzhou, Zhangzhou, Xiamen, Taiwan, Penghu, SW Taiwan plain; diaspora across SE Asia", cls:"c-min",
+          mk:[[24.87,118.67,"Quanzhou"],[24.51,117.65,"Zhangzhou"],[24.48,118.08,"Xiamen"],[25.03,121.56,"Taipei"],[22.99,120.2,"Tainan"],[14.6,120.98,"Manila"],[5.41,100.33,"Penang"],[3.59,98.67,"Medan"],[1.35,103.82,"Singapore"]],
+          h:[`"Hokkien" (福建, literally just "Fujian-ese" in its local pronunciation <em>Hok-kiàn</em>) is the speech of the Quanzhou–Zhangzhou plain, carried to Taiwan by 17th–18th-century settlers — Tainan first, then north — and still spoken as a mother tongue by the majority of the island's Hoklo population despite decades of Mandarin-only schooling. Its overseas reaches define the Chinese of Southeast Asia: the "Hokkien" of Penang and Medan descends from Quanzhou, Manila's from Liancheng and Zhangzhou, Singapore's is a levelled contact koine.`,
+            `The prestige standard crystallised at treaty-port Xiamen (Amoy): its 1873 dictionaries and the <em>pe̍h-ōe-jī</em> romanisation created by missionaries in the 1850s gave Hokkien a written vernacular tradition, and under Japanese rule (1895–1945) Taiwan's spoken-language schools standardised "Taiwanese" along Amoy lines. The accent map is still a social map: the Quanzhou "floury", Zhangzhou "grocery" and mixed "salt-and-sugar" accents of Taiwan trace straight back to which plain your ancestors crossed.`],
+          t:[["1661–1683","Zheng Chenggong's conquest; organised Zhangzhou/Quanzhou settlement of Taiwan"],
+             ["1850s–1873","pe̍h-ōe-jī romanisation; first Amoy dictionaries"],
+             ["1945–1987","Mandarin-only policy in Taiwan; Hokkien recedes from schools"],
+             ["2016–","Taiwan's mother-tongue education reverses course"]]},
+        { id:"teochew", en:"Teochew", zh:"潮州", py:"Diâ-siu / Tiô-chiu-miân", sp:"≈10 million", region:"Chaoshan plain (Chaozhou, Shantou, Jieyang); Thailand, Singapore, Vietnam, Malaysia, Cambodia", cls:"c-min",
+          mk:[[23.66,116.62,"Chaozhou"],[23.35,116.68,"Shantou"],[23.55,116.58,"Jieyang"],[13.75,100.5,"Bangkok"],[1.35,103.82,"Singapore"],[10.76,106.66,"Ho Chi Minh City"],[11.57,104.92,"Phnom Penh"]],
+          h:[`Teochew (潮州话, "Chaozhou speech") is the southwestermost Southern Min language, spoken on the fertile Han River delta where it meets the sea — home base Chaozhou (the old prefectural seat, famous for Han Yu's 819 exile and the crocodile-driving legend), with Shantou, opened as Swatow treaty port in 1860, as its modern face and Jieyang its ancient commandery core (Han dynasty Jieyang commandery). Intelligible with Hokkien only partially — its closest relative is the Zhenan Min stranded across the border in Zhejiang.`,
+            `Poor land between mountains and sea drove the Teochew to emigrate early and massively. In Thailand — where they form the largest single Chinese dialect group, concentrated in Bangkok around Sampeng and the old canals — Teochew was so dominant that King Taksin (r. 1767–82), of mixed Teochew descent, conducted court affairs in it, and Thai still carries a stratum of Teochew loanwords for trade, fruit and kinship. Teochew lineages ran the rice trade of the Chao Phraya, the rice mills of Vietnamese Cholon, and Singapore's early gambier and pepper estates — the Teochew Poitua huiguan, founded 1820s, is among the island's oldest Chinese associations.`,
+            `Like other southern languages, Teochew is now squeezed between Mandarin at school and Thai/English in the diaspora: Chaoshan children's fluency has fallen two generations running, even as the region's gongfu tea ceremony, Chaozhou opera and cuisine keep the name famous.`],
+          t:[["819 CE","Han Yu exiled to Chaozhou — prefecture enters Chinese literary memory"],
+             ["1400s–1800s","Chaoshan plain fully dyked & settled; mass out-migration begins"],
+             ["1767","King Taksin of Siam, of Teochew descent, founds Thonburi"],
+             ["1860","Swatow (Shantou) opens as treaty port; global diaspora institutionalises"]]},
+        { id:"leizhou", en:"Leizhou Min", zh:"雷州", py:"Lui-tsiu Min", sp:"≈2–3 million", region:"Leizhou peninsula — Leizhou, Zhanjiang, Lianjiang, Wenchang contacts", cls:"c-min",
+          mk:[[20.93,110.06,"Leizhou"],[21.27,110.36,"Zhanjiang"],[21.42,110.06,"Lianjiang"]],
+          h:[`The Min of the bare southern peninsula — settled by waves of Fujianese farmers and fisher-folk under the Tang–Song, then sealed off by the inland Yue and Zhuang-speaking country. Cut from its parent coast, Leizhou Min absorbed deep Cantonese and Kra-Dai (Zhuang) vocabulary and simplified its tones, and today is retreating fast inside its own cities before Cantonese- and Mandarin-flavoured urban speech.`] },
+        { id:"hainan", en:"Hainan Min", zh:"海南", py:"Hainan-lae", sp:"millions (island's main Han speech)", region:"Hainan coast: Haikou, Wenchang, Qionghai, Boao; Qiongwén literary register", cls:"c-min",
+          mk:[[20.04,110.34,"Haikou"],[19.61,110.8,"Wenchang"],[19.25,110.47,"Qiongzhou/Hainan island"]],
+          h:[`Hainan's Chinese arrived from southern Fujian and Pu-Tian across the 19-km storm-strait in Song–Ming centuries, and today Hainan Min (with the old written register scholars call Qiongwén) is the everyday majority speech of the island's Han, far more widely than the Mandarin promoted since 1988, when Hainan became a province. The island layers are old: Han commanderies here from 110 BCE, the 6th-century Lady Dowager Xian who unified the aboriginal and Chinese populations, and — in the 12th–13th centuries — a stream of Vietnamese refugees of the Lý clan, whose descendants still keep their language in Zhuohao village near Haikou.`] }
+       ]}
+    ]},
+  { id:"yue", en:"Yue (Cantonese)", zh:"粤", py:"Yuhtyuht", sp:"≈86 million",
+    region:"Pearl River Delta & Guangdong coast, Guangxi, HK, Macau; global diaspora", cls:"c-yue",
+    mk:[[23.13,113.26,"Guangzhou"],[22.32,114.17,"Hong Kong"],[22.2,113.55,"Macau"],[22.25,112.79,"Taishan"],[23.48,111.28,"Wuzhou"],[22.63,110.16,"Yulin"],[21.97,108.62,"Qinzhou"],[37.77,-122.42,"San Francisco"]],
+    h:[`Yue is the Chinese of Lingnan — the land south of the Ridge. Its cradle is Zhao Tuo's kingdom of Nanyue (founded 204 BCE by a Qin general at Panyu, today's Guangzhou, whose tomb's 1983 excavation still stops tourists); when Han armies annexed it in 111 BCE, garrison speech began fusing with the Yue substratum whose echo survives in a substrate vocabulary Austroasiatic and Kra-Dai linguists still unpack.`,
+      `Guangzhou's geography made it the last port and the first window: Tang-era Arab and Persian warehouses (the 蕃坊 quarter, brutally sacked by Huang Chao in 879), Ming–Qing cantonment trade, and after 1842 a treaty-port century that exported Taishan and Sze Yi villagers to every goldfield and railway camp on earth — North American Chinatowns spoke Taishanese, not Mandarin, until the 1960s.`,
+      `Linguistically Yue is Middle Chinese's most complete conservative: six tones plus three checked tones (-p, -t, -k) and the -m final intact — you can recite Du Fu in Cantonese with rhyme schemes Mandarin has broken. Cantonese (Guangzhou Yuehai, with Hong Kong as its modern amplifier) built a mass-media empire — Cantonese opera, 1970s–90s Cantopop, kung-fu cinema — and a living written vernacular (冇, 啲, 乜) unique among modern Chinese. Subgroups: Yuehai (Cantonese proper), Siyi (Taishan), Gao–Yang, Wu–Hua, Qin–Lian and Guangxi's Goulou/Yongjiang branches.`],
+    t:[["204 BCE","Zhao Tuo founds Nanyue kingdom at Panyu (Guangzhou)"],
+       ["111 BCE","Han annexation begins garrison-Sinitic layering of Lingnan"],
+       ["714 / 879","Tang maritime trade office; Huang Chao sacks the foreign quarters"],
+       ["1842–61","Treaty ports open; Siyi emigration builds overseas Chinatowns"],
+       ["1970s–90s","Cantopop & cinema globalise Cantonese"]],
+    kids:[
+     { id:"yuehai", en:"Cantonese (Yuehai)", zh:"粵語", py:"Jyut6 jyu5", sp:"≈64 million", region:"Guangzhou, Pearl Delta, Hong Kong, Macau, Guangxi cities", cls:"c-yue",
+       mk:[[23.13,113.26,"Guangzhou"],[22.32,114.17,"Hong Kong"],[22.2,113.55,"Macau"],[23.08,113.7,"Dongguan"]],
+       h:[`The standard Yuehai variety: Guangzhou norms, Hong Kong's global megaphone. Hong Kong and Macau — never subjected to mainland-style Putonghua-only schooling — have kept Cantonese as the language of government, courts and classrooms, making it the strongest non-Mandarin Chinese on earth institutionally; Guangzhou's 2010 "protect Cantonese" protests voiced the mainland delta's anxiety as Putonghua overtakes the crèche.`] },
+     { id:"siyi", en:"Siyi (Sze Yi)", zh:"四邑", py:"Ssei ngap", sp:"≈10 million", region:"Taishan, Kaiping, Xinhui, Enping — the “Four Counties”", cls:"c-yue",
+       mk:[[22.25,112.79,"Taishan"],[22.37,112.69,"Kaiping"],[22.52,113.03,"Xinhui"]],
+       h:[`The "Four Counties" south of the delta, whose people — first mass Chinese emigrants of the gold-rush era (1848+) — built the Chinatowns of San Francisco and Victoria and the railroad camps of the western US; Angel Island's interrogations were conducted in Taishanese. Its divergent vowels (famously turning s- into h-, so 三 "three" lands as "ham") made old America's "Cantonese" sound like this, not Hong Kong's. The Kaiping diaolou watchtowers — UNESCO-listed — were built by its overseas-silver returnees.`] }
+    ]},
+  { id:"hui", en:"Hui", zh:"徽", py:"Huīyǔ", sp:"≈3–4 million",
+    region:"Huizhou core: Shexian, Jixi, Tunxi (S Anhui) & neighbours in Zhejiang (Chun'an)", cls:"c-hui",
+    mk:[[29.87,118.43,"Shexian"],[29.79,118.57,"Jixi"],[29.71,118.34,"Tunxi"],[29.6,119.02,"Chun'an"]],
+    h:[`Hui is the puzzle of Sinitic classification — variously filed with Wu, with Gan, or left independent for seventy years — and that ambiguity is the point: it is the ancient mixed speech of the Xin'an river valley, at the hinge of the Yangtze delta, the Poyang corridor and the Gan uplands, with a tonal map wildly divergent from every neighbour (eight tones in some valleys, tone correspondences that defeat the usual geography).`,
+      `Its carriers were the <em>Huizhou merchants</em>, for five centuries (14th–19th) the most famous merchant network of China — salt monopolists, bankers, timber and book traders whose guild-halls stood in every city from Yangzhou to Chengdu, and whose home-valley villages (Hongcun and Xidi, the postcard "Villages of South Anhui") still stand as built proof of their profits. As Huizhou capital shrivelled after the Taiping wars gutted the salt trade, Hui became a rural pocket language, retreating before Mandarin even in its ancestral county seats.`],
+    t:[["730 CE","Xin'an prefecture organised; the dialect name “Hui” attaches to this country"],
+       ["1370–1500s","Huizhou merchant networks rise with the salt monopoly"],
+       ["1850s–64","Taiping wars devastate Huizhou; language begins urban retreat"]]},
+  { id:"ping", en:"Ping", zh:"平", py:"Pínghuà", sp:"≈2–3 million",
+    region:"Guangxi river corridors: Yongjiang (Nanning area), Rongjiang (Rong'an), north-east enclaves", cls:"c-ping",
+    mk:[[22.82,108.32,"Nanning/Yongjiang"],[22.64,109.7,"Hengzhou"],[25.28,109.87,"Rong'an"],[24.27,109.73,"Luzhai"]],
+    h:[`Ping ("flat/garrison speech") is the Chinese of the Guangxi river lanes — the Lingqu Canal route by which Qin's armies reached Lingnan in 214 BCE, and by which garrison and merchant Chinese lingered among a Zhuang-speaking sea for two thousand years. Its deep Kra-Dai (Zhuang) imprint — in vocabulary, tone behaviour and even syntax — marks it as the oldest sustained Chinese–southeast-Asian contact zone in China; many Ping speakers are officially counted as Zhuang.`,
+      `Historically it was the urban layer: for centuries Ping was the market-town speech of Guangxi while Zhuang tongues held the countryside ("Ping people" vs "mountain people" in Qing gazetteers). It split into northern (Rongjiang / Liuzhou area) and southern (Yongjiang) branches; both are now hemmed in — the north by Southwestern Mandarin, the south by Cantonese — making Ping one of China's most endangered larger varieties.`],
+    t:[["214 BCE","Lingqu Canal links Guilin to the Xi Jiang; first garrison Chinese"],
+       ["Ming–Qing","“Ping people” form the urban layer over a Zhuang countryside"],
+       ["20th c.","Mandarin & Cantonese squeeze both Ping branches"]]},
+  { id:"unc", en:"Unclassified varieties", zh:"未分", py:"", sp:"≈1.5 million combined", region:"W Hunan (Waxiang), NE Guangdong (Tuhua), NW Hainan (Danzhou), W Guangdong (Mai)", cls:"c-unc",
+    mk:[[28.46,110.39,"Yuanling (Waxiang)"],[24.06,117.81,"Xinfeng (Shaozhou Tuhua)"],[19.52,109.58,"Danzhou (Mandarin/Yue dual speech)"],[23.9,111.5,"Fengkai (Mai)"]],
+    h:[`The family tree's fog bank: varieties that refuse classification. <strong>Waxianghua</strong> (西話, "Western speech", ~700k speakers in west Hunan) layers a conservative Sinitic core over a heavy substrate some analysts read as non-Chinese — a candidate echo of the lost "Ba–Shu" Chinese or of Miao–Yao speech. <strong>Shaozhou Tuhua</strong> ("local speech", around Shaoguan) is a cluster of mutually strange dialects long dismissed as "unclear Cantonese," now recognised as a lineage apart. The <strong>Mai</strong> dialects and Danzhou's Mandarin/Yue dual speech in northwest Hainan round out the honest footnote: the atlas still has blank quarters, and every field survey since 1990 moves the borders.`],
+    t:[["1987 / 2012","The Language Atlas leaves these “other dialects” (其他方言) unassigned"]]}
  ]
 };
-/*@APP@*/
+/* ---------- index the tree ---------- */
+const byId = {};
+(function index(n, pcls){ byId[n.id]=n; n.cls = n.cls || pcls || 'c-anc'; (n.kids||[]).forEach(k=>index(k, n.cls)); })(DATA, null);
+function markersOf(n){ let out=(n.mk||[]).map(m=>[m[0],m[1],m[2],n.cls,n.zh,n.en]); (n.kids||[]).forEach(k=>{ out=out.concat(markersOf(k)); }); return out; }
+
+/* ---------- schematic China outline (simplified, embedded; [lng,lat] rings) ---------- */
+const MAINLAND = [[124.3,40.0],[122.5,39.6],[121.3,38.8],[121.9,40.4],[121.0,40.9],[119.6,39.9],[117.7,39.0],[118.9,38.2],[119.2,37.9],[120.3,37.6],[121.4,37.5],[122.7,37.4],[120.4,36.1],[119.5,35.4],[119.4,34.8],[120.9,32.6],[121.5,31.7],[121.9,31.0],[121.3,30.4],[121.6,29.6],[121.3,28.4],[120.7,28.0],[120.2,27.3],[119.6,26.0],[119.5,25.3],[118.7,24.9],[118.1,24.5],[117.4,23.6],[116.7,23.4],[115.9,22.9],[114.8,22.6],[114.1,22.4],[113.5,22.1],[112.7,21.6],[110.4,21.2],[110.3,20.2],[109.9,21.4],[109.2,21.4],[108.6,21.7],[108.0,21.5],[106.6,22.4],[105.3,23.2],[104.3,22.8],[102.9,22.4],[101.7,21.1],[100.1,21.4],[99.2,22.2],[99.5,22.9],[99.0,23.1],[98.9,24.1],[97.6,23.9],[97.7,24.8],[98.7,25.8],[98.4,27.0],[97.9,28.3],[96.6,28.4],[95.0,29.0],[93.0,28.6],[92.0,27.7],[90.0,28.0],[88.9,27.9],[86.0,28.1],[85.0,28.3],[84.0,29.3],[82.0,30.0],[81.0,30.2],[79.7,30.9],[78.7,31.3],[78.8,32.5],[78.8,34.4],[77.0,35.3],[75.9,36.0],[74.6,37.0],[74.9,37.4],[74.9,38.5],[73.5,39.4],[73.6,39.9],[74.8,40.3],[76.6,41.0],[80.2,42.2],[80.3,43.0],[80.1,44.1],[80.4,44.7],[81.9,45.3],[82.6,45.2],[83.2,47.2],[85.5,47.1],[87.3,49.0],[87.8,49.2],[89.1,48.0],[90.7,45.2],[94.1,44.7],[96.4,42.9],[100.0,42.7],[102.0,42.2],[104.9,41.6],[107.4,42.4],[109.9,42.6],[111.9,43.7],[111.5,44.4],[111.9,45.1],[113.6,44.7],[116.0,45.7],[117.4,46.6],[118.5,46.7],[119.3,47.5],[117.9,49.5],[119.8,49.4],[120.7,51.3],[120.5,52.5],[121.6,53.2],[123.5,53.5],[124.5,53.1],[126.5,52.8],[126.0,51.6],[127.3,50.3],[127.5,49.6],[129.0,49.4],[130.5,48.9],[131.5,48.4],[134.3,48.3],[133.7,47.9],[132.5,47.7],[131.3,47.7],[131.0,46.8],[130.6,46.4],[131.3,45.6],[131.1,44.9],[130.4,43.9],[131.3,43.4],[131.3,42.9],[130.4,42.7],[130.6,42.5],[129.0,42.3],[128.1,41.4],[127.0,41.5],[126.9,41.8],[126.1,41.1],[125.5,40.4],[124.3,40.0]];
+const TAIWAN = [[121.6,25.2],[121.9,24.6],[121.6,23.4],[121.1,22.5],[120.8,21.9],[120.2,22.5],[120.3,23.6],[120.6,24.4],[121.1,25.1],[121.6,25.2]];
+const HAINAN = [[110.3,20.1],[110.7,19.6],[110.5,18.8],[109.6,18.3],[108.8,19.0],[109.3,19.8],[110.3,20.1]];
+const CHINA_GEO = { type:'FeatureCollection', features:[MAINLAND,TAIWAN,HAINAN].map(r=>({
+  type:'Feature', properties:{}, geometry:{ type:'Polygon', coordinates:[r] } })) };
+
+/* ---------- map (MapLibre GL + OpenFreeMap vector tiles; no API keys) ---------- */
+const OFM='https://tiles.openfreemap.org/styles/';
+/* palette derived from the same CSS custom properties the legend uses — single source of truth */
+const CLS_COLORS=(function(){
+  const o={}, p=document.createElement('span');
+  p.style.display='none'; document.body.appendChild(p);
+  ['c-anc','c-gu','c-jin','c-wu','c-xiang','c-gan','c-hak','c-min','c-yue','c-hui','c-ping','c-unc'].forEach(c=>{
+    p.className=c;
+    o[c]=getComputedStyle(p).getPropertyValue('--c').trim()||'#e8dcc0';
+  });
+  p.remove(); return o;
+})();
+let map=null, baseStyle='fiord', lastSel=null, mkHandlersBound=false;
+
+/* English labels: patch text layers AFTER a URL-loaded style is ready (object-styles via
+   setStyle proved unreliable in MapLibre v4, so styles are always loaded by URL string). */
+const EN_LABEL=['coalesce',['get','name_en'],['get','name']];
+function applyEnglishLabels(){
+  const s = map.getStyle(); if(!s || !s.layers) return;
+  s.layers.forEach(l=>{ if(l.layout && l.layout['text-field']) map.setLayoutProperty(l.id,'text-field',EN_LABEL); });
+}
+/* sketch mode = hide every basemap layer (custom layers persist), show the embedded outline */
+const EXTRA_IDS={ 'china':1,'china-fill':1,'china-line':1,'mk':1 };
+function setBasemapVisible(vis){
+  const s = map.getStyle(); if(!s || !s.layers) return;
+  s.layers.forEach(l=>{ if(!EXTRA_IDS[l.id]) map.setLayoutProperty(l.id,'visibility', vis?'visible':'none'); });
+}
+function showChina(v){
+  ['china-fill','china-line'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility', v?'visible':'none'); });
+}
+function ensureOverlay(){
+  try{
+    if(!map || !map.isStyleLoaded() || map.getLayer('mk')) return;
+    addMarkerLayer();
+    if(baseStyle==='positron-en') applyEnglishLabels();
+    if(document.querySelector('.map-pane').classList.contains('sketch')) showChina(true);
+  }catch(e){ /* style not ready yet; idle will fire again */ }
+}
+function onMkClick(e){
+  if(!map.getLayer('mk')) return;
+  const p = e.features[0].properties;
+  new maplibregl.Popup({className:'popup',closeButton:false,offset:12})
+    .setLngLat(e.lngLat).setHTML('<span class="zh">'+p.zh+'</span> '+p.label).addTo(map);
+}
+function onMkEnter(){ map.getCanvas().style.cursor='pointer'; }
+function onMkLeave(){ map.getCanvas().style.cursor=''; }
+function addMarkerLayer(){
+  if(!map.getSource('markers'))
+    map.addSource('markers',{ type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+  if(!map.getSource('china'))
+    map.addSource('china',{ type:'geojson', data:CHINA_GEO, attribution:'Schematic outline — works fully offline' });
+  if(!map.getLayer('china-fill'))
+    map.addLayer({ id:'china-fill', type:'fill', source:'china', layout:{ visibility:'none' },
+                   paint:{ 'fill-color':'rgba(212,169,79,0.06)' } });
+  if(!map.getLayer('china-line'))
+    map.addLayer({ id:'china-line', type:'line', source:'china', layout:{ visibility:'none' },
+                   paint:{ 'line-color':'#d4a94f','line-width':1.5,'line-opacity':.85 } });
+  if(!map.getLayer('mk'))
+  map.addLayer({ id:'mk', type:'circle', source:'markers',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'],3,['case',['==',['to-number',['get','sel'],0],1],6,4],7,['case',['==',['to-number',['get','sel'],0],1],11,8]],
+      'circle-color':['get','c'], 'circle-opacity':.85,
+      'circle-stroke-width':['case',['==',['to-number',['get','sel'],0],1],3,2],
+      'circle-stroke-color':['case',['==',['to-number',['get','sel'],0],1],'#fff','#0d1220']
+    }});
+  if(!mkHandlersBound){
+    map.on('click','mk',onMkClick);
+    map.on('mouseenter','mk',onMkEnter);
+    map.on('mouseleave','mk',onMkLeave);
+    mkHandlersBound = true;
+  }
+  if(lastSel) showMarkers(lastSel.n, lastSel.selected, false);   // repaint after style swap
+}
+if (typeof maplibregl !== 'undefined') {
+  map = new maplibregl.Map({ container:'map', style:OFM+'fiord', center:[110,32.5], zoom:3.8, maxZoom:14,
+                            attributionControl:{ compact:true } });
+  map.addControl(new maplibregl.NavigationControl({ showCompass:false }),'top-left');
+  map.on('style.load', ()=>{ addMarkerLayer(); if(baseStyle==='positron-en') applyEnglishLabels(); });
+  map.on('idle', ensureOverlay);   // safety net: some environments skip style.load after setStyle
+  map.on('error', ()=>{});   // keep console quiet for expected tile/style retries
+} else {
+  document.getElementById('map').innerHTML =
+    '<p style="padding:2rem;color:var(--ink-faint)">Map library unavailable offline — tree and histories still work.</p>';
+  document.getElementById('mapToggle').style.display = 'none';
+}
+function showMarkers(n, selected, fit){
+  if(!map) return;
+  lastSel = { n, selected };
+  if(!map.getSource('markers')) return;   // style still loading; addMarkerLayer() repaints on load
+  const ms = markersOf(n);
+  map.getSource('markers').setData({ type:'FeatureCollection',
+    features: ms.map(([la,ln,label,cls,zh,en])=>({ type:'Feature',
+      properties:{ zh:zh||'', label:label||en||'', c:CLS_COLORS[cls||'c-anc']||'#e8dcc0', sel:selected?1:0 },
+      geometry:{ type:'Point', coordinates:[ln,la] } })) });
+  if(fit && ms.length){
+    const b = ms.reduce((b,[la,ln])=>b.extend([ln,la]), new maplibregl.LngLatBounds([ms[0][1],ms[0][0]],[ms[0][1],ms[0][0]]));
+    const lngSpan = b.getEast()-b.getWest();
+    map.fitBounds(b,{ padding:60, maxZoom: lngSpan>90?3:(lngSpan>40?4:(ms.length===1?7:6)) });
+  }
+}
+
+/* ---------- history panel ---------- */
+const info = document.getElementById('info');
+function depthOf(n){ let d=0,p=n; while((p=DATA&&findParent(p))){d++;} return d; }
+function findParent(n){ let found=null; (function w(x,par){ if(x===n) found=par; (x.kids||[]).forEach(k=>w(k,x)); })(DATA,null); return found; }
+function renderInfo(n){
+  const depth = depthOf(n);
+  const kind = depth===0 ? 'The family'
+             : ['ancient','old','middle','oldmand'].includes(n.id) ? 'Ancestral stage'
+             : (n.kids && n.kids.length ? 'Branch / group' : 'Living variety');
+  info.innerHTML =
+    '<p class="kicker">'+kind+'</p>'+
+    '<h2>'+n.en+'</h2>'+
+    (n.zh && !['古','未分'].includes(n.zh) ? '<div class="zh-big">'+n.zh+(n.py?' <span class="py">'+n.py+'</span>':'')+'</div>' : (n.py?'<div class="py">'+n.py+'</div>':''))+
+    '<div class="chips">'+
+      (n.sp ? '<span class="chip sp">'+n.sp+' speakers</span>' : '')+
+      '<span class="chip">'+n.region+'</span>'+
+    '</div>'+
+    '<h3>History</h3>'+
+    n.h.map((p,i)=>'<p'+(i===0?' class="lead"':'')+'>'+p+'</p>').join('')+
+    (n.t && n.t.length ? '<h3>Timeline</h3><ol class="timeline">'+
+      n.t.map(([yr,ev])=>'<li><span class="yr">'+yr+'</span><span class="ev">'+ev+'</span></li>').join('')+'</ol>' : '');
+  info.scrollTop = 0;
+  const st=document.getElementById('sheetTitle'); if(st) st.textContent = n.en;
+}
+/* ---------- tree ---------- */
+const treeEl = document.getElementById('tree');
+const wide = window.matchMedia('(min-width:1181px)');
+let selectedId = null;
+
+function buildNode(n, depth){
+  const li = document.createElement('li');
+  li.dataset.id = n.id;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'tnode ' + (n.cls||'c-anc') + (depth ? ' lvl'+Math.min(depth,3) : '');
+  btn.innerHTML =
+    '<span class="caret" aria-hidden="true">'+((n.kids&&n.kids.length)?'▶':'·')+'</span>'+
+    '<span class="t-zh">'+n.zh+'</span>'+
+    '<span class="t-en">'+n.en+'</span>'+
+    '<span class="t-sp">'+(n.sp||'')+'</span>';
+  const preview = ()=>{ if(wide.matches){ renderInfo(n); showMarkers(n, n.id===selectedId, false); } };
+  btn.addEventListener('mouseenter', preview);
+  btn.addEventListener('focus', preview);
+  btn.addEventListener('mouseleave', ()=>{ if(wide.matches && selectedId && byId[selectedId]!==n){ renderInfo(byId[selectedId]); showMarkers(byId[selectedId], true, false);} });
+  btn.addEventListener('click', ()=>{
+    const had = li.classList.contains('open');
+    select(n);
+    if (n.kids && n.kids.length && !had) li.classList.add('open');
+  });
+  li.appendChild(btn);
+  if (n.kids && n.kids.length){
+    const ul = document.createElement('ul');
+    n.kids.forEach(k=>ul.appendChild(buildNode(k, depth+1)));
+    li.appendChild(ul);
+  }
+  return li;
+}
+function select(n, fit){
+  selectedId = n.id;
+  treeEl.querySelectorAll('.tnode.active').forEach(e=>e.classList.remove('active'));
+  const li = treeEl.querySelector('li[data-id="'+n.id+'"]');
+  if (li){
+    li.querySelector('.tnode').classList.add('active');
+    let p = li.parentElement.closest('li');
+    while(p){ p.classList.add('open'); p = p.parentElement.closest('li'); }
+  }
+  renderInfo(n);
+  showMarkers(n, true, fit !== false);
+  if(!wide.matches) document.body.classList.add('sheet');
+}
+const rootUl = document.createElement('ul');
+rootUl.appendChild(buildNode(DATA, 0));
+treeEl.appendChild(rootUl);
+treeEl.querySelector('li[data-id="sinitic"]').classList.add('open');
+
+/* ---------- legend ---------- */
+const LEG = [["c-anc","Ancestral / proto"],["c-gu","Mandarin"],["c-jin","Jin"],["c-wu","Wu"],["c-xiang","Xiang"],["c-gan","Gan"],["c-hak","Hakka"],["c-min","Min"],["c-yue","Yue"],["c-hui","Hui"],["c-ping","Ping"],["c-unc","Unclassified"]];
+document.getElementById('legend').innerHTML = LEG.map(([c,name])=>'<span class="'+c+'"><i></i>'+name+'</span>').join('');
+
+/* ---------- filter ---------- */
+const filterEl = document.getElementById('filter');
+function matches(n, q){
+  return (n.en+' '+n.zh+' '+n.py+' '+n.region).toLowerCase().includes(q);
+}
+function applyFilter(q){
+  function walk(li){
+    const n = byId[li.dataset.id];
+    let self = !q || matches(n,q), childHit = false;
+    li.querySelectorAll(':scope > ul > li').forEach(cl=>{ if(walk(cl)) childHit=true; });
+    const show = self || childHit;
+    li.classList.toggle('hidden', !show);
+    if (q && childHit) li.classList.add('open');
+    if (self && q) li.classList.add('open');
+    return show;
+  }
+  treeEl.querySelectorAll(':scope > ul > li').forEach(walk);
+}
+filterEl.addEventListener('input', ()=>applyFilter(filterEl.value.trim().toLowerCase()));
+
+/* ---------- sheet close ---------- */
+document.getElementById('closeSheet').addEventListener('click', ()=>document.body.classList.remove('sheet'));
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.body.classList.remove('sheet'); });
+
+/* ---------- basemap cycle: dark → English labels → offline sketch → dark ---------- */
+const NEXT={ fiord:['positron-en','🔤 English labels'], 'positron-en':['sketch','◈ offline sketch'], sketch:['fiord','🌑 dark map'] };
+document.getElementById('mapToggle').addEventListener('click', function(){
+  if(!map) return;
+  baseStyle = NEXT[baseStyle][0];
+  const sketch = baseStyle==='sketch';
+  this.textContent = 'Next: ' + NEXT[baseStyle][1];
+  this.setAttribute('aria-pressed', String(sketch));
+  document.querySelector('.map-pane').classList.toggle('sketch', sketch);
+  if(sketch){
+    setBasemapVisible(false);        // keep the loaded style alive; just hide it
+    showChina(true);
+  } else {
+    map.setStyle(OFM + (baseStyle==='positron-en' ? 'positron' : 'fiord'));  // URL load = reliable path
+    [500,1500,3000,6000,10000].forEach(t=>setTimeout(ensureOverlay,t));      // + timed safety net
+  }
+});
+
+/* ---------- init ---------- */
+select(byId['sinitic'], false);
+
 </script>
 </body>
 </html>
