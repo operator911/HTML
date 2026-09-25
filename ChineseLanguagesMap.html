@@ -83,6 +83,9 @@ mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1
 .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.85rem 0 1rem}
 .chip{font-size:.72rem;padding:.2rem .6rem;border-radius:99px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim)}
 .chip.sp{border-color:color-mix(in srgb,var(--c) 55%,transparent);color:var(--c)}
+.listen{display:flex;flex-wrap:wrap;gap:.4rem;margin:.75rem 0 .1rem}
+.listen a{font-size:.72rem;padding:.22rem .65rem;border-radius:99px;border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));background:var(--panel-2);color:var(--gold);text-decoration:none;white-space:nowrap}
+.listen a:hover,.listen a:focus-visible{border-color:var(--gold);background:var(--gold-soft)}
 #info h3{margin:1.4rem 0 .5rem;font-size:.74rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:.6rem}
 #info h3::after{content:"";flex:1;height:1px;background:var(--line)}
 #info p{margin:.55rem 0;font-size:.92rem;font-family:var(--serif)}
@@ -134,7 +137,7 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
 const DATA = {
  id:"sinitic", en:"Chinese (Sinitic)", zh:"汉语", py:"Hànyǔ", sp:"~1.4 billion",
  region:"China, Taiwan, Singapore and overseas Chinese communities worldwide", cls:"c-anc", mk:[],
- h:[`Chinese — the <em>Sinitic</em> branch of the Sino-Tibetan family — is one of the world's great language lineages, with roughly 1.4 billion native speakers. What are popularly called "dialects" are in reality a spectrum of languages as mutually unintelligible as those of Romance: a Beijing speaker cannot understand Wenzhounese or Taishanese without study.`,
+ h:[`Chinese — the <em>Sinitic</em> branch of the Sino-Tibetan family — is one of the world's great language lineages, with roughly 1.4 billion speakers. What are popularly called "dialects" are in reality a spectrum of languages as mutually unintelligible as those of Romance: a Beijing speaker cannot understand Wenzhounese or Taishanese without study.`,
    `The writing system, continuous since the oracle bones of ca. 1250 BCE, historically unified these varieties: for two millennia, literate speakers of mutually unintelligible speech read the same classics. The standard scholarly map — the <em>Language Atlas of China</em> (1987, revised 2012) — recognises ten main branches, preceded here by the three attested ancestral stages from which they descend.`],
  t:[["c. 1250 BCE","Earliest attested Chinese: Shang oracle-bone inscriptions"],
     ["601 CE","Qieyun rhyme dictionary fixes the Middle Chinese reading"],
@@ -151,7 +154,7 @@ const DATA = {
         ["110 BCE","Han destroy Minyue; Chinese foothold established in Fujian"]]},
    { id:"middle", en:"Middle Chinese", zh:"中古", py:"Zhōnggǔ Hànyǔ", sp:"—", region:"Sui–Tang literary standard, exported across East Asia", cls:"c-anc",
      mk:[[34.34,108.94,"Chang'an"],[34.62,112.45,"Luoyang"],[32.06,118.8,"Jiankang (Nanjing)"]],
-     h:[`Middle Chinese is the reading tradition of the Sui and Tang, captured with famous precision in the rhyme dictionary 《切韻》 <em>Qieyun</em> (601 CE), compiled in Chang'an by Lu Fayan and eight colleagues who reconciled the literary readings of the northern and southern courts. Its sound system — four tone classes, full sets of voiced obstruents, and finals <em>-p, -t, -k, -m</em> — is documented in rhyme tables like the <em>Yunjing</em> and survives in the "Sino-Xenic" strata of Japanese, Korean and Vietnamese, and in the checked tones of modern Cantonese.`,
+     h:[`Middle Chinese is the reading tradition of the Sui and Tang, captured with famous precision in the rhyme dictionary 《切韻》 <em>Qieyun</em> (601 CE), compiled by Lu Fayan and eight colleagues who reconciled the literary readings of the northern and southern courts. Its sound system — four tone classes, full sets of voiced obstruents, and finals <em>-p, -t, -k, -m</em> — is documented in rhyme tables like the <em>Yunjing</em> and survives in the "Sino-Xenic" strata of Japanese, Korean and Vietnamese, and in the checked tones of modern Cantonese.`,
        `Most modern branches descend from the regional spoken Middle Chinese of their area, and their innovations are predictable: northern varieties devoiced the stops and lost the checked tones; southern ones kept them wholly or partly. The great exception is <em>Min</em>, whose everyday layer split off before the Qieyun synthesis existed.`],
      t:[["601 CE","Lu Fayan compiles the Qieyun"],
         ["7th–9th c.","Tang koine spreads; readings borrowed into Japanese, Korean, Vietnamese"],
@@ -172,7 +175,7 @@ const DATA = {
        ["1368–1644","Mandarin spreads south with Ming officialdom and garrisons"],
        ["1932 / 1956","Beijing-based standard adopted in China and Taiwan"]],
     kids:[
-     { id:"beifang", en:"Northern group", zh:"北", py:"Běifāng Guānhuà", sp:"≈230 million", region:"Manchuria, Hebei, Shandong, Tianjin", cls:"c-gu", mk:[],
+     { id:"beifang", en:"Northern group", zh:"北", py:"Běifāng Guānhuà", sp:"≈260 million", region:"Manchuria, Hebei, Shandong, Tianjin", cls:"c-gu", mk:[],
        h:[`Four subgroups — Northeastern, Beijing, Ji–Lu and Jiaoliao — form the homogeneous north: big plains, constant movement, recent settlement. Differences are shallow and mutual intelligibility near-total.`], kids:[
       { id:"dongbei", en:"Northeastern", zh:"东", py:"Dōngběi Guānhuà", sp:"≈90 million", region:"Heilongjiang, Jilin, NE Inner Mongolia, N Liaoning", cls:"c-gu",
         mk:[[45.75,126.65,"Harbin"],[43.88,125.32,"Changchun"],[41.8,123.43,"Shenyang"]],
@@ -183,10 +186,10 @@ const DATA = {
       { id:"beijingmd", en:"Beijing", zh:"京", py:"Jīngxiāng", sp:"≈35 million", region:"Beijing, Tianjin, surrounding Hebei", cls:"c-gu",
         mk:[[39.9,116.4,"Beijing"],[39.13,117.2,"Tianjin"],[40.97,117.94,"Chengde"]],
         h:[`The prestige variety of modern China. Beijing's speech rose with the city: Jurchen Jin capital from 1153, Mongol Dadu, Ming–Qing Beijing. Conquest dynasties, garrisons and the court layered its speech; contacts with Mongol and Manchu speakers are popularly credited with pervasive <em>erhua</em> (儿化) and light syllables, though scholars debate how deep that influence really was.`,
-          `In 1913 China's Commission on Unification of Reading met to settle a national standard; after years of dispute, the 1932 <em>Guoyin Zidian</em> dictionary conceded living Beijing phonology outright. The PRC's 1955 definition of Putonghua — "Beijing pronunciation as the standard" — sealed its global reach: it is now a second language for nearly every Chinese person.`],
+          `In 1913 China's Commission on Unification of Reading met to settle a national standard; after years of dispute, the 1932 <em>Guoyin Changyong Zihui</em> (《国音常用字汇》) conceded living Beijing phonology outright. The PRC's 1955 definition of Putonghua — "Beijing pronunciation as the standard" — sealed its global reach: it is now a second language for nearly every Chinese person.`],
         t:[["1153 / 1267","Jin Zhongdu, then Yuan Dadu, established at Beijing"],
            ["1913","Commission on Unification of Reading convenes"],
-           ["1932","Guoyin Zidian adopts Beijing phonology"],
+           ["1932","Guoyin Changyong Zihui 《国音常用字汇》 adopts the Beijing-based new guoyin"],
            ["1956","Putonghua promotion campaign launched"]]},
       { id:"jiaoliao", en:"Jiaoliao", zh:"胶", py:"Jiāoliáo Guānhuà", sp:"≈25 million", region:"Shandong peninsula & Liaodong peninsula across the Bohai", cls:"c-gu",
         mk:[[37.54,121.39,"Yantai"],[37.51,122.12,"Weihai"],[38.91,121.61,"Dalian"],[39.998,123.429,"Dandong"]],
@@ -262,7 +265,7 @@ const DATA = {
      { id:"swu", en:"Southern Wu", zh:"南吴", py:"", sp:"≈13 million", region:"Zhejiang interior: Wenzhou (Oujiang), Quzhou (Chu–Qu), Jinhua basin", cls:"c-wu",
        mk:[[28.0,120.67,"Wenzhou"],[29.08,117.33,"Quzhou"],[29.08,119.65,"Jinhua"]],
        h:[`Beyond the delta's canals the mountains begin, and Wu turns conservative and fragmented: the Oujiang (Wenzhou) and Chu–Qu varieties keep checked tones and voiced series that Shanghai smoothed away, and valley-to-valley divergence makes neighbouring counties mutually opaque.`,
-         `This is the Wu closest to the lost speech of medieval Jiangdong — which is why Wenzhou earned its reputation as the "devil's language" Japanese intelligence reportedly failed to code-break in the 1930s–40s, and why Wenzhou and Qingtian merchants turned that unintelligibility into diaspora network capital.`] }
+         `This is the Wu closest to the lost speech of medieval Jiangdong — which is why Wenzhou is nicknamed the "devil's language": so opaque to outsiders that China pressed Wenzhou speakers into service as code talkers against the Japanese in the 1930s–40s, as the Americans used the Navajo — and why Wenzhou and Qingtian merchants turned that same unintelligibility into diaspora network capital.`] }
     ]},
   { id:"xiang", en:"Xiang", zh:"湘", py:"Xiāngyǔ", sp:"≈38 million",
     region:"Central & SW Hunan, parts of Guangxi, Guizhou, Sichuan, Jiangxi, Hubei", cls:"c-xiang",
@@ -295,17 +298,17 @@ const DATA = {
     region:"NE Guangdong, S Fujian, S Jiangxi; Taiwan; Hainan, Guangxi; overseas", cls:"c-hak",
     mk:[[24.29,116.12,"Meizhou"],[23.74,114.7,"Heyuan"],[25.83,114.93,"Ganzhou"],[25.83,116.36,"Changting"],[23.11,114.42,"Huizhou"],[24.56,120.82,"Miaoli, Taiwan"],[22.87,120.56,"Meinong, Taiwan"],[22.55,114.11,"Shenzhen/New Territories"],[5.84,118.12,"Sandakan, Sabah"]],
     h:[`<em>Hakka</em> 客家 means "guest families" — the name their Cantonese neighbours gave them, and the key to their history. Hakka historiography tells of families driven south in waves from the war-torn North-West (the Yongjia collapse of 311, the Tang–Song transition, the Mongol conquest), taking up residence in the mountainous corner where Guangdong, Fujian and Jiangxi meet. Modern linguistics tempers the legend — the genealogies were glorified by Qing compilers, and Hakka's closest relative is <em>Gan</em>, marking a long shared history in the Gan–Zhe–Min highlands — but the language itself confirms a layered, migratory origin.`,
-      `Pressure from established "landed" (本地) lineages pushed Hakka further: into Sichuan with the Qing repopulation, into Taiwan after the 1747 Wu Shamia uprising granted them frontier land, and south. The Punti–Hakka clan wars of 1854–67 in the Pearl Delta — among the deadliest conflicts few textbooks mention, hundreds of thousands dead — ended with displaced Hakka communities, some resettled by decree, others emigrating as labourers to the Straits Settlements, Borneo's gold fields (Sandakan's Hakka still call it "the Hakka town"), California and Australia.`,
-      `Meizhou speech became the Hakka prestige standard. In Taiwan, Hakka (Sixian and Hailu dialects, spoken by roughly one in five islanders) was suppressed under martial law, rehabilitated by the 1988 <em>Hakka Round Our Tongue</em> movement, given a basic-language law in 2010, and in 2018 made an official <em>national language</em> — train and subway announcements include it today.`],
+      `Pressure from established "landed" (本地) lineages pushed Hakka further: into Sichuan with the Qing repopulation, into Taiwan — where the Liudui (六堆) Hakka militias, decorated by the Qing as "righteous" after putting down the Wu Fusheng rising of 1732, held the southern frontier — and beyond, across the sea. The Punti–Hakka clan wars of 1854–67 in the Pearl Delta — among the deadliest conflicts few textbooks mention, hundreds of thousands dead — ended with displaced Hakka communities, some resettled by decree, others emigrating as labourers to the Straits Settlements, Borneo's gold fields (Sandakan's Hakka still call it "the Hakka town"), California and Australia.`,
+      `Meizhou speech became the Hakka prestige standard. In Taiwan, Hakka (Sixian and Hailu dialects, spoken by roughly one in five islanders) was suppressed under martial law, rehabilitated by the 1988 <em>Hakka Round Our Tongue</em> movement, given standing by the 2010 Hakka Basic Language Law (客家基本法), and in 2018 made an official <em>national language</em> under the National Languages Development Act — train and subway announcements include it today.`],
     t:[["4th–13th c.","North-to-south migrations into the Gan–Yue–Min highlands (as remembered & debated)"],
-       ["1747","Wu Shamia uprising: Hakka granted Taiwan frontier land"],
+       ["1732","Wu Fusheng rising: Liudui Hakka militias honoured as righteous by the Qing"],
        ["1854–67","Punti–Hakka clan wars in the Pearl Delta; diaspora accelerates"],
        ["1988 / 2018","Taiwan Hakka language movement; national-language status"]]},
   { id:"min", en:"Min", zh:"闽", py:"Mǐnyǔ", sp:"≈75 million",
     region:"Fujian, Hainan, Leizhou, parts of Zhejiang & Jiangxi; Taiwan, SE Asia", cls:"c-min",
     mk:[[26.07,119.3,"Fuzhou"],[27.03,118.12,"Jian'ou"],[25.43,119.01,"Putian"],[24.87,118.67,"Quanzhou"],[24.51,117.65,"Zhangzhou"],[23.35,116.68,"Shantou"],[20.04,110.34,"Haikou"]],
-    h:[`Min is the family's deep outlier. Almost all Chinese varieties descend from the Middle Chinese of the Qieyun era — Min's everyday layer does not. Its ancestors split from the family earlier, in the spoken Chinese of the Han expansion into Fujian, and linguists reconstruct a <strong>Proto-Min</strong> (with its own tonal and consonantal system) that predates the Tang: Min keeps <em>m-</em> initials where Middle Chinese had <em>b-</em> (Hokkien <em>bai</em> 马 "horse", <em>bin</em> 面 "noodles"), relics linking it to Old Chinese itself.`,
-      `Fujian — "the eight provinces facing the mountains, one facing the sea" — received its first Chinese garrisons after 110 BCE, but its decisive Sinification came in two great entries from Guangshan (固始) in Henan: General Chen Zheng and his son Chen Yuanguang, who pacified the region for the Tang in 669 and settled an army there, and in 885 the five Wang brothers who backed the founder of Min kingdom (Wang Shenzhi), bringing hundreds of named clans — "the eighteen surnames that followed Wang to open Min" still figures in temple genealogies from Taipei to Penang. Each entry laid a new literary stratum over the older colloquial one, giving Min its famous double (文读/白读) readings.`,
+    h:[`Min is the family's deep outlier. Almost all Chinese varieties descend from the Middle Chinese of the Qieyun era — Min's everyday layer does not. Its ancestors split from the family earlier, in the spoken Chinese of the Han expansion into Fujian, and linguists reconstruct a <strong>Proto-Min</strong> (with its own tonal and consonantal system) that predates the Tang: Min turns the old nasal <em>*m-</em> into <em>b-</em> in everyday words where the rest of Chinese kept m- (Hokkien <em>ba̍k</em> 目 "eye", <em>bīn</em> 面 "noodles"), a hallmark of its early separation from the family.`,
+      `Fujian — "eight parts mountains, one part water, one part field" — received its first Chinese garrisons after 110 BCE, but its decisive Sinification came in two great entries from Guangshan (固始) in Henan: General Chen Zheng and his son Chen Yuanguang, who pacified the region for the Tang in 669 and settled an army there, and in 885 five brothers of the Gushi Wang clan — among them the young Wang Shenzhi, later founder of the Min kingdom — bringing hundreds of named clans — "the eighteen surnames that followed Wang to open Min" still figures in temple genealogies from Taipei to Penang. Each entry laid a new literary stratum over the older colloquial one, giving Min its famous double (文读/白读) readings.`,
       `Mountain fragmentation then did the rest, shattering Min into five mutually unintelligible branches — Northern (Jian'ou), Eastern (Fuzhou), Central (Shaowu), Pu-Xian (Putian) and Southern (Hokkien/Teochew) — of which the coastal south, through the seafaring peoples of Quanzhou, Zhangzhou and Chaozhou, became the most globally dispersed Chinese speech of all.`],
     t:[["110 BCE","Han destroy Minyue; first Chinese garrisons in Fujian"],
        ["669","Chen Zheng & Chen Yuanguang settle a Tang garrison army"],
@@ -327,23 +330,23 @@ const DATA = {
      { id:"smin", en:"Southern Min", zh:"闽南", py:"Mǐnnányǔ", sp:"≈48 million", region:"Quanzhou–Zhangzhou–Chaozhou coast, Leizhou, Hainan, Taiwan, SE Asia", cls:"c-min",
        mk:[[24.87,118.67,"Quanzhou"],[24.51,117.65,"Zhangzhou"],[24.48,118.08,"Xiamen"],[22.99,120.2,"Tainan"],[23.35,116.68,"Shantou"],[21.27,110.36,"Zhanjiang"],[20.04,110.34,"Haikou"]],
        h:[`Southern Min (Min Nan) is Min of the sea. From the ports of Quanzhou, Zhangzhou and Chaozhou its speakers became Southeast Asia's Chinese — and after 1661, Taiwan's. Its dialect continuum runs southwest along the coast from Quanzhou and Zhangzhou (the Hokkien heartland) through the Teochew delta, onto the Leizhou peninsula and across the strait to Hainan, with Zhenan Min islands stranded in Zhejiang.`,
-         `Quanzhou was the great port of the Maritime Silk Road — Zayton, where Marco Polo embarked homeward in 1291 and Ibn Battuta marvelled at the great ships two generations later; its Maritime Trade Supervisory Bureau dates to 1087. When the Ming sea-bans and 16th-century pirate wars hardened, its people went underground or overseas; when the Qing lifted the bans in 1684, they colonised Taiwan and the Straits in force.`],
+         `Quanzhou was the great port of the Maritime Silk Road — Zayton, which Marco Polo reached on the eve of sailing home in 1291–92 and where Ibn Battuta marvelled at the great ships two generations later; its Maritime Trade Supervisory Bureau dates to 1087. When the Ming sea-bans and 16th-century pirate wars hardened, its people went underground or overseas; when the Qing lifted the bans in 1684, they colonised Taiwan and the Straits in force.`],
        t:[["1087","Quanzhou gets a Maritime Trade Supervisory Bureau"],
-          ["1291 / 1345","Marco Polo and Ibn Battuta describe Zayton (Quanzhou)"],
+          ["c. 1291 / 1345","Marco Polo and Ibn Battuta describe Zayton (Quanzhou)"],
           ["1684","Qing lifts sea ban; explosion of Hokkien emigration"]],
        kids:[
         { id:"hokkien", en:"Hokkien", zh:"闽南", py:"Bân-lâm-gí", sp:"≈35 million (incl. Taiwan & SE Asia)", region:"Quanzhou, Zhangzhou, Xiamen, Taiwan, Penghu, SW Taiwan plain; diaspora across SE Asia", cls:"c-min",
           mk:[[24.87,118.67,"Quanzhou"],[24.51,117.65,"Zhangzhou"],[24.48,118.08,"Xiamen"],[25.03,121.56,"Taipei"],[22.99,120.2,"Tainan"],[14.6,120.98,"Manila"],[5.41,100.33,"Penang"],[3.59,98.67,"Medan"],[1.35,103.82,"Singapore"]],
           h:[`"Hokkien" (福建, literally just "Fujian-ese" in its local pronunciation <em>Hok-kiàn</em>) is the speech of the Quanzhou–Zhangzhou plain, carried to Taiwan by 17th–18th-century settlers — Tainan first, then north — and still spoken as a mother tongue by the majority of the island's Hoklo population despite decades of Mandarin-only schooling. Its overseas reaches define the Chinese of Southeast Asia: the "Hokkien" of Penang and Medan descends from Quanzhou, Manila's from Liancheng and Zhangzhou, Singapore's is a levelled contact koine.`,
-            `The prestige standard crystallised at treaty-port Xiamen (Amoy): its 1873 dictionaries and the <em>pe̍h-ōe-jī</em> romanisation created by missionaries in the 1850s gave Hokkien a written vernacular tradition, and under Japanese rule (1895–1945) Taiwan's spoken-language schools standardised "Taiwanese" along Amoy lines. The accent map is still a social map: the Quanzhou "floury", Zhangzhou "grocery" and mixed "salt-and-sugar" accents of Taiwan trace straight back to which plain your ancestors crossed.`],
+            `The prestige standard crystallised at treaty-port Xiamen (Amoy): its 1873 dictionaries and the <em>pe̍h-ōe-jī</em> romanisation created by missionaries in the 1850s gave Hokkien a written vernacular tradition, and under Japanese rule (1895–1945) Taiwan's spoken-language schools standardised "Taiwanese" along Amoy lines. The accent map is still a social map: the Quanzhou-leaning (偏泉), Zhangzhou-leaning (偏漳) and mixed (混合) accents of Taiwan trace straight back to which plain your ancestors crossed.`],
           t:[["1661–1683","Zheng Chenggong's conquest; organised Zhangzhou/Quanzhou settlement of Taiwan"],
              ["1850s–1873","pe̍h-ōe-jī romanisation; first Amoy dictionaries"],
              ["1945–1987","Mandarin-only policy in Taiwan; Hokkien recedes from schools"],
              ["2016–","Taiwan's mother-tongue education reverses course"]]},
         { id:"teochew", en:"Teochew", zh:"潮州", py:"Diâ-siu / Tiô-chiu-miân", sp:"≈10 million", region:"Chaoshan plain (Chaozhou, Shantou, Jieyang); Thailand, Singapore, Vietnam, Malaysia, Cambodia", cls:"c-min",
           mk:[[23.66,116.62,"Chaozhou"],[23.35,116.68,"Shantou"],[23.55,116.58,"Jieyang"],[13.75,100.5,"Bangkok"],[1.35,103.82,"Singapore"],[10.76,106.66,"Ho Chi Minh City"],[11.57,104.92,"Phnom Penh"]],
-          h:[`Teochew (潮州话, "Chaozhou speech") is the southwestermost Southern Min language, spoken on the fertile Han River delta where it meets the sea — home base Chaozhou (the old prefectural seat, famous for Han Yu's 819 exile and the crocodile-driving legend), with Shantou, opened as Swatow treaty port in 1860, as its modern face and Jieyang its ancient commandery core (Han dynasty Jieyang commandery). Intelligible with Hokkien only partially — its closest relative is the Zhenan Min stranded across the border in Zhejiang.`,
-            `Poor land between mountains and sea drove the Teochew to emigrate early and massively. In Thailand — where they form the largest single Chinese dialect group, concentrated in Bangkok around Sampeng and the old canals — Teochew was so dominant that King Taksin (r. 1767–82), of mixed Teochew descent, conducted court affairs in it, and Thai still carries a stratum of Teochew loanwords for trade, fruit and kinship. Teochew lineages ran the rice trade of the Chao Phraya, the rice mills of Vietnamese Cholon, and Singapore's early gambier and pepper estates — the Teochew Poitua huiguan, founded 1820s, is among the island's oldest Chinese associations.`,
+          h:[`Teochew (潮州话, "Chaozhou speech") is the southwestermost Southern Min language, spoken on the fertile Han River delta where it meets the sea — home base Chaozhou (the old prefectural seat, famous for Han Yu's 819 exile and the crocodile-driving legend), with Shantou, opened as Swatow treaty port in 1860, as its modern face and Jieyang its ancient county core (Han-dynasty Jieyang county). Intelligible with Hokkien only partially — its closest relative is the Zhenan Min stranded across the border in Zhejiang.`,
+            `Poor land between mountains and sea drove the Teochew to emigrate early and massively. In Thailand — where they form the largest single Chinese dialect group, concentrated in Bangkok around Sampeng and the old canals — Teochew was so dominant that King Taksin (r. 1767–82), of mixed Teochew descent, owed his throne to the Teochew trading networks around the capital, and Thai still carries a stratum of Teochew loanwords for trade, fruit and kinship. Teochew lineages ran the rice trade of the Chao Phraya, the rice mills of Vietnamese Cholon, and Singapore's early gambier and pepper estates — the Teochew Poitua huiguan, founded 1820s, is among the island's oldest Chinese associations.`,
             `Like other southern languages, Teochew is now squeezed between Mandarin at school and Thai/English in the diaspora: Chaoshan children's fluency has fallen two generations running, even as the region's gongfu tea ceremony, Chaozhou opera and cuisine keep the name famous.`],
           t:[["819 CE","Han Yu exiled to Chaozhou — prefecture enters Chinese literary memory"],
              ["1400s–1800s","Chaoshan plain fully dyked & settled; mass out-migration begins"],
@@ -354,7 +357,7 @@ const DATA = {
           h:[`The Min of the bare southern peninsula — settled by waves of Fujianese farmers and fisher-folk under the Tang–Song, then sealed off by the inland Yue and Zhuang-speaking country. Cut from its parent coast, Leizhou Min absorbed deep Cantonese and Kra-Dai (Zhuang) vocabulary and simplified its tones, and today is retreating fast inside its own cities before Cantonese- and Mandarin-flavoured urban speech.`] },
         { id:"hainan", en:"Hainan Min", zh:"海南", py:"Hainan-lae", sp:"millions (island's main Han speech)", region:"Hainan coast: Haikou, Wenchang, Qionghai, Boao; Qiongwén literary register", cls:"c-min",
           mk:[[20.04,110.34,"Haikou"],[19.61,110.8,"Wenchang"],[19.25,110.47,"Qiongzhou/Hainan island"]],
-          h:[`Hainan's Chinese arrived from southern Fujian and Pu-Tian across the 19-km storm-strait in Song–Ming centuries, and today Hainan Min (with the old written register scholars call Qiongwén) is the everyday majority speech of the island's Han, far more widely than the Mandarin promoted since 1988, when Hainan became a province. The island layers are old: Han commanderies here from 110 BCE, the 6th-century Lady Dowager Xian who unified the aboriginal and Chinese populations, and — in the 12th–13th centuries — a stream of Vietnamese refugees of the Lý clan, whose descendants still keep their language in Zhuohao village near Haikou.`] }
+          h:[`Hainan's Chinese arrived from southern Fujian and Pu-Tian across the 19-km storm-strait in Song–Ming centuries, and today Hainan Min (with the old written register scholars call Qiongwén) is the everyday majority speech of the island's Han, far more widely than the Mandarin promoted since 1988, when Hainan became a province. The island layers are old: Han commanderies here from 110 BCE, the 6th-century Lady Dowager Xian who unified the aboriginal and Chinese populations, and — in the 12th–13th centuries — a stream of Vietnamese refugees of the Lý clan, whose descendants near Haikou still keep ancestral halls honouring their Vietnamese origin.`] }
        ]}
     ]},
   { id:"yue", en:"Yue (Cantonese)", zh:"粤", py:"Yuhtyuht", sp:"≈86 million",
@@ -381,7 +384,7 @@ const DATA = {
     mk:[[29.87,118.43,"Shexian"],[29.79,118.57,"Jixi"],[29.71,118.34,"Tunxi"],[29.6,119.02,"Chun'an"]],
     h:[`Hui is the puzzle of Sinitic classification — variously filed with Wu, with Gan, or left independent for seventy years — and that ambiguity is the point: it is the ancient mixed speech of the Xin'an river valley, at the hinge of the Yangtze delta, the Poyang corridor and the Gan uplands, with a tonal map wildly divergent from every neighbour (eight tones in some valleys, tone correspondences that defeat the usual geography).`,
       `Its carriers were the <em>Huizhou merchants</em>, for five centuries (14th–19th) the most famous merchant network of China — salt monopolists, bankers, timber and book traders whose guild-halls stood in every city from Yangzhou to Chengdu, and whose home-valley villages (Hongcun and Xidi, the postcard "Villages of South Anhui") still stand as built proof of their profits. As Huizhou capital shrivelled after the Taiping wars gutted the salt trade, Hui became a rural pocket language, retreating before Mandarin even in its ancestral county seats.`],
-    t:[["730 CE","Xin'an prefecture organised; the dialect name “Hui” attaches to this country"],
+    t:[["1121","She prefecture renamed Huizhou (徽州) — the name “Hui” attaches to this country"],
        ["1370–1500s","Huizhou merchant networks rise with the salt monopoly"],
        ["1850s–64","Taiping wars devastate Huizhou; language begins urban retreat"]]},
   { id:"ping", en:"Ping", zh:"平", py:"Pínghuà", sp:"≈2–3 million",
@@ -513,6 +516,60 @@ function showMarkers(n, selected, fit){
 
 /* ---------- history panel ---------- */
 const info = document.getElementById('info');
+/* ---------- listen links: curated audio where a stable public source exists,
+   plus a never-rotting YouTube search fallback on every node ---------- */
+const yt = q => 'https://www.youtube.com/results?search_query='+encodeURIComponent(q);
+const OM = 'https://www.omniglot.com/chinese/';   // per-variety pages with recordings & samples
+const FV = 'https://forvo.com/languages/';        // word-level native pronunciations (by ISO code)
+const SOUND = {
+ sinitic:    [['Spoken Chinese — Omniglot', OM+'spoken.htm']],
+ ancient:    [],
+ old:        [['How Old Chinese sounded ▶', yt('Old Chinese reconstruction pronunciation audio')]],
+ middle:     [['Middle Chinese pronunciation ▶', yt('Middle Chinese reconstruction pronunciation audio Qieyun')]],
+ oldmand:    [['Zhongyuan Yinyun ▶', yt('Zhongyuan Yinyun 中原音韻 pronunciation demo')]],
+ guanhua:    [['Mandarin — Omniglot', OM+'mandarin.htm'], ['Word audio — Forvo', FV+'zh/']],
+ dongbei:    [['东北话 ▶', yt('东北话 Dongbei dialect native speaker')]],
+ beijingmd:  [['北京话 ▶', yt('北京话 old Beijing dialect speaker')]],
+ jiaoliao:   [['烟台话 ▶', yt('烟台话 Yantai Jiaoliao dialect')]],
+ jilu:       [['济南话 ▶', yt('济南话 Jinan dialect')]],
+ zhongyuan:  [['河南话 ▶', yt('河南话 Henan dialect native')]],
+ lanyin:     [['兰州话 ▶', yt('兰州话 Lanzhou dialect')], ['Dungan — Omniglot', OM+'dungan.htm']],
+ xinan:      [['四川话 ▶', yt('四川话 Sichuanese dialect native speaker')]],
+ jianghuai:  [['南京话 ▶', yt('南京话 Nanjing dialect')]],
+ jin:        [['Jin word audio — Forvo', FV+'cjy/'], ['太原话 ▶', yt('太原话 Taiyuan Jin dialect')]],
+ wu:         [['Wu — Omniglot', OM+'wu.htm'], ['Wu word audio — Forvo', FV+'wuu/']],
+ shanghainese:[['Shanghainese — Omniglot', OM+'shanghainese.htm'], ['Word audio — Forvo', FV+'wuu/']],
+ suzhounese: [['苏州话 ▶', yt('苏州话 Suzhou dialect speaker')]],
+ ningbomd:   [['宁波话 ▶', yt('宁波话 Ningbo dialect speaker')]],
+ swu:        [['Wenzhounese — Omniglot', OM+'wenzhounese.htm']],
+ xiang:      [['Xiang — Omniglot', OM+'xiang.htm'], ['Xiang word audio — Forvo', FV+'hsn/']],
+ nxiang:     [['长沙话 ▶', yt('长沙话 Changsha dialect')]],
+ oxiang:     [['老湘语 娄底 ▶', yt('娄底话 old Xiang Loudi Shuangfeng dialect')]],
+ gan:        [['Gan — Omniglot', OM+'gan.htm'], ['Gan word audio — Forvo', FV+'gan/']],
+ hakka:      [['Hakka — Omniglot', OM+'hakka.htm'], ['Hakka word audio — Forvo', FV+'hak/']],
+ min:        [['Min — Omniglot', OM+'min.htm']],
+ nmin:       [['Jian\'ou — Omniglot', OM+'jianou.htm'], ['建瓯话 ▶', yt('建瓯话 Jian\'ou dialect')]],
+ emin:       [['Fuzhounese — Omniglot', OM+'fuzhounese.htm'], ['Word audio — Forvo', FV+'cdo/']],
+ cmin:       [['邵武话 ▶', yt('邵武话 Shaowu dialect')]],
+ pxmin:      [['Puxian — Omniglot', OM+'puxian.htm'], ['莆田话 ▶', yt('莆田话 Puxian dialect')]],
+ smin:       [['Min Nan word audio — Forvo', FV+'nan/']],
+ hokkien:    [['Hokkien — Omniglot', OM+'taiwanese.htm'], ['Word audio — Forvo', FV+'nan/']],
+ teochew:    [['Teochew — Omniglot', OM+'teochew.htm'], ['潮州话 ▶', yt('Teochew dialect native speaker 潮州话')]],
+ leizhou:    [['雷州话 ▶', yt('雷州话 Leizhou dialect')]],
+ hainan:     [['海南话 ▶', yt('海南话 Hainanese Haikou dialect')]],
+ yue:        [['Yue — Omniglot', OM+'yue.htm']],
+ yuehai:     [['Cantonese — Omniglot', OM+'cantonese.htm'], ['Cantonese word audio — Forvo', FV+'zh-yue/']],
+ siyi:       [['Taishanese ▶', yt('Taishanese Sze Yup dialect native speaker')]],
+ hui:        [['徽语 ▶', yt('徽语 歙县方言 Huizhou dialect')]],
+ ping:       [['平话 ▶', yt('广西平话 Pinghua dialect')]],
+ unc:        [['瓦乡话 ▶', yt('Waxiang 瓦乡话 language')]]
+};
+function listenLinks(n){
+  let out = (SOUND[n.id]||[]).map(kv=>'<a href="'+kv[1]+'" target="_blank" rel="noopener">🔊 '+kv[0]+'</a>');
+  const base = n.en.replace(/[()]/g,' ').trim();
+  out.push('<a href="'+yt(base+' Chinese dialect listening native speaker')+'" target="_blank" rel="noopener">🔎 hear more — search</a>');
+  return out.join('');
+}
 function depthOf(n){ let d=0,p=n; while((p=DATA&&findParent(p))){d++;} return d; }
 function findParent(n){ let found=null; (function w(x,par){ if(x===n) found=par; (x.kids||[]).forEach(k=>w(k,x)); })(DATA,null); return found; }
 function renderInfo(n){
@@ -528,6 +585,7 @@ function renderInfo(n){
       (n.sp ? '<span class="chip sp">'+n.sp+' speakers</span>' : '')+
       '<span class="chip">'+n.region+'</span>'+
     '</div>'+
+    '<div class="listen">'+listenLinks(n)+'</div>'+
     '<h3>History</h3>'+
     n.h.map((p,i)=>'<p'+(i===0?' class="lead"':'')+'>'+p+'</p>').join('')+
     (n.t && n.t.length ? '<h3>Timeline</h3><ol class="timeline">'+
