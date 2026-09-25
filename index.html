@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML Playground — Interactive Experiments</title>
+<meta name="description" content="A small shelf of interactive web experiments: an atlas of the Chinese languages, 3D airport sims, a cloth simulation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1220;--panel:#141b2d;--panel-2:#1a2338;--line:#2a3550;--ink:#e9e4d6;--ink-dim:#a7adc0;--ink-faint:#6d7590;--gold:#d4a94f;--gold-soft:rgba(212,169,79,.14);--sans:"Inter","Helvetica Neue",Arial,sans-serif;--serif:"EB Garamond",Georgia,serif;--cjk:"Noto Serif SC","Songti SC","SimSun",serif}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 75% -10%,rgba(79,195,217,.07),transparent 60%),radial-gradient(900px 500px at 10% 110%,rgba(212,169,79,.06),transparent 60%),var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;min-height:100dvh}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+a{color:inherit}
+.wrap{max-width:1060px;margin:0 auto;padding:0 1.4rem 4rem}
+header{padding:2.6rem 0 1.6rem;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1.6rem}
+header h1{margin:0;font-family:var(--serif);font-weight:600;font-size:clamp(1.5rem,3vw,2.1rem);letter-spacing:.02em}
+header h1 .zh{font-family:var(--cjk);color:var(--gold);font-weight:700;margin-right:.55rem}
+.tagline{color:var(--ink-dim);font-size:.9rem;font-family:var(--serif);font-style:italic}
+.gh{margin-left:auto;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:.35rem .85rem}
+.gh:hover,.gh:focus-visible{border-color:var(--gold);color:var(--gold)}
+h2{margin:2.4rem 0 1rem;font-size:.76rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:.7rem}
+h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.featured{display:block;margin-top:1.6rem;border:1px solid color-mix(in srgb,var(--gold) 38%,var(--line));border-radius:14px;background:linear-gradient(160deg,var(--gold-soft),transparent 55%),var(--panel);padding:1.6rem 1.7rem;text-decoration:none;position:relative;transition:transform .16s ease,box-shadow .16s ease}
+.featured:hover,.featured:focus-visible{transform:translateY(-3px);box-shadow:0 14px 38px rgba(0,0,0,.45)}
+.featured .kicker{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.featured h3{margin:.45rem 0 .15rem;font-family:var(--serif);font-weight:600;font-size:clamp(1.3rem,2.6vw,1.8rem);line-height:1.15}
+.featured h3 .zh{font-family:var(--cjk);color:var(--gold);font-weight:700;margin-right:.5rem}
+.featured p{margin:.5rem 0 0;font-family:var(--serif);font-size:1.02rem;color:var(--ink-dim);max-width:62ch}
+.featured .go{position:absolute;right:1.4rem;top:1.5rem;font-size:1.25rem;color:var(--gold)}
+.badge{display:inline-block;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:#141b2d;border-radius:99px;padding:.14rem .55rem;margin-left:.6rem;vertical-align:.18em;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:1rem;margin-top:.4rem}
+.card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:1.05rem 1.1rem;text-decoration:none;display:flex;flex-direction:column;gap:.45rem;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.card:hover,.card:focus-visible{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 55%,var(--line));box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.card .dot{width:.65rem;height:.65rem;border-radius:50%;background:var(--c);box-shadow:0 0 8px color-mix(in srgb,var(--c) 55%,transparent)}
+.card h3{margin:0;font-family:var(--serif);font-weight:600;font-size:1.08rem;line-height:1.25}
+.card .sub{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.card p{margin:.15rem 0 0;font-size:.83rem;color:var(--ink-dim)}
+.card .size{margin-top:auto;padding-top:.55rem;font-size:.68rem;color:var(--ink-faint);letter-spacing:.05em}
+footer{margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;display:flex;flex-wrap:wrap;gap:.4rem 1.4rem}
+footer .zh{font-family:var(--cjk);color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1><span class="zh">遊藝</span>HTML Playground</h1>
+  <span class="tagline">small worlds, rendered in the browser</span>
+  <a class="gh" href="https://github.com/operator911/HTML" target="_blank" rel="noopener">GitHub</a>
+</header>
+
+<h2>Featured</h2>
+<a class="featured" href="ChineseLanguagesMap.html">
+  <span class="go">→</span>
+  <span class="kicker">Interactive Atlas<span class="badge">New</span></span>
+  <h3><span class="zh">漢語方言</span>The Branches of Chinese</h3>
+  <p>An interactive tree-and-map atlas of the Sinitic languages — from Old Chinese and the Qieyun of 601&nbsp;CE to every major modern branch, with regional histories, timelines, speaker figures, and listening links for each variety.</p>
+</a>
+
+<h2>Airport 3D — model bake-off</h2>
+<div class="grid">
+  <a class="card" style="--c:#4fc3d9" href="airport-3d-NemoUltra.html"><span class="dot"></span><span class="sub">Nemo Ultra</span><h3>3D Airport Control</h3><p>The most developed variant of the bake-off — a full Three.js airfield with towers, taxiways and live traffic.</p><span class="size">67 KB</span></a>
+  <a class="card" style="--c:#ef8354" href="airport-3d-GLM5.2.html"><span class="dot"></span><span class="sub">GLM 5.2</span><h3>3D Airport Control</h3><p>Raw initial attempt — layout, loading screen, legend and lighting in one shot.</p><span class="size">42 KB</span></a>
+  <a class="card" style="--c:#e2657a" href="airport-3d-DSv4F.html"><span class="dot"></span><span class="sub">DS v4 Flash</span><h3>3D Airport Control</h3><p>Same brief, different model — compare scene design and flight logic.</p><span class="size">40 KB</span></a>
+  <a class="card" style="--c:#b07de0" href="airport-3d-Q397B.html"><span class="dot"></span><span class="sub">Q 397B</span><h3>3D Airport Control</h3><p>The large-model take on the identical prompt.</p><span class="size">60 KB</span></a>
+  <a class="card" style="--c:#5a8fe8" href="airport-3d-Q3.6-35B.html"><span class="dot"></span><span class="sub">Q3.6 · 35B</span><h3>3D Airport Control</h3><p>Mid-size variant of the Q3.6 series.</p><span class="size">44 KB</span></a>
+  <a class="card" style="--c:#4ecf8f" href="airport-3d-Q3.6-27B.html"><span class="dot"></span><span class="sub">Q3.6 · 27B</span><h3>3D Airport Control</h3><p>Smaller sibling — worth diffing against the 35B.</p><span class="size">31 KB</span></a>
+  <a class="card" style="--c:#a9be5c" href="airport-3d-Q3.5-122B.html"><span class="dot"></span><span class="sub">Q3.5 · 122B</span><h3>3D Airport Control</h3><p>Previous-generation large variant of the same experiment.</p><span class="size">31 KB</span></a>
+  <a class="card" style="--c:#d98cc4" href="airport-3d-mm2.7.html"><span class="dot"></span><span class="sub">mm 2.7</span><h3>3D Airport Control</h3><p>The mm-series entry in the bake-off.</p><span class="size">54 KB</span></a>
+</div>
+
+<h2>Physics</h2>
+<div class="grid">
+  <a class="card" style="--c:#d4a94f" href="cloth.html"><span class="dot"></span><span class="sub">Verlet</span><h3>Cloth Simulation</h3><p>A draped cloth built from a verlet-integrated spring lattice — poke and drag it around.</p><span class="size">25 KB</span></a>
+</div>
+
+<footer>
+  <span><span class="zh">遊藝</span> — play at the arts</span>
+  <span>Static experiments, no trackers, no build step.</span>
+  <span style="margin-left:auto">© <span id="yr"></span> operator911</span>
+</footer>
+
+</div>
+<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
+</body>
+</html>
