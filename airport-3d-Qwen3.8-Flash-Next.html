@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metro International — 3D Airport Traffic Simulator</title>
+<style>
+  :root {
+    --panel-bg: rgba(13, 18, 30, 0.78);
+    --panel-fg: #e8eefc;
+    --accent: #6db3ff;
+    --muted: #9fb0cc;
+    --radius: 12px;
+    --gap: 0.85rem;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; }
+  #app { position: relative; width: 100%; height: 100dvh; }
+  #scene { display: block; width: 100%; height: 100%; }
+
+  #panel {
+    position: absolute; top: 1rem; left: 1rem; width: min(19rem, calc(100vw - 2rem));
+    padding: 1rem 1.1rem 0.9rem; border-radius: var(--radius);
+    background: var(--panel-bg); color: var(--panel-fg);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid rgba(140, 170, 220, 0.25);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  #panel h1 { margin: 0 0 0.75rem; font-size: 1.02rem; font-weight: 650; letter-spacing: 0.02em; }
+  .ctl { margin-bottom: var(--gap); }
+  .ctl label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.2rem; color: var(--muted); font-size: 0.82rem; }
+  .ctl output { color: var(--panel-fg); font-variant-numeric: tabular-nums; font-weight: 600; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+  input[type="range"]:focus-visible, button:focus-visible, input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .row { display: flex; align-items: center; gap: 0.45rem; color: var(--muted); font-size: 0.82rem; margin-top: 0.35rem; cursor: pointer; }
+  .btns { display: flex; gap: 0.5rem; margin-bottom: var(--gap); }
+  button {
+    flex: 1; padding: 0.4rem 0.6rem; border-radius: 8px; cursor: pointer;
+    border: 1px solid rgba(140, 170, 220, 0.35); background: rgba(80, 110, 170, 0.25);
+    color: var(--panel-fg); font: inherit; font-size: 0.84rem;
+  }
+  button:hover { background: rgba(100, 140, 210, 0.4); }
+  #stats { margin: 0 0 0.4rem; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #stats b { color: var(--panel-fg); }
+  .hint { margin: 0; font-size: 0.72rem; color: rgba(160, 176, 204, 0.7); }
+  #err {
+    position: absolute; inset: auto 1rem 1rem 1rem; padding: 0.9rem 1.1rem; border-radius: var(--radius);
+    background: rgba(120, 25, 25, 0.9); color: #ffe2e2;
+    font: 14px/1.5 system-ui, sans-serif;
+  }
+  @media (max-width: 480px) { #panel { font-size: 13px; } }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<main id="app" aria-label="3D airport traffic simulation">
+  <canvas id="scene" aria-label="Animated 3D view of an airport: aircraft land on the north runway, taxi to gates, then depart from the south runway"></canvas>
+  <aside id="panel" aria-label="Simulation controls">
+    <h1>Metro Intl · ATC Sim</h1>
+    <div class="ctl">
+      <label for="tod">Time of day <output id="todOut" for="tod">10:00</output></label>
+      <input id="tod" type="range" min="0" max="23.9" step="0.1" value="10">
+      <label class="row"><input id="autocy" type="checkbox"> Auto day/night cycle</label>
+    </div>
+    <div class="ctl">
+      <label for="rate">Arrival interval <output id="rateOut" for="rate">40 s</output></label>
+      <input id="rate" type="range" min="12" max="120" step="1" value="40">
+    </div>
+    <div class="ctl">
+      <label for="speed">Sim speed <output id="speedOut" for="speed">1.0×</output></label>
+      <input id="speed" type="range" min="0" max="3" step="0.25" value="1">
+    </div>
+    <div class="btns">
+      <button id="pause" type="button" aria-pressed="false">Pause</button>
+      <button id="camBtn" type="button">Reset view</button>
+    </div>
+    <p id="stats" role="status" aria-live="polite">Loading…</p>
+    <p class="hint">Drag to orbit · scroll to zoom · right-drag to pan. Low arrival intervals force holding patterns.</p>
+  </aside>
+  <div id="err" hidden></div>
+</main>
+<script type="module">
+
+import * as NS from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ---------- load guard ---------- */
+const errBox = document.getElementById('err');
+window.addEventListener('error', (e) => {
+  errBox.hidden = false;
+  errBox.textContent = 'Failed to load Three.js from the CDN — an internet connection is required. (' + (e.message || 'load error') + ')';
+});
+const THREE = NS;
+
+/* ---------- constants ---------- */
+const G = 3.5;                                   // fuselage-center height when on ground
+const RW_A = -320, RW_B = 300;                   // runway centreline z (A arrivals north, B departures south)
+const RW_HALF = 80, RW_X1 = -1000, RW_X2 = 1000; // runway extents
+const GATES = [-350, -210, -70, 70, 210, 350];   // gate stand-off x positions (standoff z ≈ -35)
+const GATE_Z = -35, TERM_ZF = -90;               // gate park z, terminal north face z
+const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const clamp = THREE.MathUtils.clamp;
+const UP = v3(0, 1, 0);
+
+/* ---------- renderer / scene / camera ---------- */
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x9fbfd8, 0.00048);
+const skyCol = new THREE.Color(0x9fbfd8);
+scene.background = skyCol;
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 12, 16000);
+const CAM_POS = v3(1000, 480, 1050), CAM_TGT = v3(-80, 30, -60);
+camera.position.copy(CAM_POS);
+const controls = new OrbitControls(camera, canvas);
+controls.target.copy(CAM_TGT);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.minDistance = 120;
+controls.maxDistance = 4200;
+
+/* ---------- lights ---------- */
+const sun = new THREE.DirectionalLight(0xfff3e0, 1.6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 500; sun.shadow.camera.far = 14000;
+sun.shadow.camera.left = -1800; sun.shadow.camera.right = 1800;
+sun.shadow.camera.top = 1800; sun.shadow.camera.bottom = -1800;
+sun.shadow.bias = -0.0006;
+sun.shadow.normalBias = 3;
+scene.add(sun, sun.target);
+const moonLight = new THREE.DirectionalLight(0x7d90c4, 0.0);
+moonLight.position.set(-1500, 2500, -900);
+scene.add(moonLight);
+const hemi = new THREE.HemisphereLight(0xbdd6ee, 0x40483c, 0.55);
+const amb = new THREE.AmbientLight(0xffffff, 0.12);
+scene.add(hemi, amb);
+
+/* ---------- day-night registries ---------- */
+const lightMats = [];   // emissive-looking dots: bright at night, dull grey by day
+const windowMats = [];  // MeshStandardMaterial with emissive windows
+const glowPools = [];   // additive decals under lights
+let nightF = 0;
+
+function regLight(color) {
+  const mat = new THREE.MeshBasicMaterial({ color });
+  lightMats.push({ mat, base: new THREE.Color(color) });
+  return mat;
+}
+
+/* ---------- radial glow texture ---------- */
+function glowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(64, 64, 4, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(255,255,255,0.85)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.28)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+const glowTex = glowTexture();
+
+function pool(x, z, r, color, y = 2.4) {
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(r * 2, r * 2),
+    new THREE.MeshBasicMaterial({ map: glowTex, color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  m.rotation.x = -Math.PI / 2; m.position.set(x, y, z);
+  scene.add(m); glowPools.push(m);
+}
+
+function instancedDots(mat, pts, s = 1) {
+      const im = new THREE.InstancedMesh(new THREE.SphereGeometry(2.4 * s, 8, 6), mat, pts.length);
+  const d = new THREE.Object3D();
+  pts.forEach((p, i) => { d.position.copy(p); d.updateMatrix(); im.setMatrixAt(i, d.matrix); });
+  scene.add(im);
+}
+const V = (x, z, y = 4) => v3(x, y, z);
+
+/* ---------- ground ---------- */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(16000, 16000),
+  new THREE.MeshStandardMaterial({ color: 0x46523c, roughness: 1 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+function pad(x, z, w, d, color, y) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ color, roughness: 0.95 }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, y, z);
+    m.receiveShadow = true; scene.add(m);
+  return m;
+}
+function quadPad(ax, az, bx, bz, cx, cz, dx2, dz2, color, y) {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+    ax, 0, az,  bx, 0, bz,  cx, 0, cz,
+    ax, 0, az,  cx, 0, cz,  dx2, 0, dz2,
+  ]), 3));
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: 0.95 }));
+  m.position.y = y; m.receiveShadow = true; scene.add(m);
+  return m;
+}
+// runways, taxiways, aprons
+pad(0, RW_A, 2000, 64, 0x2b2e33, 1.2);
+pad(0, RW_B, 2000, 64, 0x2b2e33, 1.2);
+pad(0, -230, 1900, 30, 0x3a3e44, 1.0);   // T1 (arrivals side)
+pad(0, 230, 1900, 30, 0x3a3e44, 1.0);    // T2 (departures side)
+pad(-720, -80, 130, 320, 0x3a3e44, 1.0); // west wrap connector
+pad(740, 120, 130, 340, 0x3a3e44, 1.0);  // east wrap connector
+pad(0, 5, 1650, 180, 0x474b52, 0.8);     // main apron around gates
+// high-speed diagonal turnoff: RW_A -> T1 near x ~ 200
+quadPad(250, -290, 170, -290, 75, -243, 155, -243, 0x3a3e44, 1.1);
+
+
+/* ---------- runway markings ---------- */
+{
+  const dashMat = new THREE.MeshBasicMaterial({ color: 0xd8d8d2 });
+  const dashGeo = new THREE.PlaneGeometry(22, 1.3);
+  const pts = [];
+  for (const z of [RW_A, RW_B]) {
+    for (let x = -940; x <= 940; x += 90) pts.push([x, z, 0]);          // centreline
+    for (const ex of [RW_X1 + 40, RW_X2 - 40])                            // threshold "piano keys"
+      for (let i = -3; i <= 3; i++) if (i !== 0) pts.push([ex, z + i * 8, 1]);
+  }
+  const im = new THREE.InstancedMesh(dashGeo, dashMat, pts.length);
+  const d = new THREE.Object3D();
+  pts.forEach((p, i) => {
+        d.position.set(p[0], 1.8, p[1]);
+    d.rotation.set(-Math.PI / 2, 0, p[2] ? Math.PI / 2 : 0);
+    d.updateMatrix(); im.setMatrixAt(i, d.matrix);
+  });
+  scene.add(im);
+}
+
+/* ---------- runway / taxiway lighting ---------- */
+{
+  const white = regLight(0xfff2cf), green = regLight(0x5cff8a), red = regLight(0xff5340), blue = regLight(0x4fa8ff);
+  const edgeW = [], appr = [], thrG = [], thrR = [], twyB = [];
+    for (const z of [RW_A, RW_B]) {
+    for (let x = RW_X1; x <= RW_X2; x += 100) {
+      edgeW.push(V(x, z - 38), V(x, z + 38));
+    }
+    thrG.push(V(RW_X2 - 12, z - 28), V(RW_X2 - 12, z + 28)); // east threshold (used)
+    thrR.push(V(RW_X1 + 12, z - 28), V(RW_X1 + 12, z + 28));
+  }
+  for (let x = 1120; x <= 1720; x += 100) appr.push(V(x, RW_A));           // approach bar beyond east end
+  for (const z of [-230, 230])
+    for (let x = -900; x <= 900; x += 110) twyB.push(V(x, z - 19), V(x, z + 19)); // taxiway edge
+  instancedDots(white, edgeW); instancedDots(white, appr);
+  instancedDots(green, thrG, 1.2); instancedDots(red, thrR, 1.2);
+    instancedDots(blue, twyB, 0.8);
+}
+
+/* ---------- buildings ---------- */
+const bMat = new THREE.MeshStandardMaterial({ color: 0x8f97a3, roughness: 0.85 });
+const bMatDark = new THREE.MeshStandardMaterial({ color: 0x5d6570, roughness: 0.9 });
+function box(w, h, d, x, y, z, mat = bMat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+  scene.add(m); return m;
+}
+// terminal main building (z -190..-90)
+box(920, 26, 100, 0, 13, -140, bMat);
+box(920, 4, 104, 0, 28, -140, bMatDark);
+{
+  const wm = new THREE.MeshStandardMaterial({ color: 0x31383f, emissive: 0xffd27a, emissiveIntensity: 0, roughness: 0.4 });
+  windowMats.push(wm);
+  const w1 = new THREE.Mesh(new THREE.PlaneGeometry(900, 12), wm);
+    w1.position.set(0, 14, -88.8); scene.add(w1);
+  const w2 = new THREE.Mesh(new THREE.PlaneGeometry(900, 12), wm);
+    w2.position.set(0, 14, -191.2); w2.rotation.y = Math.PI; scene.add(w2);
+}
+// jet bridges + gate labels + apron floodlight poles
+function gateLabel(txt) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const g = c.getContext('2d');
+  g.font = 'bold 110px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#e8e4c8'; g.fillText(txt, 128, 66);
+  return new THREE.CanvasTexture(c);
+}
+const lampMat = regLight(0xffe6b0);
+GATES.forEach((gx, i) => {
+  const jb = box(8, 5, 34, gx, 6, -72, bMatDark);
+  jb.rotation.x = -0.16;
+  const lab = new THREE.Mesh(new THREE.PlaneGeometry(46, 23),
+    new THREE.MeshBasicMaterial({ map: gateLabel('A' + (i + 1)), transparent: true }));
+    lab.rotation.x = -Math.PI / 2; lab.position.set(gx, 1.8, 60);
+  scene.add(lab);
+  pool(gx, 10, 75, 0xffdf9e);
+  box(2.5, 42, 2.5, gx + 55, 21, 92, bMatDark);
+  instancedDots(lampMat, [v3(gx + 55, 92, 42)], 1.6);
+  pool(gx + 55, 92, 55, 0xffe6b0);
+});
+// control tower
+{
+  const t = new THREE.Mesh(new THREE.CylinderGeometry(13, 17, 95, 12), bMat);
+  t.position.set(-620, 47.5, -150); t.castShadow = true; scene.add(t);
+  const cab = new THREE.Mesh(new THREE.CylinderGeometry(24, 18, 16, 12), bMatDark);
+  cab.position.set(-620, 100, -150); cab.castShadow = true; scene.add(cab);
+  const wm = new THREE.MeshStandardMaterial({ color: 0x20262e, emissive: 0x9fd8ff, emissiveIntensity: 0, roughness: 0.3 });
+  windowMats.push(wm);
+  const cw = new THREE.Mesh(new THREE.CylinderGeometry(22.5, 20, 9, 12, 1, true), wm);
+  cw.position.set(-620, 100.5, -150); scene.add(cw);
+  pool(-620, -150, 90, 0x9fd8ff);
+}
+// hangars
+for (const hx of [-1250, -1480]) {
+  box(180, 42, 130, hx, 21, -60, bMatDark);
+  box(184, 5, 134, hx, 44, -60, bMat);
+}
+
+/* ---------- stars / sun / moon ---------- */
+const starMat = new THREE.PointsMaterial({ color: 0xdfe8ff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0 });
+{
+  const n = 700, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, e = Math.random() * Math.PI * 0.46 + 0.04, r = 7000;
+    pos[i * 3] = Math.cos(a) * Math.cos(e) * r; pos[i * 3 + 1] = Math.sin(e) * r; pos[i * 3 + 2] = Math.sin(a) * Math.cos(e) * r;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(g, starMat));
+}
+const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(130, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xffeecb, fog: false }));
+const moonDisc = new THREE.Mesh(new THREE.SphereGeometry(90, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xd9e2f5, fog: false }));
+scene.add(sunDisc, moonDisc);
+
+/* ================= aircraft ================= */
+/* Model built nose-forward (-z), so lookAt-style orientation points the nose along travel. */
+const LIVERY = [0xd8443a, 0x2f6fbf, 0x2f9e6e, 0xe0a53a, 0x8c5ad1, 0x39b6c9];
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0xe9ebee, roughness: 0.5, metalness: 0.25 });
+const gearMat = new THREE.MeshStandardMaterial({ color: 0x33383f, roughness: 0.8 });
+
+function buildPlane() {
+  const g = new THREE.Group();
+  const tail = new THREE.MeshStandardMaterial({ color: LIVERY[(Math.random() * LIVERY.length) | 0], roughness: 0.5, metalness: 0.2 });
+
+  const fus = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 2.6, 40, 10), bodyMat);
+  fus.rotation.x = Math.PI / 2; g.add(fus);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(2.6, 10, 8), bodyMat);
+  nose.position.z = -20; nose.scale.z = 1.7; g.add(nose);
+  const cone = new THREE.Mesh(new THREE.SphereGeometry(3.0, 10, 8), bodyMat);
+  cone.position.z = 19; cone.scale.z = 1.4; g.add(cone);
+
+  const wingGeo = new THREE.BoxGeometry(17, 0.9, 4.6);
+  for (const s of [-1, 1]) {
+    const w = new THREE.Mesh(wingGeo, bodyMat);
+    w.position.set(s * 10.4, -0.6, 3.5); w.rotation.y = s * -0.52; g.add(w);
+    const eng = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.7, 5.4, 8), gearMat);
+    eng.rotation.x = Math.PI / 2; eng.position.set(s * 8, -2.1, -1.5); g.add(eng);
+  }
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(1, 9.5, 8), tail);
+  fin.position.set(0, 6.8, 17.4); fin.rotation.x = 0.28; g.add(fin);
+  const hstab = new THREE.Mesh(new THREE.BoxGeometry(12, 0.7, 4), tail);
+  hstab.position.set(0, 2.4, 18.5); g.add(hstab);
+
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+
+  /* lights */
+  const L = {};
+  const dot = (color, r) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 6, 6), new THREE.MeshBasicMaterial({ color, transparent: true }));
+    g.add(m); return m;
+  };
+  L.navL = dot(0xff3322, 0.55); L.navL.position.set(-19, -0.4, 6.5);
+  L.navR = dot(0x33ff66, 0.55); L.navR.position.set(19, -0.4, 6.5);
+  L.strobe = dot(0xffffff, 0.7); L.strobe.position.set(0, 1.6, 20.5);
+  L.beacon = dot(0xff5533, 0.6); L.beacon.position.set(0, 3.1, 2);
+  const sprite = () => {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xfff6d8, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    s.scale.setScalar(14); g.add(s); return s;
+  };
+  L.land = [sprite(), sprite()];
+  L.land[0].position.set(-6.5, -2.1, -4.2); L.land[1].position.set(6.5, -2.1, -4.2);
+  g.userData.L = L;
+  return g;
+}
+/* ================= routes ================= */
+/* Everything flows westbound (-x): land on RW_A (z=-320), depart RW_B (z=300).
+   Arrival taxi loops the terminal on the west side, departure taxi exits east. */
+const P = (x, z, y = G) => v3(x, y, z);
+const HOLD_ALT = 520;
+const holdCurve = new THREE.CatmullRomCurve3([
+  P(2400, -1160, HOLD_ALT), P(3400, -1160, HOLD_ALT), P(3980, -900, HOLD_ALT),
+  P(3400, -640, HOLD_ALT), P(2600, -640, HOLD_ALT), P(2050, -900, HOLD_ALT),
+], true, 'catmullrom', 0.5);
+const takeoffRoll = new THREE.CatmullRomCurve3([P(880, RW_B), P(200, RW_B), P(-430, RW_B)]);
+const climbCurve = new THREE.CatmullRomCurve3([
+  P(-430, RW_B), P(-800, RW_B + 8, 55), P(-1500, RW_B + 30, 230),
+  P(-2400, RW_B + 55, 520), P(-3600, RW_B + 80, 900), P(-5400, RW_B + 110, 1500),
+]);
+
+/* per-gate taxi routes */
+const taxiToGate = {}, taxiToDep = {};
+GATES.forEach((gx, i) => {
+  const c = new THREE.CatmullRomCurve3([
+    P(330, -230), P(-300, -230), P(-560, -230), P(-690, -212), P(-748, -165),
+    P(-762, -100), P(-752, -20), P(-712, 30), P(-620, 34),
+    P(gx - 120, 34), P(gx - 25, 26), P(gx, -5), P(gx, -35),
+  ], false, 'catmullrom', 0.5);
+  taxiToGate[i] = { curve: c, len: c.getLength() };
+
+  const d = new THREE.CatmullRomCurve3([
+    P(gx, 8), P(gx + 32, 26), P(gx + 95, 32), P(640, 32), P(722, 40), P(775, 82),
+    P(792, 145), P(782, 205), P(748, 250), P(800, 262), P(880, 250), P(975, 245),
+    P(1055, 252), P(1098, 282), P(1088, 312), P(1030, 330), P(950, 315), P(880, RW_B),
+  ], false, 'catmullrom', 0.5);
+  let hs = 0;
+  for (let t = 0; t < 1; t += 0.002) {
+    if (d.getPointAt(t).z > 266) { hs = t; break; }
+  }
+  taxiToDep[i] = { curve: d, len: d.getLength(), holdDist: d.getLength() * hs };
+});
+
+/* landing curve built per arrival, gliding onto the glide path then rolling out */
+function makeApproach(from) {
+  const m1 = from.clone().lerp(v3(2700, 400, -560), 0.4);
+  const m2 = from.clone().lerp(v3(2700, 400, -560), 0.75);
+  return new THREE.CatmullRomCurve3([
+    from.clone(), m1, m2, P(2700, -560, 400), P(2150, -410, 305), P(1500, -330, 190),
+        P(950, -320, 88), P(700, -320, 22), P(620, -320, G), P(230, -320, G),
+    P(120, -252, G), P(40, -230, G), P(-20, -230, G),
+  ], false, 'catmullrom', 0.5);
+}
+
+function nearestT(curve, p) {
+  let bt = 0, bd = Infinity;
+  for (let t = 0; t < 1; t += 0.005) {
+    const d = curve.getPointAt(t).distanceToSquared(p);
+        if (d < bd) { bd = d; bt = t; }
+  }
+  return bt;
+}
+
+/* ================= aircraft states ================= */
+const gates = GATES.map((x, i) => ({ x, busy: null, i }));
+let approachBusy = null;   // one aircraft on final + runway A at a time
+let depBusy = null;        // one aircraft on runway B at a time
+let tGlobal = 0;
+
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _qz = new THREE.Quaternion();
+const _v = new THREE.Vector3(), VZ = v3(0, 0, 1);
+const twoPi = Math.PI * 2;
+
+class Plane {
+  constructor(name) {
+    this.group = buildPlane();
+    this.name = name;
+    this.state = 'INBOUND';
+    this.v = 150; this.s = 0; this.curve = null; this.len = 1;
+    this.gate = null; this.timer = 0; this.psi = Math.PI; this.roll = 0;
+    this.callsign = name + (100 + ((Math.random() * 899) | 0));
+    scene.add(this.group);
+  }
+  dispose() { scene.remove(this.group); this.dead = true; }
+
+    setState(s) {
+    this.state = s;
+    if (s === 'GATE') this.v = 0;
+  }
+  startCurve(route) { this.curve = route.curve || route; this.len = route.len || this.curve.getLength(); this.s = route.s || 0; }
+
+  orient(tan, dt, bankOn) {
+    _m.lookAt(this.group.position, _v.copy(this.group.position).add(tan), UP);
+    _q.setFromRotationMatrix(_m);
+    const psi = Math.atan2(-tan.x, -tan.z);
+    let d = psi - this.psi; if (d > Math.PI) d -= twoPi; if (d < -Math.PI) d += twoPi;
+    const rate = dt > 0 ? d / dt : 0;
+    this.psi = psi;
+    const target = bankOn ? clamp(rate * 0.55, -0.5, 0.5) : 0;
+    this.roll += (target - this.roll) * clamp(dt * 2.2, 0, 1);
+    _qz.setFromAxisAngle(VZ, this.roll);
+    _q.multiply(_qz);
+    this.group.quaternion.slerp(_q, clamp(dt * 3.2, 0, 1));
+  }
+    follow(dt, targetV, bankOn, endGap = 0, rate = 1.6) {
+    this.v += (targetV - this.v) * clamp(dt * rate, 0, 1);
+    this.s += this.v * dt;
+    const lim = this.len - endGap;
+    const t = clamp(this.s / this.len, 0, 1);
+    this.group.position.copy(this.curve.getPointAt(t));
+    const tan = this.curve.getTangentAt(t); tan.y *= 0.35;
+    this.orient(tan, dt, bankOn);
+    return this.s >= lim;
+  }
+
+  update(dt) {
+    const p = this.group.position, L = this.group.userData.L;
+    switch (this.state) {
+      case 'INBOUND': {
+        p.x -= this.v * dt;
+        this.orient(v3(-1, 0, 0), dt, false);
+                if (!approachBusy && p.x < 3450 && p.x > 3000 && this.commit()) break;
+        if (p.x < 3450) {
+          const len = holdCurve.getLength();
+          this.setState('HOLD');
+          this.startCurve({ curve: holdCurve, len, s: nearestT(holdCurve, p) * len });
+        }
+        break;
+      }
+            case 'HOLD': {
+        if (this.s > this.len) this.s -= this.len;   // wrap the closed racetrack
+        this.follow(dt, 140, true);
+        if (!approachBusy && p.x > 2550 && p.x < 3350 && p.z > -780 && p.z < -520) this.commit();
+        break;
+      }
+      case 'APPROACH': {
+        const x = p.x;
+                const tv = p.y > 6 ? (x > 2100 ? 140 : x > 1300 ? 118 : 100)
+                           : (x > 560 ? 92 : x > 330 ? 78 : x > 230 ? 52 : x > 120 ? 30 : 22);
+        if (this.follow(dt, tv, true, 0, 0.9)) {
+          if (approachBusy === this) approachBusy = null;
+          const g = taxiToGate[this.gate.i];
+          this.startCurve({ curve: g.curve, len: g.len, s: nearestT(g.curve, p) * g.len });
+          this.setState('TAXI_GATE');
+        }
+        break;
+      }
+      case 'TAXI_GATE': {
+                const tv = this.s > this.len - 90 ? 6 : 24;
+        if (this.follow(dt, tv, false)) {
+          p.copy(taxiToGate[this.gate.i].curve.getPointAt(1));
+          this.setState('GATE');
+          this.timer = 12 + Math.random() * 22;
+        }
+        break;
+      }
+      case 'GATE': {
+        this.v = 0;
+        this.timer -= dt;
+        if (this.timer <= 0) {
+          const td = taxiToDep[this.gate.i];
+          this.startCurve(td);
+          this.push = { from: p.clone(), to: td.curve.getPointAt(0), k: 0 };
+          this.setState('PUSHBACK');
+        }
+        break;
+      }
+      case 'PUSHBACK': {
+        this.k = (this.k || 0) + dt / 4.5;
+                if (this.k >= 1) {
+          this.k = 0;
+          if (this.gate && this.gate.busy === this) this.gate.busy = null;
+          this.setState('TAXI_DEP'); this.v = 3; break;
+        }
+        this.push.k = this.k;
+        p.lerpVectors(this.push.from, this.push.to, this.k * this.k * (3 - 2 * this.k));
+        this.orient(v3(0, 0, -1), dt, false);   // nose stays parked into the terminal
+        break;
+      }
+      case 'TAXI_DEP': {
+        const hs = taxiToDep[this.gate.i].holdDist;
+        const blocked = depBusy && depBusy !== this;
+                const tv = (blocked && this.s + 15 > hs && this.s < hs + 1) ? 0 : 22;
+        if (tv > 0 && this.s < hs && this.s + this.v * dt >= hs) {
+          if (blocked) { this.s = hs - 0.5; }
+          else { depBusy = this; }
+        }
+                if (this.follow(dt, tv, false)) {
+          this.setState('ROLL');
+          this.startCurve({ curve: takeoffRoll, len: takeoffRoll.getLength() });
+          this.group.position.copy(takeoffRoll.getPointAt(0));
+        }
+        break;
+      }
+      case 'ROLL': {
+        this.v = Math.min(this.v + 8.5 * dt, 112);
+        if (this.follow(dt, this.v, false)) {
+          this.setState('CLIMB');
+          this.startCurve({ curve: climbCurve, len: climbCurve.getLength() });
+        }
+        break;
+      }
+      case 'CLIMB': {
+        this.v = Math.min(this.v + 5 * dt, 165);
+        if (depBusy === this && p.x < -1010) depBusy = null;
+        if (p.x < -5300) { this.dispose(); break; }
+        this.follow(dt, this.v, true);
+        break;
+      }
+    }
+    /* aircraft lights */
+    const moving = this.v > 6 && this.state !== 'GATE';
+    const u = (tGlobal * 0.9) % 1;
+    L.beacon.visible = (tGlobal * 1.3) % 1 < 0.14;
+    L.strobe.visible = moving && (u < 0.04 || (u > 0.09 && u < 0.125));
+    const navOn = nightF > 0.3;
+    L.navL.visible = navOn; L.navR.visible = navOn;
+    const phase = this.state;
+    const landOn = navOn || phase === 'APPROACH' || phase === 'ROLL' || phase === 'CLIMB';
+    L.land.forEach(m => m.visible = landOn && phase !== 'GATE');
+  }
+
+  commit() {
+    const free = gates.find(g => !g.busy);
+    if (!free) return false;
+    this.gate = free; free.busy = this;
+    approachBusy = this;
+    const r = makeApproach(this.group.position);
+    this.startCurve({ curve: r, len: r.getLength() });
+    this.setState('APPROACH');
+    return true;
+  }
+}
+/* ================= day / night ================= */
+const cNight = new THREE.Color(0x0e1630), cDay = new THREE.Color(0x8fbce0),
+      cDusk = new THREE.Color(0xcf7038), cTmp = new THREE.Color();
+const cSunHigh = new THREE.Color(0xfff3e0), cSunLow = new THREE.Color(0xff9a55);
+
+function applyTime(h) {
+  const el = Math.sin((h - 6) / 12 * Math.PI);            // sun elevation, -1..1
+  const dayF = clamp((el + 0.07) / 0.3, 0, 1);
+  nightF = 1 - dayF;
+  const dusk = dayF * (1 - dayF) * 3.4;                   // golden-hour tint
+
+  cTmp.copy(cNight).lerp(cDay, dayF).lerp(cDusk, Math.min(dusk, 0.7));
+  scene.background.copy(cTmp);
+  scene.fog.color.copy(cTmp);
+    scene.fog.density = 0.00027 + nightF * 0.00011;
+
+  const a = (h - 6) / 12 * Math.PI;
+  const sx = -Math.cos(a) * 6200, sy = el * 4800;
+  sun.position.set(sx, Math.max(sy, -800), -2200);
+  sun.target.position.set(0, 0, 0);
+  sun.intensity = dayF * 1.75;
+  sun.color.copy(cSunLow).lerp(cSunHigh, clamp(el * 2.5, 0, 1));
+  sun.castShadow = dayF > 0.25;
+    moonLight.intensity = nightF * 0.55;
+  hemi.intensity = 0.22 + dayF * 0.45;
+  amb.intensity = 0.12 + dayF * 0.12;
+
+  for (const { mat, base } of lightMats) mat.color.copy(base).multiplyScalar(0.16 + 0.84 * Math.pow(nightF, 1.15));
+  for (const wm of windowMats) wm.emissiveIntensity = nightF * 1.6;
+  for (const p of glowPools) p.material.opacity = nightF * 0.45;
+  starMat.opacity = clamp((nightF - 0.35) * 1.6, 0, 1);
+  sunDisc.position.set(sx * 1.15, Math.max(sy, -200) * 1.15, -2500);
+  moonDisc.position.set(-sx * 1.15, Math.max(-sy, -200) * 1.15, 2500);
+  sunDisc.visible = el > -0.1;
+  moonDisc.visible = nightF > 0.15;
+}
+
+/* ================= traffic ================= */
+const planes = [];
+const AIRLINES = ['SKY', 'AIR', 'JET', 'NOR', 'VAX'];
+let spawnT = 0, todHours = 10, simSpeed = 1, paused = false;
+
+function spawn(x = 4700) {
+  if (planes.length >= 13) return;
+  const p = new Plane(AIRLINES[(Math.random() * AIRLINES.length) | 0] + ' ');
+  p.group.position.set(x, 560, -1160);
+  planes.push(p);
+}
+
+/* start with a lived-in airport */
+(function seed() {
+  spawn(4100); spawn(5300);
+  const held = new Plane('SKY ');
+  held.group.position.copy(holdCurve.getPointAt(0.1));
+  held.setState('HOLD');
+  held.startCurve({ curve: holdCurve, len: holdCurve.getLength(), s: 0.1 * holdCurve.getLength() });
+  planes.push(held);
+  for (const gi of [0, 4]) {
+    const parked = new Plane('AIR ');
+    parked.gate = gates[gi]; gates[gi].busy = parked;
+    parked.group.position.copy(taxiToGate[gi].curve.getPointAt(1));
+    parked.setState('GATE'); parked.timer = 6 + Math.random() * 15;
+    planes.push(parked);
+  }
+  const taxiing = new Plane('JET ');
+  taxiing.gate = gates[2];
+  taxiing.setState('TAXI_DEP');
+  taxiing.startCurve(taxiToDep[2]); taxiing.s = 260; taxiing.v = 19;
+  planes.push(taxiing);
+})();
+
+/* ================= UI ================= */
+const $ = id => document.getElementById(id);
+const tod = $('tod'), todOut = $('todOut'), autocy = $('autocy'), rate = $('rate'),
+      rateOut = $('rateOut'), speed = $('speed'), speedOut = $('speedOut'),
+      pauseBtn = $('pause'), camBtn = $('camBtn'), stats = $('stats');
+
+function fmtTod(h) {
+  const hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
+  return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+tod.addEventListener('input', () => { todHours = +tod.value; todOut.value = fmtTod(todHours); applyTime(todHours); });
+rate.addEventListener('input', () => rateOut.value = rate.value + ' s');
+speed.addEventListener('input', () => { simSpeed = +speed.value; speedOut.value = simSpeed.toFixed(2).replace(/0$/, '') + '×'; });
+pauseBtn.addEventListener('click', () => {
+  paused = !paused;
+  pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+  pauseBtn.setAttribute('aria-pressed', String(paused));
+});
+camBtn.addEventListener('click', () => { camera.position.copy(CAM_POS); controls.target.copy(CAM_TGT); });
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ================= main loop ================= */
+applyTime(todHours); todOut.value = fmtTod(todHours);
+let last = performance.now(), statT = 0;
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+  if (paused) dt = 0;
+  dt *= simSpeed;
+  tGlobal += dt;
+
+  if (dt > 0) {
+    if (autocy.checked) {
+      todHours = (todHours + dt * 0.15) % 24;
+      tod.value = todHours; todOut.value = fmtTod(todHours); applyTime(todHours);
+    }
+    spawnT += dt;
+    if (spawnT >= +rate.value) { spawnT = 0; spawn(); }
+    for (let i = planes.length - 1; i >= 0; i--) {
+      planes[i].update(dt);
+      if (planes[i].dead) {
+        if (planes[i].gate) planes[i].gate.busy = null;
+        planes.splice(i, 1);
+      }
+    }
+  }
+  controls.update();
+  renderer.render(scene, camera);
+
+  statT += dt;
+  if (statT > 0.4) {
+    statT = 0;
+    const c = s => planes.filter(p => p.state === s).length;
+    stats.innerHTML = `Airborne <b>${c('INBOUND') + c('HOLD') + c('APPROACH') + c('CLIMB')}</b>` +
+            ` · Holding <b>${c('HOLD')}</b> · On final <b>${c('APPROACH')}</b>` +
+      ` · Gates <b>${planes.filter(p => p.state === 'GATE').length}/6</b>` +
+      ` · Total <b>${planes.length}</b>`;
+  }
+}
+requestAnimationFrame(frame);
+window.__airport = { planes, gates };   // small debug handle for inspection
+
+
+
+
+</script>
+</body>
+</html>
+
+
+
