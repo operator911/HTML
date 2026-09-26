@@ -42,7 +42,7 @@ it is checked — never reconstructed from memory afterwards.
 | Sinitic (retrofit) | 0 | 0 | 0 | 0 | 42 seeded targets below — **sweep skipped by instruction (Phase 0.5)** |
 | Tungusic | 8 | 8 | 0 | 0 | — |
 | Kra–Dai | 9 | 9 | 0 | 0 | — |
-| Mongolic | 10 | 8 | 1 | 1 | — |
+| Mongolic | 11 | 8 | 1 | 1 | — |
 | Japonic & Ainu | 10 | 8 | 1 | 1 | — |
 | Koreanic | 0 | 0 | 0 | 0 | atlas not written |
 | Tibeto-Burman | 0 | 0 | 0 | 0 | atlas not written |
@@ -76,6 +76,14 @@ it is checked — never reconstructed from memory afterwards.
 > entry where it was not independently re-fetched. Where a figure is a range, the prose says
 > "by source". Nothing here is cited that was not read. Phases 5–8 are unwritten: their
 > sections in this file are empty by design, not by omission.
+>
+> ⚠ **One exception, found and closed on 2026-09-26.** The Mongolic Oirat figure (368,000) was
+> in the atlas from the start and *was* read from the source — but it had no entry in this file
+> until `[MG-111]`, so for a while the sentence above was not strictly true of it. The same
+> re-check also found a Mongolic number (5.6 million) that was in **no** source at all and has
+> been removed. Both are recorded at `[MG-111]`. The claim above is now accurate; it was
+> previously an aspiration, and that is worth knowing when reading any entry written before
+> that date.
 
 ---
 
@@ -188,6 +196,7 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
 - [x] The mixed Sinitic–Mongolic languages Tangwang and Wutun — the cross-link into Sinitic — `[MG-108]`
 - [x] Moghol, Dagur's historical Manchu script, Khamnigan, and the Manchu/Xibe script lineage — `[MG-109]`
 - [x] Link health for every Omniglot URL in `SOUND` — `[MG-110]`
+- [x] ⚠ **Re-check pass:** three figure problems found and fixed — an unlogged Oirat figure, a source that contradicts itself on Inner Mongolia, and a number with no source behind it — `[MG-111]`
 - [x] **Atlas built:** `atlas-mongolic.js` — 26 nodes · 108 markers · 4 branches · 9 palette classes ·
       7 sketch polygons (Mongolia, Buryatia, Kalmykia, Xinjiang, Gansu–Qinghai, Manchuria, Herat).
       `node tools/check-atlas.js` passes (26 nodes · 108 markers · 26 iso · 26 features) and the
@@ -495,7 +504,7 @@ as Phase 3, so wording could be quoted exactly.
 - **Confidence:** high for the classification statements and the homeland; medium for the total, which is my own sum of the source's own table (see `[MG-102]`) rather than a figure the article states
 - **Action:** the root gives "about 6.3 million, by source" and names the sum's origin rather than presenting it as a published count. The Altaic/Transeurasian material is presented as a proposal that has been criticised, not as a finding.
 
-### [MG-102] The speaker table, and three figures that disagree with Wikipedia's own infoboxes
+### [MG-102] The speaker table, and four figures that disagree with Wikipedia's own infoboxes
 - **Claim as written:** the per-language figures in `atlas-mongolic.js`, e.g. "Mongolian proper 5.2 million · Buryat 330,000 · Kalmyk–Oirat 360,000 · Dagur 96,000 · Santa 200,000 · Monguor 150,000 · Eastern Yugur 4,000 · Bonan 6,000 · Khamnigan 2,000 · Kangjia 1,000 · Moghol extinct".
 - **Appears in:** `atlas-mongolic.js` → nodes `khalkha`, `peripheral`, `buryat`, `oirat`, `kalmyk`, `dagur`, `santa`, `monguor`, `yugur`, `bonan`, `khamnigan`, `kangjia`, `moghol`
 - **Verdict:** verified as a citation, with conflicts logged
@@ -571,9 +580,21 @@ as Phase 3, so wording could be quoted exactly.
 ### [MG-110] Link health — Omniglot coverage for Mongolic (protocol from TU-109)
 - **Claim as written:** every `SOUND` entry in `atlas-mongolic.js` is a URL that was requested before being written down.
 - **Appears in:** `atlas-mongolic.js` → `const SOUND`
-- **Verdict:** verified — 24 candidate URLs requested 2026-09-26
+- **Verdict:** verified — 26 candidate URLs requested 2026-09-26
 - **What the check found:** **200** for `mongolian`, `buryat`, `kalmyk`, `monguor`, `phagspa`, `xibe`, `manchu`. **404** for `mongolian_script`, `mongolian_cyrillic`, `mongolic`, `dagur`, `dongxiang`, `bonan`, `kangjia`, `yugur`, `moghol`, `clear_script`, `phags_pa`, `mongolian_alphabets`, `todo`, `todo_bichig`, `clear`, `mongolian_traditional`, `mongolian_todo`, `kalmyk_clear`, `mongol`.
 - **Action:** the SOUND map carries only the 200s. Nodes with no Omniglot page (Dagur, Santa, Bonan, Kangjia, Eastern Yugur, Moghol, Middle Mongol, Khamnigan, and the script nodes) carry an **empty list** rather than a guessed or 404 link; the engine's YouTube-search fallback covers them. Note the two traps recorded here so a later session does not repeat them: Omniglot has **no** separate page for the Mongolian *script* (only for the language), and its ʼPhags-pa page is spelled **`phagspa.htm`**, not `phags_pa.htm`.
+
+### [MG-111] ⚠ Three figure problems found on a re-check: an unlogged Oirat figure, a source that contradicts itself, and one number with no source at all
+- **Found:** 2026-09-26, in a consistency pass over `atlas-mongolic.js` against the saved source dumps in `/tmp/wp-mg-*.txt`. Three separate problems, all now fixed. Recorded because two of them were invisible from inside the atlas and one was a genuine error of mine.
+- **Problem 1 — the Oirat figure was correct but unlogged.** The `oirat` node carried "368,000 — 58% of 655,372 ethnic Oirats, by source", and `[MG-101]`–`[MG-110]` never mentioned 368,000 or 655,372. Re-checked against the saved dump: `/tmp/wp-mg-Oirat_language.txt` lines 9–10 give the infobox as `| ethnicity = 655,372 [[Oirats]]` and `| speakers = 368,000, 58% of ethnic population`. So the node is a **faithful quote** and was never a fabrication — but it was an unlogged citation, which is exactly what the honesty note above says does not happen. Now logged here.
+  - **The arithmetic inside the source is loose, and the atlas now says so.** 58% of 655,372 is about 380,000, not 368,000. The percentage and the absolute figure do not agree with each other *in the infobox*. The node quotes both and flags the mismatch rather than silently correcting either.
+  - **And it is a third figure, not a restatement of Janhunen's.** The family article's table gives **360,000** for "Kalmyk–Oirat" *combined*; the Oirat infobox gives **368,000** for Oirat's own speakers. These are different sources, different dates and slightly different populations, and they are too close to call either one the error. The node, its `sp` chip and its `FEATURES` list now carry all three figures — 368,000, 360,000 and Kalmyk's 110,000 (2021) — with the scope of each stated.
+- **Problem 2 — the source contradicts itself on Inner Mongolia, and the atlas had repeated the headline.** The `peripheral` node asserted flatly that Inner Mongolian "outnumbers the Mongolian of the state of Mongolia", quoting the Mongolian-language article's sentence "The number of Mongolian speakers in China is still larger than in the state of Mongolia". **The same article's own figures say the opposite.** `/tmp/wp-mg-Mongolian_language.txt` line 83 gives Mongolia "nearly 3.6 million people (2014 estimate)", Inner Mongolia "about 2.1 million people speak Mongolian", and all of China "roughly half of the country's 5.8 million ethnic Mongols" — i.e. about 2.9 million for China against 3.6 million for Mongolia. So the sentence and the numbers it sits beside cannot both be right.
+  - **Resolution:** the atlas now reports the claim *as a claim* and gives the figures that undercut it, rather than asserting the surprise fact. What survives unhedged is the dialect position, which is not contested: rather more than two million speak Khorchin as a mother tongue, making that group comparable in size to Khalkha.
+- **Problem 3 — a number of mine with no source behind it, now removed.** The `central` node's `sp` chip read "≈5.6 million — most of the family". That figure appears in **no** source dump and is not derivable from the table: the family article's tree (`/tmp/wp-mg-Mongolic_languages.txt` lines 124–130) gives Dagur 96,000, Buryat 330,000 and Kalmyk–Oirat 360,000, and gives **Peripheral Mongolian no figure at all** — so any sum for Central Mongolic is necessarily incomplete, and 5.6 million was not one. Replaced with the qualitative "the great majority of the family, by source".
+  - **A related scope error, also fixed.** The `khalkha` node carried "5.2 million (Mongolian proper)" as if that were Khalkha's own count. Janhunen's "Mongolian proper" is a **single table row covering the Khalkha and Inner Mongolian varieties together**, so putting all of it on Khalkha double-counted against the `peripheral` node beside it. The chip now gives Mongolia's own figure, **nearly 3.6 million (2014)**, with the 5.2 million labelled as the whole "Mongolian proper" row, and the node prose states the scope difference explicitly.
+- **Confidence:** high for all three. Problems 1 and 2 are direct readings of saved dumps; problem 3 is an absence — the figure could not be found in any source consulted, which is why it was removed rather than re-hedged.
+- **Action:** the atlas's `sources` note now says **five** logged figure problems rather than four, and names the Oirat and "Mongolian proper" scope issues alongside the original three. The `[MG-102]` heading said "three figures" while its own body logged four; corrected to "four". The Disputed table below gains two rows.
 
 ## Disputed / conflicting sources
 
@@ -593,6 +614,8 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 | Mongolic | Buryat's speaker count | 330,000 (Janhunen 2006, via the family article) vs. 436,300 (Ethnologue e26, 2017–2020, via the Buryat infobox) | both figures given, "by source" — see `[MG-102]` |
 | Mongolic | Kalmyk's speaker count | 360,000 for Kalmyk–Oirat combined (Janhunen) vs. 110,000 for Kalmyk alone (2021) | both given, with the difference in scope stated — see `[MG-102]`, `[MG-106]` |
 | Mongolic | Cyrillic's date | 1941 (decreed, per two articles) vs. 1946 (traditional script displaced, per the Mongolian-script article) | stated as "decreed in 1941, displaced by 1946" — see `[MG-103]` |
+| Mongolic | Oirat's speaker count | 368,000 with 655,372 ethnic Oirats (the Oirat infobox, 2007–2010) vs. 360,000 for Kalmyk–Oirat combined (Janhunen, via the family article); the infobox's own 58% implies ≈380,000, not 368,000 | all three figures given with scope stated, and the infobox's internal mismatch flagged — see `[MG-111]` |
+| Mongolic | Inner Mongolia's size vs. Mongolia's | "Mongolian speakers in China is still larger than in the state of Mongolia" (the Mongolian article) vs. that article's own figures — Mongolia ≈3.6m (2014), Inner Mongolia ≈2.1m, all China ≈2.9m | the claim is reported as a claim, with the figures that undercut it — see `[MG-111]` |
 | Mongolic | Moghol's status | "few" speakers (1982) vs. Glottolog "extinct" | both reported — see `[MG-109]` |
 
 ---

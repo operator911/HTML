@@ -17,7 +17,7 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 2 | **Tungusic 通古斯** | `atlas-tungusic.js` | ✅ built | 19 nodes · 53 markers · Manchu dormant, Xibe vigorous; **script correction logged (TU-102)** |
 | 3 | **Kra–Dai 壮侗 / 侗台** | `atlas-kradai.js` | ✅ built | 36 nodes · 114 markers · 6 branches; Zhuang macrolanguage, Jiamao's non-Hlai core, Ahom in Assam; **Saek and Bouyei figures corrected against sources (KD-108)** |
 | 4 | **Japonic & Ainu 日本語族・アイヌ語** | `atlas-japonic.js` | ✅ built | 23 nodes · 102 markers · 4 branches; two unrelated families in one file; **Yaeyama's UNESCO grade is disputed between sources (JP-104)** |
-| 5 | **Mongolic 蒙古语族** | `atlas-mongolic.js` | ✅ built | 26 nodes · 108 markers · 4 branches; six scripts as a labelled non-genetic branch; four logged speaker conflicts (MG-102); Oirat has no ISO code of its own (MG-105); **the *Secret History* is not a 1240 text (MG-104)** |
+| 5 | **Mongolic 蒙古语族** | `atlas-mongolic.js` | ✅ built | 26 nodes · 108 markers · 4 branches; six scripts as a labelled non-genetic branch; five logged figure problems (MG-102, MG-111); Oirat has no ISO code of its own (MG-105); **the *Secret History* is not a 1240 text (MG-104)** |
 | 6 | **Silk Road lost languages 丝绸之路死语** | `atlas-silkroad.js` | 💤 planned | file does not exist yet; special mode: all-extinct, timeline-first, script chips |
 | 7 | **Tibeto-Burman 藏缅语族** | `atlas-tibetoburman.js` | 💤 planned | file does not exist yet; ~45 nodes for a 350-language family, with the honest "and 200+ more" node |
 | 8 | **Hmong–Mien 苗瑶语族** | `atlas-hmongmien.js` | 💤 planned | file does not exist yet; Hmongic + Mienic; diaspora to Laos, the US, French Guiana |
@@ -28,9 +28,9 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 13 | **Siberian isolate pocket** (Nivkh, Yukaghir, Chukotko-Kamchatkan, Ket, Ainu) | `atlas-siberian.js` | 💤 planned | file does not exist yet; Phase 8 capstone; the "peoples before the farmers" map |
 
 > **Do not mark a family ✅ on the strength of a plan.** As of this revision `atlas-sinitic.js`,
-> `atlas-tungusic.js`, `atlas-kradai.js`, `atlas-japonic.js` and `atlas-mongolic.js` exist on disk, and
-> the `FAMILIES` array
-> in `EastAsiaAtlas.html` must match this table exactly: a `status:'done'` entry whose file is missing
+> `atlas-tungusic.js`, `atlas-kradai.js`, `atlas-japonic.js` and `atlas-mongolic.js` exist on disk,
+> and the `FAMILIES` array in `EastAsiaAtlas.html` must match this table exactly: a `status:'done'`
+> entry whose file is missing
 > loads into the "data pending" path instead of the disabled-button path, which is worse than
 > saying so up front.
 
@@ -123,6 +123,28 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     436,300; Kalmyk 360,000 for Kalmyk–Oirat together vs 110,000 for Kalmyk alone (2021); Dagur 96,000
     (Janhunen) vs 91,000 (the article's own infobox, 1999 Ethnologue e18); Mongolian proper 5.2 million
     vs the macrolanguage's ≈5 million. Every figure in the file carries the "by source" hedge.
+  - **`MG-111` is a re-check pass, and it found three more problems** — worth recording because two were
+    invisible from inside the atlas:
+    - **An unlogged citation.** The Oirat node's "368,000 — 58% of 655,372 ethnic Oirats" turned out to be
+      a faithful quote of the Oirat article's infobox, but no research entry mentioned it — exactly what
+      the honesty note says does not happen. Now logged. The infobox's own arithmetic is also loose: 58%
+      of 655,372 is ≈380,000, not 368,000, so the atlas quotes both and flags the mismatch rather than
+      silently correcting either. And it is a **third** figure, not a restatement: the table's 360,000 is
+      for "Kalmyk–Oirat" combined, the infobox's 368,000 is Oirat's own count, and Kalmyk alone is
+      110,000. The node, its chip and its feature list now carry all three with the scope of each stated.
+    - **A source that contradicts itself, which the atlas had repeated as fact.** The `peripheral` node
+      asserted that Inner Mongolian "outnumbers the Mongolian of the state of Mongolia", quoting the
+      Mongolian article. That article's own figures say otherwise: Mongolia ≈3.6 million (2014), Inner
+      Mongolia ≈2.1 million, all of China ≈2.9 million. The node now reports the claim *as a claim* and
+      gives the figures that undercut it. What stays unhedged is the dialect position — Khorchin's two
+      million-plus speakers make that group comparable to Khalkha.
+    - **A number with no source behind it, removed.** The `central` node's chip read "≈5.6 million" — in
+      no source dump, and not derivable, since the family table gives Peripheral Mongolian no figure at
+      all. Replaced with the qualitative "the great majority of the family, by source". The related scope
+      error went with it: the `khalkha` node had carried "5.2 million (Mongolian proper)" as if it were
+      Khalkha's own count, but Janhunen's "Mongolian proper" is **one row covering Khalkha and Inner
+      Mongolian together**, so it double-counted against the `peripheral` node beside it. The chip now
+      gives Mongolia's own ≈3.6 million (2014) and labels the 5.2 million as the whole row.
   - **`MG-105` ISO findings.** `mon` is a **macrolanguage** over `khk` + `mvf`, and `bua` over
     `bxm` + `bxr` + `bxu` — the register's macrolanguage table gives both sets status **A**. `xng`
     (Middle Mongolian) and `cmg` (Classical Mongolian) are type **H**; `xwo` (Written Oirat) is type
@@ -758,7 +780,7 @@ the sketch-geometry workflow are well proven.
 | **1** | Tungusic atlas (§2.2) — research first, then write | `atlas-tungusic.js` — proves multi-extent, multi-script, dormant-language handling | ✅ done |
 | **2** | Kra–Dai (§2.3) | `atlas-kradai.js` — 36 nodes, 114 markers; reuses the south-China extent; cross-atlas links live in both directions | ✅ done |
 | **3** | Japonic & Ainu (§2.5) | forces the new sketch-geometry workflow (Japan arc, Ryukyus, Sakhalin) | ✅ done — `atlas-japonic.js`, 23 nodes, 102 markers, 11 sketch polygons; `JP-102` self-correction, `JP-104` source conflict |
-| **4** | Mongolic (§2.4) | script-history spine; Shirongolic cluster and Kalmyk outliers | ✅ done — `atlas-mongolic.js`, 26 nodes, 108 markers, 7 sketch polygons; `MG-104` two-part self-correction, `MG-102` four speaker conflicts, `MG-105` ISO findings |
+| **4** | Mongolic (§2.4) | script-history spine; Shirongolic cluster and Kalmyk outliers | ✅ done — `atlas-mongolic.js`, 26 nodes, 108 markers, 7 sketch polygons; `MG-104` two-part self-correction, `MG-102` four speaker conflicts, `MG-105` ISO findings, `MG-111` re-check (unlogged Oirat figure, self-contradicting source, one unsourced number removed) |
 | **5** | Silk Road lost languages (§2.12) | validates "special mode" (all-extinct, timeline-first, script chips) | 💤 not started |
 | **6** | Tibeto-Burman (§2.7) | the big one; shared ancestor nodes with Sinitic | 💤 not started |
 | **7** | Hmong–Mien (§2.8) · Koreanic (§2.6) · Formosan (§2.10) · Turkic (§2.9, scope decision) · Austroasiatic (§2.11) | in whatever order appetite dictates | 💤 not started |
