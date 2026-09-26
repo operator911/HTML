@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>East Asian Language Atlas — family trees, maps and histories</title>
+<meta name="description" content="A series of interactive atlases of the language families of East Asia and Siberia: a classification tree, a map of where each variety is rooted, and per-variety history, timeline and distinctive features.">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link id="basefonts" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1220;--panel:#141b2d;--panel-2:#1a2338;--line:#2a3550;--ink:#e9e4d6;--ink-dim:#a7adc0;--ink-faint:#6d7590;--gold:#d4a94f;--gold-soft:rgba(212,169,79,.14);--sans:"Inter","Helvetica Neue",Arial,sans-serif;--serif:"EB Garamond",Georgia,serif;--native:"Noto Serif SC","Songti SC","SimSun",serif;--tw:360px;--iw:390px}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 75% -10%,rgba(79,195,217,.07),transparent 60%),radial-gradient(900px 500px at 10% 110%,rgba(212,169,79,.06),transparent 60%),var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+header{flex:0 0 auto;padding:.85rem 1.4rem .8rem;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1.6rem;background:linear-gradient(180deg,rgba(212,169,79,.05),transparent)}
+header h1{margin:0;font-family:var(--serif);font-weight:600;font-size:clamp(1.25rem,2.2vw,1.7rem);letter-spacing:.02em}
+header h1 .zh{font-family:var(--native);color:var(--gold);font-weight:700;margin-right:.5rem}
+.tagline{color:var(--ink-dim);font-size:.85rem}
+.stats{margin-left:auto;display:flex;gap:1.2rem;color:var(--ink-faint);font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
+.stats b{color:var(--gold);font-weight:600}
+.app{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:var(--tw) 6px minmax(0,1fr) 6px var(--iw)}
+.grip{cursor:col-resize;position:relative;z-index:600;touch-action:none;user-select:none;background:transparent}
+.grip::after{content:"";position:absolute;inset:0 2px;background:var(--line);transition:background .15s}
+.grip:hover::after,.grip:focus-visible::after{background:var(--gold)}
+.pane{min-height:0;display:flex;flex-direction:column}
+.tree-pane{border-right:1px solid var(--line);background:var(--panel)}
+.info-pane{border-left:1px solid var(--line);background:var(--panel)}
+.tree-head{flex:0 0 auto;padding:.8rem .9rem .6rem;border-bottom:1px solid var(--line)}
+.tree-head label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:.35rem}
+#filter{width:100%;padding:.45rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:.9rem}
+#filter::placeholder{color:var(--ink-faint)}
+#tree{flex:1 1 auto;overflow:auto;padding:.6rem .7rem 1.2rem;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+#tree ul{list-style:none;margin:0;padding:0}
+#tree ul ul{margin-left:.95rem;border-left:1px solid var(--line);padding-left:.55rem}
+#tree li{margin:.1rem 0}
+#tree li:not(.open)>ul{display:none}
+.tnode{width:100%;display:flex;align-items:center;gap:.45rem;background:none;border:0;color:inherit;font:inherit;font-family:var(--serif);text-align:left;padding:.28rem .45rem;border-radius:7px;cursor:pointer;border-left:3px solid transparent}
+.tnode:hover,.tnode:focus-visible{background:var(--panel-2)}
+.tnode.lvl1{border-left-color:var(--c)}
+.tnode.lvl2,.tnode.lvl3{border-left-color:color-mix(in srgb,var(--c) 40%,transparent)}
+.tnode.active{background:color-mix(in srgb,var(--c) 16%,var(--panel-2));border-left-color:var(--c)}
+.tnode.active .t-en{color:var(--c)}
+.caret{flex:0 0 1rem;display:inline-flex;justify-content:center;color:var(--ink-faint);font-size:.7rem;transition:transform .18s ease}
+li.open>.tnode .caret{transform:rotate(90deg)}
+.t-zh{font-family:var(--native);font-weight:700;color:var(--c);width:1.3em;text-align:center;flex:0 0 auto}
+.t-en{font-size:.97rem}
+.t-sp{margin-left:auto;font-size:.7rem;color:var(--ink-faint);flex:0 0 auto;padding-left:.4rem;font-family:var(--sans)}
+li.hidden{display:none}
+mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1px}
+.legend{flex:0 0 auto;padding:.6rem .9rem .7rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.3rem .85rem}
+.legend span{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--ink-dim)}
+.legend i{width:.65rem;height:.65rem;border-radius:50%;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 60%,transparent)}
+.map-pane{position:relative}
+#map{position:absolute;inset:0;background:#0a0f1c}
+.maplibregl-map{font-family:var(--sans)}
+.maplibregl-ctrl-attrib{background:rgba(13,18,32,.75)!important;color:var(--ink-faint)!important;font-size:10px!important}
+.maplibregl-ctrl-attrib a{color:var(--ink-dim)!important}
+.maplibregl-ctrl-group{background:var(--panel-2)!important}
+.maplibregl-ctrl-group button+button{border-top:1px solid var(--line)}
+.maplibregl-ctrl-group button{filter:invert(.8)}
+.maplibregl-popup-content{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.3rem .7rem;font-size:.8rem;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip{border-bottom-color:var(--panel-2)}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--panel-2)}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--panel-2)}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--panel-2)}
+.maplibregl-popup-close-button{color:var(--ink-dim)}
+.popup .zh{font-family:var(--native);color:var(--gold)}
+.map-note{position:absolute;top:.6rem;right:.6rem;z-index:500;max-width:280px;background:rgba(20,27,45,.88);border:1px solid var(--line);border-radius:8px;padding:.45rem .7rem;font-size:.74rem;color:var(--ink-dim);margin:0}
+.map-note b{color:var(--gold)}
+.map-toggle{position:absolute;bottom:1.8rem;right:.6rem;z-index:600;background:rgba(20,27,45,.92);border:1px solid var(--line);color:var(--ink-dim);border-radius:99px;padding:.35rem .8rem;font:inherit;font-size:.74rem;cursor:pointer;letter-spacing:.02em}
+.map-toggle:hover,.map-toggle:focus-visible{border-color:var(--gold);color:var(--gold)}
+.map-toggle[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:rgba(212,169,79,.12)}
+.map-toggle.areas{bottom:3.45rem}
+.areas-cap{position:absolute;bottom:5.6rem;right:.6rem;z-index:500;max-width:250px;background:rgba(20,27,45,.9);border:1px solid var(--line);border-radius:8px;padding:.4rem .65rem;font-size:.7rem;line-height:1.45;color:var(--ink-faint);margin:0;display:none}
+.map-pane.areas-on .areas-cap{display:block}
+.map-pane.sketch .areas-cap{bottom:auto;top:.6rem;right:auto;left:.6rem;margin-top:3.6rem}
+.sketch-cap{position:absolute;top:.6rem;left:.6rem;z-index:500;background:rgba(20,27,45,.88);border:1px solid var(--line);border-radius:8px;padding:.35rem .7rem;font-size:.72rem;color:var(--ink-faint);margin:0;display:none;max-width:220px}
+.map-pane.sketch .sketch-cap{display:block}
+.map-pane.sketch .map-note{display:none}
+#info{flex:1 1 auto;overflow:auto;padding:1.2rem 1.3rem 2.5rem;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.empty{color:var(--ink-faint);font-family:var(--serif);font-size:1.05rem;font-style:italic;padding-top:2rem;text-align:center}
+#info h2{margin:0;font-family:var(--serif);font-weight:600;font-size:1.55rem;line-height:1.2;color:var(--c)}
+#info .zh-big{font-family:var(--native);font-size:1.15rem;color:var(--ink-dim);font-weight:500;margin-top:.1rem}
+#info .py{color:var(--ink-faint);font-size:.85rem;font-style:italic}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.85rem 0 1rem}
+.chip{font-size:.72rem;padding:.2rem .6rem;border-radius:99px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim)}
+.chip.sp{border-color:color-mix(in srgb,var(--c) 55%,transparent);color:var(--c)}
+.chip.iso{font-family:var(--sans);letter-spacing:.03em;text-transform:none}
+#info .kicker{margin:0 0 .2rem;font-size:.68rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+#info ul.feat{margin:.5rem 0 0;padding:0 0 0 1.15rem;font-family:var(--serif);font-size:.9rem;color:var(--ink-dim)}
+#info ul.feat li{margin:.3rem 0}
+#info ul.feat b{color:var(--ink);font-weight:600}
+#info .note{margin:1.3rem 0 0;padding:.6rem .75rem;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);font-family:var(--sans);font-size:.71rem;line-height:1.5;color:var(--ink-faint)}
+#info .note b{color:var(--ink-dim)}
+.listen{display:flex;flex-wrap:wrap;gap:.4rem;margin:.75rem 0 .1rem}
+.listen a{font-size:.72rem;padding:.22rem .65rem;border-radius:99px;border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));background:var(--panel-2);color:var(--gold);text-decoration:none;white-space:nowrap}
+.listen a:hover,.listen a:focus-visible{border-color:var(--gold);background:var(--gold-soft)}
+#info h3{margin:1.4rem 0 .5rem;font-size:.74rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:.6rem}
+#info h3::after{content:"";flex:1;height:1px;background:var(--line)}
+#info p{margin:.55rem 0;font-size:.92rem;font-family:var(--serif)}
+#info p em{color:var(--ink-dim)}
+#info .lead{font-family:var(--serif);font-size:1.06rem}
+#info .lead::first-letter{font-size:2.2em;float:left;line-height:.9;padding:.06em .12em 0 0;color:var(--c);font-weight:600}
+ol.timeline{margin:.4rem 0 0;padding:0 0 0 .2rem;list-style:none;border-left:2px solid color-mix(in srgb,var(--c) 40%,transparent)}
+ol.timeline li{margin:0 0 .7rem;padding:0 0 0 1rem;position:relative}
+ol.timeline li::before{content:"";position:absolute;left:-.41rem;top:.42rem;width:.6rem;height:.6rem;border-radius:50%;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 55%,transparent)}
+ol.timeline .yr{display:block;font-family:var(--serif);font-weight:600;color:var(--c);font-size:.95rem}
+ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
+@media (max-width:1180px){.grip{display:none}body{overflow:auto;height:auto}.app{display:block}.tree-pane{order:2;border-right:0;border-top:1px solid var(--line)}.map-pane{order:1;height:52vh;min-height:340px}#tree{max-height:46vh}.info-pane{position:fixed;inset:auto 0 0 0;z-index:1200;max-height:78dvh;border-left:0;border-top:1px solid var(--gold);box-shadow:0 -18px 40px rgba(0,0,0,.55);transform:translateY(102%);transition:transform .28s ease;border-radius:14px 14px 0 0;background:var(--panel)}body.sheet .info-pane{transform:translateY(0)}.sheet-handle{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--line)}.sheet-handle button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.3rem .8rem;font:inherit;font-size:.82rem;cursor:pointer}}
+@media (min-width:1181px){.sheet-handle{display:none}}
+/* ---------- family toggle (Phase 0; see languages.md §1.4) ---------- */
+.families{flex:0 0 100%;display:flex;flex-wrap:wrap;gap:.3rem;margin:.5rem 0 0;padding:0}
+.families button{font:inherit;font-size:.74rem;line-height:1.25;padding:.26rem .64rem;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);cursor:pointer;display:inline-flex;align-items:center;gap:.34rem;letter-spacing:.01em}
+.families button:hover:not(:disabled),.families button:focus-visible{border-color:var(--gold);color:var(--gold)}
+.families button[aria-current="page"]{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
+.families button:disabled{opacity:.42;cursor:not-allowed}
+.families button .fz{font-family:var(--native);font-size:.95em;opacity:.9}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.pending{padding:1.1rem .9rem;font-family:var(--serif);color:var(--ink-dim);font-size:.95rem}
+.pending p{margin:.4rem 0}
+.pending code{font-family:var(--sans);font-size:.82em;color:var(--gold)}
+@media (max-width:1180px){.families button{font-size:.7rem;padding:.22rem .56rem}}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="zh" id="hdrZh">汉语</span><span id="hdrEn">Branches of Chinese</span></h1>
+  <span class="tagline" id="hdrTag"></span>
+  <div class="stats" id="hdrStats"></div>
+  <nav class="families" id="families" aria-label="Language family atlases"></nav>
+</header>
+<main class="app">
+  <aside class="pane tree-pane" aria-label="Classification of the selected family">
+    <div class="tree-head">
+      <label for="filter">Filter varieties</label>
+      <input id="filter" type="search" placeholder="Filter…" autocomplete="off">
+    </div>
+    <nav id="tree" aria-label="Language family tree"></nav>
+    <div class="legend" id="legend" aria-hidden="true"></div>
+  </aside>
+  <div class="grip" id="gripTree" role="separator" aria-orientation="vertical" aria-label="Resize tree panel (double-click resets)" tabindex="0"></div>
+  <section class="pane map-pane" aria-label="Map of present-day distribution">
+    <div id="map"></div>
+    <p class="map-note" id="mapNote"></p>
+    <button id="mapToggle" class="map-toggle" type="button" aria-pressed="false">Next: 🔤 English labels</button>
+    <button id="areasToggle" class="map-toggle areas" type="button" aria-pressed="false" aria-controls="areasCap">◧ areas (approx.)</button>
+    <p class="areas-cap" id="areasCap"></p>
+    <p class="sketch-cap" id="sketchCap"></p>
+  </section>
+  <div class="grip" id="gripInfo" role="separator" aria-orientation="vertical" aria-label="Resize history panel (double-click resets)" tabindex="0"></div>
+  <aside class="pane info-pane" id="infoPane" aria-live="polite" aria-label="History of the selected language">
+    <div class="sheet-handle"><span id="sheetTitle" style="font-family:var(--serif)"></span><button id="closeSheet" type="button">Close</button></div>
+    <div id="info"><p class="empty">Hover or tap a variety in the tree to read its history.</p></div>
+  </aside>
+</main>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+/* ===========================================================================
+   East Asian Language Atlas — shared engine
+   ---------------------------------------------------------------------------
+   One viewer, swappable atlases. See languages.md §1.
+
+   Data files are plain <script src="atlas-<key>.js"> injections, not fetch()/
+   import(): an injected script tag is not CORS-blocked, so the identical code
+   path works from file://, from GitHub Pages, and from any future host
+   (languages.md §1.2). Each file registers exactly one object on window.ATLASES.
+
+   The atlas contract (languages.md §1.3):
+     key · title{zh,en} · tagline · stats[[value,label]] · palette{key:hex}
+     legend[[key,label]] · view{center,zoom} · outline{color,fill} · sketchGeo
+     captions{note,areas,sketch} · fonts[Noto…] · filterPlaceholder
+     listen{om,fv,search} · rootId · stages[ids] · zhSuppress[str]
+     sources · tree · iso · features · sound · areas
+   =========================================================================== */
+'use strict';
+
+/* ---- the shelf: every family this viewer knows about. `status:'planned'`
+        renders the toggle button disabled, with a pointer to languages.md. ---- */
+const FAMILIES = [
+  { key: 'sinitic',       zh: '汉语',       en: 'Sinitic',           file: 'atlas-sinitic.js',       status: 'done' },
+  { key: 'tungusic',      zh: '通古斯',     en: 'Tungusic',          file: 'atlas-tungusic.js',      status: 'done' },
+  { key: 'kradai',        zh: '壮侗',       en: 'Kra–Dai',           file: 'atlas-kradai.js',        status: 'done' },
+  { key: 'japonic',       zh: '日本語族',   en: 'Japonic & Ainu',    file: 'atlas-japonic.js',       status: 'done' },
+  { key: 'mongolic',      zh: '蒙古语族',   en: 'Mongolic',          file: 'atlas-mongolic.js',      status: 'planned' },
+  { key: 'silkroad',      zh: '丝路死语',   en: 'Silk Road lost',    file: 'atlas-silkroad.js',      status: 'planned' },
+  { key: 'tibetoburman',  zh: '藏缅语族',   en: 'Tibeto-Burman',     file: 'atlas-tibetoburman.js',  status: 'planned' },
+  { key: 'hmongmien',     zh: '苗瑶语族',   en: 'Hmong–Mien',        file: 'atlas-hmongmien.js',     status: 'planned' },
+  { key: 'korean',        zh: '朝鲜语族',   en: 'Koreanic',          file: 'atlas-korean.js',        status: 'planned' },
+  { key: 'formosan',      zh: '台湾南岛语', en: 'Formosan',          file: 'atlas-formosan.js',      status: 'planned' },
+  { key: 'turkic',        zh: '突厥语族',   en: 'Turkic',            file: 'atlas-turkic.js',        status: 'planned' },
+  { key: 'austroasiatic', zh: '南亚语系',   en: 'Austroasiatic',     file: 'atlas-austroasiatic.js', status: 'planned' },
+  { key: 'siberian',      zh: '西伯利亚',   en: 'Siberian isolates', file: 'atlas-siberian.js',      status: 'planned' }
+];
+
+/* ---- Google Fonts registry. Names absent from this map are still honoured in
+        the CSS font stack (they simply fall back if the webfont is missing). ---- */
+const GFONT = {
+  'Noto Serif SC':        'Noto+Serif+SC:wght@500;700',
+  'Noto Sans SC':         'Noto+Sans+SC:wght@400;600',
+  'Noto Serif JP':        'Noto+Serif+JP:wght@500;700',
+  'Noto Serif KR':        'Noto+Serif+KR:wght@500;700',
+  'Noto Sans Mongolian':  'Noto+Sans+Mongolian',
+  'Noto Serif Tibetan':   'Noto+Serif+Tibetan:wght@500;700',
+  'Noto Sans Thai':       'Noto+Sans+Thai:wght@400;600',
+  'Noto Sans Lao':        'Noto+Sans+Lao:wght@400;600',
+  'Noto Sans Myanmar':    'Noto+Sans+Myanmar:wght@400;600',
+  'Noto Sans Khmer':      'Noto+Sans+Khmer:wght@400;600',
+  'Noto Sans Devanagari': 'Noto+Sans+Devanagari:wght@400;600',
+  'Noto Sans Ol Chiki':   'Noto+Sans+Ol+Chiki',
+  'Noto Sans Yi':         'Noto+Sans+Yi',
+  'Noto Sans Nushu':      'Noto+Sans+Nushu',
+  'Noto Sans Runic':      'Noto+Sans+Runic',
+  'Noto Sans Old Turkic': 'Noto+Sans+Old+Turkic',
+  'Noto Sans Tangut':     'Noto+Sans+Tangut',
+  'Noto Sans Sogdian':    'Noto+Sans+Sogdian',
+  'Noto Sans Manichaean': 'Noto+Sans+Manichaean'
+};
+
+/* Script stack: whatever the atlas declares, then CJK, then the browser default. */
+const SCRIPT_FALLBACK = ['Noto Serif SC', 'Songti SC', 'SimSun', 'serif'];
+
+const $  = (s) => document.querySelector(s);
+const el = (id) => document.getElementById(id);
+const yt = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+
+let ATLAS = null;                 // the active atlas object
+let byId = {};                    // nodeId → node, for the active atlas
+let selectedId = null;
+let CLS_COLORS = {};              // class name ('c-yue') → hex
+let inflight = {};                // family key → { node } while its file loads
+
+let map = null, baseStyle = 'fiord', lastSel = null,
+    mkHandlersBound = false, areasOn = false, areasSel = null;
+
+const treeEl  = el('tree');
+const info    = el('info');
+const filterEl = el('filter');
+const wide    = window.matchMedia('(min-width:1181px)');
+
+/* ------------------------------------------------------------------ palette */
+/* Runtime-injected custom properties replace v1's hardcoded .c-* CSS block, so
+   a family's palette is data, not stylesheet (languages.md §1.4). */
+function applyPalette(pal) {
+  CLS_COLORS = {};
+  let css = '';
+  Object.keys(pal).forEach((k) => {
+    const cls = k.indexOf('c-') === 0 ? k : 'c-' + k;
+    CLS_COLORS[cls] = pal[k];
+    css += '.' + cls + '{--c:' + pal[k] + '}\n';
+  });
+  let s = el('palette');
+  if (!s) { s = document.createElement('style'); s.id = 'palette'; document.head.appendChild(s); }
+  s.textContent = css;
+}
+function fontStack(names) {
+  return names.map((n) => (/^[a-z-]+$/.test(n) ? n : '"' + n + '"')).join(',');
+}
+function applyFonts(names) {
+  const fams = (names || []).map((n) => GFONT[n]).filter(Boolean);
+  let link = el('scriptfonts');
+  if (!fams.length) { if (link) link.remove(); }
+  else {
+    if (!link) {
+      link = document.createElement('link');
+      link.id = 'scriptfonts'; link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    link.href = 'https://fonts.googleapis.com/css2?' +
+                fams.map((f) => 'family=' + f).join('&') + '&display=swap';
+  }
+  document.documentElement.style.setProperty('--native', fontStack((names || []).concat(SCRIPT_FALLBACK)));
+}
+
+/* ------------------------------------------------------------------- header */
+function applyHeader(a) {
+  el('hdrZh').textContent = a.title.zh;
+  el('hdrEn').textContent = a.title.en;
+  el('hdrTag').textContent = a.tagline || '';
+  el('hdrStats').innerHTML = (a.stats || [])
+    .map(([b, t]) => '<span><b>' + b + '</b> ' + t + '</span>').join('');
+  el('mapNote').innerHTML = a.captions.note;
+  el('areasCap').innerHTML = a.captions.areas;
+  el('sketchCap').innerHTML = a.captions.sketch;
+  filterEl.placeholder = a.filterPlaceholder || 'Filter varieties…';
+  document.title = a.title.en + ' — East Asian Language Atlas';
+  el('areasToggle').textContent = areasOn ? '◧ areas: on' : '◧ areas (approx.)';
+}
+function applyLegend(a) {
+  el('legend').innerHTML = (a.legend || []).map(([k, n]) => {
+    const cls = k.indexOf('c-') === 0 ? k : 'c-' + k;
+    return '<span class="' + cls + '"><i></i>' + n + '</span>';
+  }).join('');
+}
+
+/* ---------------------------------------------------------------- family nav */
+function buildFamilies() {
+  const nav = el('families');
+  nav.innerHTML = '';
+  FAMILIES.forEach((f) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.key = f.key;
+    b.innerHTML = '<span class="fz" aria-hidden="true">' + f.zh + '</span>' + f.en;
+    if (f.status !== 'done') {
+      b.disabled = true;
+      b.title = 'Planned — see languages.md';
+      b.insertAdjacentHTML('beforeend',
+        ' <span aria-hidden="true">💤</span><span class="sr-only"> — planned, not yet available; see languages.md</span>');
+    } else {
+      b.addEventListener('click', () => go(f.key));
+    }
+    nav.appendChild(b);
+  });
+}
+function markActive(key) {
+  el('families').querySelectorAll('button').forEach((b) => {
+    if (b.dataset.key === key) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+}
+
+/* ------------------------------------------------------------------- routing */
+function parseHash() {
+  const h = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+  if (!h) return { key: 'sinitic', node: null };
+  const parts = h.split('/');
+  return { key: parts[0] || 'sinitic', node: parts[1] || null };
+}
+function setHash(key, node, push) {
+  const h = '#' + key + (node ? '/' + node : '');
+  if (location.hash === h) return;
+  const st = { key: key, node: node };
+  if (push) history.pushState(st, '', h); else history.replaceState(st, '', h);
+}
+function go(key, node) {
+  const h = '#' + key + (node ? '/' + node : '');
+  if (location.hash === h) load(key, node);
+  else { setHash(key, node, true); load(key, node); }
+}
+window.addEventListener('hashchange', () => { const p = parseHash(); load(p.key, p.node); });
+window.addEventListener('popstate',   () => { const p = parseHash(); load(p.key, p.node); });
+
+/* --------------------------------------------------------------- atlas loader */
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+function showPending(fam, failed) {
+  treeEl.innerHTML = '<div class="pending"><p><b>' + esc(fam.en || fam.key) + '</b> — data ' +
+    (failed ? 'file not found' : 'pending') + '.</p>' +
+    '<p>This atlas has not been built yet. See <code>languages.md</code> for the roadmap ' +
+    'and the status board.</p></div>';
+  el('legend').innerHTML = '';
+  el('hdrStats').innerHTML = '';
+  info.innerHTML = '<p class="empty">No data loaded for this family yet.</p>';
+}
+function load(key, node) {
+  const fam = FAMILIES.find((f) => f.key === key) || FAMILIES[0];
+  if (fam.status !== 'done') { markActive(fam.key); showPending(fam); return; }
+  if (window.ATLASES && window.ATLASES[fam.key]) { activate(fam.key, node); return; }
+  if (inflight[fam.key]) { inflight[fam.key].node = node; return; }
+  markActive(fam.key);
+  showPending(fam);
+  inflight[fam.key] = { node: node };
+  const s = document.createElement('script');
+  s.src = fam.file; s.async = true;
+  s.onload = () => {
+    const req = inflight[fam.key]; delete inflight[fam.key];
+    if (window.ATLASES && window.ATLASES[fam.key]) activate(fam.key, req ? req.node : null);
+    else showPending(fam);
+  };
+  s.onerror = () => { delete inflight[fam.key]; showPending(fam, true); };
+  document.head.appendChild(s);
+}
+
+
+/* -------------------------------------------------------------------- activate */
+function indexTree(n, pcls) {
+  byId[n.id] = n;
+  n.cls = n.cls || pcls || 'c-anc';
+  (n.kids || []).forEach((k) => indexTree(k, n.cls));
+}
+function markersOf(n) {
+  let out = (n.mk || []).map((m) => [m[0], m[1], m[2], n.cls, n.zh, n.en]);
+  (n.kids || []).forEach((k) => { out = out.concat(markersOf(k)); });
+  return out;
+}
+function activate(key, node) {
+  const A = window.ATLASES[key];
+  if (!A) return;
+  const same = !!(ATLAS && ATLAS.key === key);
+  ATLAS = A;
+  byId = {};
+  indexTree(A.tree, null);
+  if (!same) {
+    applyPalette(A.palette);
+    applyFonts(A.fonts);
+    applyHeader(A);
+    applyLegend(A);
+    areasSel = null;
+    applyOutline(A);
+    applyView(A);
+  }
+  markActive(key);
+  buildTree();
+  filterEl.value = '';
+  const start = (node && byId[node]) ? byId[node] : (byId[A.rootId] || A.tree);
+  selectedId = null;
+  select(start, !same || !!node, false);
+  setHash(key, start.id, false);
+}
+
+/* ---------------------------------------------------------------- map plumbing */
+const EXTRA_IDS = { 'sketch-fill': 1, 'sketch-line': 1, 'area-fill': 1, 'area-line': 1, 'mk': 1 };
+const EN_LABEL = ['coalesce', ['get', 'name_en'], ['get', 'name']];
+const EMPTY_FC = { type: 'FeatureCollection', features: [] };
+
+function applyEnglishLabels() {
+  const s = map.getStyle(); if (!s || !s.layers) return;
+  s.layers.forEach((l) => { if (l.layout && l.layout['text-field']) map.setLayoutProperty(l.id, 'text-field', EN_LABEL); });
+}
+function setBasemapVisible(vis) {
+  const s = map.getStyle(); if (!s || !s.layers) return;
+  s.layers.forEach((l) => { if (!EXTRA_IDS[l.id]) map.setLayoutProperty(l.id, 'visibility', vis ? 'visible' : 'none'); });
+}
+function showSketch(v) {
+  ['sketch-fill', 'sketch-line'].forEach((id) => {
+    if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v ? 'visible' : 'none');
+  });
+}
+function applyOutline(a) {
+  if (!map || !a) return;
+  if (map.getSource('sketch')) map.getSource('sketch').setData(a.sketchGeo);
+  if (map.getLayer('sketch-fill')) map.setPaintProperty('sketch-fill', 'fill-color', a.outline.fill);
+  if (map.getLayer('sketch-line')) map.setPaintProperty('sketch-line', 'line-color', a.outline.color);
+}
+function applyView(a) {
+  if (!map || !a || !a.view) return;
+  const opts = { center: a.view.center, zoom: a.view.zoom };
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) map.jumpTo(opts);
+  else map.flyTo({ center: opts.center, zoom: opts.zoom, duration: 900 });
+}
+function ensureOverlay() {
+  try {
+    if (!map || !map.isStyleLoaded() || map.getLayer('mk')) return;
+    addMarkerLayer();
+    if (baseStyle === 'positron-en') applyEnglishLabels();
+    if ($('.map-pane').classList.contains('sketch')) showSketch(true);
+    if (areasOn) { setAreasVisible(true); paintAreas(); }
+  } catch (e) { /* style not ready yet; idle will fire again */ }
+}
+function onMkClick(e) {
+  if (!map.getLayer('mk')) return;
+  const p = e.features[0].properties;
+  new maplibregl.Popup({ className: 'popup', closeButton: false, offset: 12 })
+    .setLngLat(e.lngLat).setHTML('<span class="zh">' + p.zh + '</span> ' + p.label).addTo(map);
+}
+function onMkEnter() { map.getCanvas().style.cursor = 'pointer'; }
+function onMkLeave() { map.getCanvas().style.cursor = ''; }
+
+function addMarkerLayer() {
+  const outline = ATLAS ? ATLAS.outline : { color: '#d4a94f', fill: 'rgba(212,169,79,0.06)' };
+  if (!map.getSource('markers'))
+    map.addSource('markers', { type: 'geojson', data: EMPTY_FC });
+  if (!map.getSource('sketch'))
+    map.addSource('sketch', { type: 'geojson', data: ATLAS ? ATLAS.sketchGeo : EMPTY_FC,
+                              attribution: 'Schematic outline — works fully offline' });
+  if (!map.getLayer('sketch-fill'))
+    map.addLayer({ id: 'sketch-fill', type: 'fill', source: 'sketch', layout: { visibility: 'none' },
+                   paint: { 'fill-color': outline.fill } });
+  if (!map.getLayer('sketch-line'))
+    map.addLayer({ id: 'sketch-line', type: 'line', source: 'sketch', layout: { visibility: 'none' },
+                   paint: { 'line-color': outline.color, 'line-width': 1.5, 'line-opacity': .85 } });
+  if (!map.getSource('areas'))
+    map.addSource('areas', { type: 'geojson', data: EMPTY_FC });
+  if (!map.getLayer('area-fill'))
+    map.addLayer({ id: 'area-fill', type: 'fill', source: 'areas',
+      layout: { visibility: areasOn ? 'visible' : 'none' },
+      paint: { 'fill-color': ['get', 'c'],
+               'fill-opacity': ['case', ['==', ['to-number', ['get', 'sel'], 0], 1], .30, .15] } });
+  if (!map.getLayer('area-line'))
+    map.addLayer({ id: 'area-line', type: 'line', source: 'areas',
+      layout: { visibility: areasOn ? 'visible' : 'none' },
+      paint: { 'line-color': ['get', 'c'], 'line-width': 1, 'line-dasharray': [2, 2], 'line-opacity': .5 } });
+  if (!map.getLayer('mk'))
+    map.addLayer({ id: 'mk', type: 'circle', source: 'markers',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, ['case', ['==', ['to-number', ['get', 'sel'], 0], 1], 6, 4], 7, ['case', ['==', ['to-number', ['get', 'sel'], 0], 1], 11, 8]],
+        'circle-color': ['get', 'c'], 'circle-opacity': .85,
+        'circle-stroke-width': ['case', ['==', ['to-number', ['get', 'sel'], 0], 1], 3, 2],
+        'circle-stroke-color': ['case', ['==', ['to-number', ['get', 'sel'], 0], 1], '#fff', '#0d1220']
+      } });
+  if (!mkHandlersBound) {
+    map.on('click', 'mk', onMkClick);
+    map.on('mouseenter', 'mk', onMkEnter);
+    map.on('mouseleave', 'mk', onMkLeave);
+    mkHandlersBound = true;
+  }
+  if (lastSel) showMarkers(lastSel.n, lastSel.selected, false);   // repaint after style swap
+}
+if (typeof maplibregl !== 'undefined') {
+  try {
+    map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/fiord',
+                               center: [110, 32.5], zoom: 3.8, maxZoom: 14,
+                               attributionControl: { compact: true } });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+    map.on('style.load', () => { addMarkerLayer(); if (baseStyle === 'positron-en') applyEnglishLabels(); });
+    map.on('idle', ensureOverlay);   // safety net: some environments skip style.load after setStyle
+    map.on('error', () => {});       // keep console quiet for expected tile/style retries
+  } catch (e) {
+    map = null;                      // no WebGL / blocked CDN — the tree still works
+  }
+}
+if (!map) {
+  el('map').innerHTML = '<p style="padding:2rem;color:var(--ink-faint)">Map unavailable in this ' +
+    'environment (WebGL or the map library could not load) — the tree, histories and timelines still work.</p>';
+  el('mapToggle').style.display = 'none';
+  el('areasToggle').style.display = 'none';
+}
+
+function showMarkers(n, selected, fit) {
+  if (!map) return;
+  lastSel = { n: n, selected: selected };
+  if (!map.getSource('markers')) return;   // style still loading; addMarkerLayer() repaints on load
+  const ms = markersOf(n);
+  map.getSource('markers').setData({ type: 'FeatureCollection',
+    features: ms.map(([la, ln, label, cls, zh, en]) => ({ type: 'Feature',
+      properties: { zh: zh || '', label: label || en || '', c: CLS_COLORS[cls || 'c-anc'] || '#e8dcc0', sel: selected ? 1 : 0 },
+      geometry: { type: 'Point', coordinates: [ln, la] } })) });
+  if (fit && ms.length) {
+    const b = ms.reduce((b, [la, ln]) => b.extend([ln, la]),
+      new maplibregl.LngLatBounds([ms[0][1], ms[0][0]], [ms[0][1], ms[0][0]]));
+    const lngSpan = b.getEast() - b.getWest();
+    map.fitBounds(b, { padding: 60, maxZoom: lngSpan > 90 ? 3 : (lngSpan > 40 ? 4 : (ms.length === 1 ? 7 : 6)) });
+  }
+}
+function areaFeatures(selCls) {
+  const A = ATLAS ? (ATLAS.areas || {}) : {};
+  const f = [];
+  Object.keys(A).forEach((cls) => A[cls].forEach((ring) => f.push({
+    type: 'Feature',
+    properties: { c: CLS_COLORS[cls] || '#8b94a8', sel: cls === selCls ? 1 : 0 },
+    geometry: { type: 'Polygon', coordinates: [ring] } })));
+  return { type: 'FeatureCollection', features: f };
+}
+function paintAreas() {
+  if (!map || !map.getSource('areas')) return;
+  map.getSource('areas').setData(areaFeatures(areasSel));
+}
+function setAreasVisible(v) {
+  areasOn = v;
+  ['area-fill', 'area-line'].forEach((id) => {
+    if (map && map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v ? 'visible' : 'none');
+  });
+  const pane = $('.map-pane'); if (pane) pane.classList.toggle('areas-on', v);
+}
+
+
+/* ------------------------------------------------------------- history panel */
+function listenLinks(n) {
+  const L = (ATLAS && ATLAS.listen) || {};
+  const out = (((ATLAS && ATLAS.sound) || {})[n.id] || [])
+    .map((kv) => '<a href="' + kv[1] + '" target="_blank" rel="noopener">🔊 ' + kv[0] + '</a>');
+  const base = n.en.replace(/[()]/g, ' ').trim();
+  out.push('<a href="' + yt(base + ' ' + (L.search || 'language listening native speaker')) +
+           '" target="_blank" rel="noopener">🔎 hear more — search</a>');
+  return out.join('');
+}
+function depthOf(n) { let d = 0, p = n; while ((p = findParent(p))) d++; return d; }
+function findParent(n) {
+  let found = null;
+  (function w(x, par) { if (x === n) found = par; (x.kids || []).forEach((k) => w(k, x)); })(ATLAS.tree, null);
+  return found;
+}
+function renderInfo(n) {
+  const depth = depthOf(n);
+  const kind = depth === 0 ? 'The family'
+             : (ATLAS.stages || []).indexOf(n.id) >= 0 ? 'Ancestral stage'
+             : (n.kids && n.kids.length ? 'Branch / group' : 'Living variety');
+  const iso  = (ATLAS.iso || {})[n.id];
+  const feat = (ATLAS.features || {})[n.id];
+  const rootId = ATLAS.rootId || ATLAS.tree.id;
+  info.innerHTML =
+    '<p class="kicker">' + kind + '</p>' +
+    '<h2>' + n.en + '</h2>' +
+    (n.zh && (ATLAS.zhSuppress || []).indexOf(n.zh) < 0
+      ? '<div class="zh-big">' + n.zh + (n.py ? ' <span class="py">' + n.py + '</span>' : '') + '</div>'
+      : (n.py ? '<div class="py">' + n.py + '</div>' : '')) +
+    '<div class="chips">' +
+      (n.sp ? '<span class="chip sp">' + n.sp + ' speakers</span>' : '') +
+      '<span class="chip">' + (n.region || '') + '</span>' +
+      (iso ? '<span class="chip iso">ISO 639-3: ' + iso + '</span>' : '') +
+    '</div>' +
+    '<div class="listen">' + listenLinks(n) + '</div>' +
+    '<h3>History</h3>' +
+    n.h.map((p, i) => '<p' + (i === 0 ? ' class="lead"' : '') + '>' + p + '</p>').join('') +
+    (n.t && n.t.length ? '<h3>Timeline</h3><ol class="timeline">' +
+      n.t.map(([yr, ev]) => '<li><span class="yr">' + yr + '</span><span class="ev">' + ev + '</span></li>').join('') + '</ol>' : '') +
+    (feat && feat.length ? '<h3>What makes it distinctive</h3><ul class="feat">' +
+      feat.map((x) => '<li>' + x + '</li>').join('') + '</ul>' : '') +
+    (n.id === rootId && ATLAS.sources ? '<p class="note">' + ATLAS.sources + '</p>' : '');
+  info.scrollTop = 0;
+  const st = el('sheetTitle'); if (st) st.textContent = n.en;
+}
+
+/* ------------------------------------------------------------------------ tree */
+function buildNode(n, depth) {
+  const li = document.createElement('li');
+  li.dataset.id = n.id;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'tnode ' + (n.cls || 'c-anc') + (depth ? ' lvl' + Math.min(depth, 3) : '');
+  btn.innerHTML =
+    '<span class="caret" aria-hidden="true">' + ((n.kids && n.kids.length) ? '▶' : '·') + '</span>' +
+    '<span class="t-zh">' + (n.zh || '') + '</span>' +
+    '<span class="t-en">' + n.en + '</span>' +
+    '<span class="t-sp">' + (n.sp || '') + '</span>';
+  const preview = () => {
+    if (!wide.matches) return;
+    renderInfo(n);
+    showMarkers(n, n.id === selectedId, false);
+    areasSel = n.cls || 'c-anc';
+    if (areasOn) paintAreas();
+  };
+  btn.addEventListener('mouseenter', preview);
+  btn.addEventListener('focus', preview);
+  btn.addEventListener('mouseleave', () => {
+    if (wide.matches && selectedId && byId[selectedId] !== n) {
+      renderInfo(byId[selectedId]);
+      showMarkers(byId[selectedId], true, false);
+    }
+  });
+  btn.addEventListener('click', (e) => {
+    if (n.kids && n.kids.length && e.target.closest('.caret')) { li.classList.toggle('open'); return; }
+    select(n);
+    if (n.kids && n.kids.length) li.classList.add('open');
+  });
+  li.appendChild(btn);
+  if (n.kids && n.kids.length) {
+    li.classList.add('open');
+    const ul = document.createElement('ul');
+    n.kids.forEach((k) => ul.appendChild(buildNode(k, depth + 1)));
+    li.appendChild(ul);
+  }
+  return li;
+}
+function buildTree() {
+  treeEl.innerHTML = '';
+  const rootUl = document.createElement('ul');
+  rootUl.appendChild(buildNode(ATLAS.tree, 0));
+  treeEl.appendChild(rootUl);
+  const rootId = ATLAS.rootId || ATLAS.tree.id;
+  const li = treeEl.querySelector('li[data-id="' + rootId + '"]');
+  if (li) li.classList.add('open');
+}
+function select(n, fit, push) {
+  selectedId = n.id;
+  treeEl.querySelectorAll('.tnode.active').forEach((e) => e.classList.remove('active'));
+  const li = treeEl.querySelector('li[data-id="' + n.id + '"]');
+  if (li) {
+    li.querySelector('.tnode').classList.add('active');
+    let p = li.parentElement.closest('li');
+    while (p) { p.classList.add('open'); p = p.parentElement.closest('li'); }
+  }
+  renderInfo(n);
+  showMarkers(n, true, fit !== false);
+  areasSel = n.cls || 'c-anc';
+  if (areasOn) paintAreas();
+  if (!wide.matches) document.body.classList.add('sheet');
+  if (push !== false && ATLAS) setHash(ATLAS.key, n.id, true);
+}
+
+
+/* ---------------------------------------------------------------------- filter */
+function matches(n, q) {
+  return (n.en + ' ' + (n.zh || '') + ' ' + (n.py || '') + ' ' + (n.region || '')).toLowerCase().indexOf(q) >= 0;
+}
+function applyFilter(q) {
+  function walk(li) {
+    const n = byId[li.dataset.id];
+    if (!n) return false;
+    let self = !q || matches(n, q), childHit = false;
+    li.querySelectorAll(':scope > ul > li').forEach((cl) => { if (walk(cl)) childHit = true; });
+    const show = self || childHit;
+    li.classList.toggle('hidden', !show);
+    if (q && childHit) li.classList.add('open');
+    if (self && q) li.classList.add('open');
+    return show;
+  }
+  treeEl.querySelectorAll(':scope > ul > li').forEach(walk);
+}
+filterEl.addEventListener('input', () => applyFilter(filterEl.value.trim().toLowerCase()));
+
+/* ----------------------------------------------------------------- sheet close */
+el('closeSheet').addEventListener('click', () => document.body.classList.remove('sheet'));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.body.classList.remove('sheet'); });
+
+/* -------------------------------------- basemap cycle: dark → English → sketch */
+const NEXT = { fiord: ['positron-en', '🔤 English labels'], 'positron-en': ['sketch', '◈ offline sketch'], sketch: ['fiord', '🌑 dark map'] };
+el('mapToggle').addEventListener('click', function () {
+  if (!map) return;
+  baseStyle = NEXT[baseStyle][0];
+  const sketch = baseStyle === 'sketch';
+  this.textContent = 'Next: ' + NEXT[baseStyle][1];
+  this.setAttribute('aria-pressed', String(sketch));
+  $('.map-pane').classList.toggle('sketch', sketch);
+  if (sketch) {
+    setBasemapVisible(false);        // keep the loaded style alive; just hide it
+    showSketch(true);
+  } else {
+    map.setStyle('https://tiles.openfreemap.org/styles/' + (baseStyle === 'positron-en' ? 'positron' : 'fiord'));
+    [500, 1500, 3000, 6000, 10000].forEach((t) => setTimeout(ensureOverlay, t));  // + timed safety net
+  }
+});
+
+/* --------------------------------------------------------- approximate areas */
+el('areasToggle').addEventListener('click', () => {
+  const on = !areasOn;
+  setAreasVisible(on);
+  el('areasToggle').setAttribute('aria-pressed', String(on));
+  el('areasToggle').textContent = on ? '◧ areas: on' : '◧ areas (approx.)';
+  if (on) paintAreas();
+});
+
+/* ------------------------------------------------------- resizable column grips */
+function makeResizable(target, side) {
+  const varName = side === 'left' ? '--tw' : '--iw';
+  const dflt    = side === 'left' ? 360 : 390;
+  const get = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(varName)) || dflt;
+  const set = (w) => {
+    document.documentElement.style.setProperty(varName, Math.min(760, Math.max(260, w)) + 'px');
+    if (map) map.resize();
+  };
+  target.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); target.setPointerCapture(e.pointerId);
+    const startX = e.clientX, w0 = get();
+    const dir = side === 'left' ? 1 : -1;
+    const move = (ev) => set(w0 + dir * (ev.clientX - startX));
+    const up = () => {
+      target.removeEventListener('pointermove', move);
+      target.removeEventListener('pointerup', up);
+      target.removeEventListener('pointercancel', up);
+    };
+    target.addEventListener('pointermove', move);
+    target.addEventListener('pointerup', up);
+    target.addEventListener('pointercancel', up);
+  });
+  target.addEventListener('dblclick', () => set(dflt));
+  target.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const step = e.shiftKey ? 40 : 10, dir = e.key === 'ArrowRight' ? 1 : -1;
+    set(get() + dir * step * (side === 'left' ? 1 : -1));
+  });
+}
+makeResizable(el('gripTree'), 'left');
+makeResizable(el('gripInfo'), 'right');
+
+/* ------------------------------------------------------------------------ init */
+buildFamilies();
+(function init() {
+  const p = parseHash();
+  load(p.key, p.node);
+})();
+</script>
+</body>
+</html>
