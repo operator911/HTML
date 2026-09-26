@@ -88,6 +88,11 @@ mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1
 .chip{font-size:.72rem;padding:.2rem .6rem;border-radius:99px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim)}
 .chip.sp{border-color:color-mix(in srgb,var(--c) 55%,transparent);color:var(--c)}
 .chip.iso{font-family:var(--sans);letter-spacing:.03em;text-transform:none}
+/* Special-mode chips (languages.md §2.12): script names and decipherment status.
+   Opt-in per atlas — a node supplies its own `chips:[[text,class]]` list. */
+.chip.scr{font-family:var(--serif);letter-spacing:.02em;border-style:dashed}
+.chip.dec{border-color:color-mix(in srgb,var(--gold) 55%,transparent);color:var(--gold)}
+.chip.dec.und{border-color:var(--line);color:var(--ink-faint);border-style:dotted}
 #info .kicker{margin:0 0 .2rem;font-size:.68rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
 #info ul.feat{margin:.5rem 0 0;padding:0 0 0 1.15rem;font-family:var(--serif);font-size:.9rem;color:var(--ink-dim)}
 #info ul.feat li{margin:.3rem 0}
@@ -184,8 +189,8 @@ const FAMILIES = [
   { key: 'kradai',        zh: '壮侗',       en: 'Kra–Dai',           file: 'atlas-kradai.js',        status: 'done' },
   { key: 'japonic',       zh: '日本語族',   en: 'Japonic & Ainu',    file: 'atlas-japonic.js',       status: 'done' },
   { key: 'mongolic',      zh: '蒙古语族',   en: 'Mongolic',          file: 'atlas-mongolic.js',      status: 'done' },
-  { key: 'silkroad',      zh: '丝路死语',   en: 'Silk Road lost',    file: 'atlas-silkroad.js',      status: 'planned' },
-  { key: 'tibetoburman',  zh: '藏缅语族',   en: 'Tibeto-Burman',     file: 'atlas-tibetoburman.js',  status: 'planned' },
+  { key: 'silkroad',      zh: '丝路死语',   en: 'Silk Road lost',    file: 'atlas-silkroad.js',      status: 'done' },
+  { key: 'tibetoburman',  zh: '藏缅语族',   en: 'Tibeto-Burman',     file: 'atlas-tibetoburman.js',  status: 'done' },
   { key: 'hmongmien',     zh: '苗瑶语族',   en: 'Hmong–Mien',        file: 'atlas-hmongmien.js',     status: 'planned' },
   { key: 'korean',        zh: '朝鲜语族',   en: 'Koreanic',          file: 'atlas-korean.js',        status: 'planned' },
   { key: 'formosan',      zh: '台湾南岛语', en: 'Formosan',          file: 'atlas-formosan.js',      status: 'planned' },
@@ -568,6 +573,16 @@ function listenLinks(n) {
   return out.join('');
 }
 function depthOf(n) { let d = 0, p = n; while ((p = findParent(p))) d++; return d; }
+/* History and timeline are factored out so the special mode can reorder them. */
+function historyHTML(n) {
+  return n.h.map((p, i) => '<p' + (i === 0 ? ' class="lead"' : '') + '>' + p + '</p>').join('');
+}
+function timelineHTML(n) {
+  return (n.t && n.t.length)
+    ? '<ol class="timeline">' + n.t.map(([yr, ev]) =>
+        '<li><span class="yr">' + yr + '</span><span class="ev">' + ev + '</span></li>').join('') + '</ol>'
+    : '';
+}
 function findParent(n) {
   let found = null;
   (function w(x, par) { if (x === n) found = par; (x.kids || []).forEach((k) => w(k, x)); })(ATLAS.tree, null);
@@ -575,12 +590,17 @@ function findParent(n) {
 }
 function renderInfo(n) {
   const depth = depthOf(n);
-  const kind = depth === 0 ? 'The family'
-             : (ATLAS.stages || []).indexOf(n.id) >= 0 ? 'Ancestral stage'
-             : (n.kids && n.kids.length ? 'Branch / group' : 'Living variety');
+  const K = ATLAS.kinds || {};
+  const kind = depth === 0 ? (K.root || 'The family')
+             : (ATLAS.stages || []).indexOf(n.id) >= 0 ? (K.stage || 'Ancestral stage')
+             : (n.kids && n.kids.length ? (K.branch || 'Branch / group') : (K.leaf || 'Living variety'));
   const iso  = (ATLAS.iso || {})[n.id];
   const feat = (ATLAS.features || {})[n.id];
   const rootId = ATLAS.rootId || ATLAS.tree.id;
+  /* Extra chips are author-supplied per node: [text, cssClass]. Used by the
+     Silk Road atlas for script names and decipherment status (languages.md §2.12). */
+  const extra = (n.chips || []).map((c) =>
+    '<span class="chip' + (c[1] ? ' ' + c[1] : '') + '">' + c[0] + '</span>').join('');
   info.innerHTML =
     '<p class="kicker">' + kind + '</p>' +
     '<h2>' + n.en + '</h2>' +
@@ -588,15 +608,17 @@ function renderInfo(n) {
       ? '<div class="zh-big">' + n.zh + (n.py ? ' <span class="py">' + n.py + '</span>' : '') + '</div>'
       : (n.py ? '<div class="py">' + n.py + '</div>' : '')) +
     '<div class="chips">' +
-      (n.sp ? '<span class="chip sp">' + n.sp + ' speakers</span>' : '') +
+      (n.sp ? '<span class="chip sp">' + n.sp + (ATLAS.spSuffix === undefined ? ' speakers' : ATLAS.spSuffix) + '</span>' : '') +
       '<span class="chip">' + (n.region || '') + '</span>' +
       (iso ? '<span class="chip iso">ISO 639-3: ' + iso + '</span>' : '') +
+      extra +
     '</div>' +
     '<div class="listen">' + listenLinks(n) + '</div>' +
-    '<h3>History</h3>' +
-    n.h.map((p, i) => '<p' + (i === 0 ? ' class="lead"' : '') + '>' + p + '</p>').join('') +
-    (n.t && n.t.length ? '<h3>Timeline</h3><ol class="timeline">' +
-      n.t.map(([yr, ev]) => '<li><span class="yr">' + yr + '</span><span class="ev">' + ev + '</span></li>').join('') + '</ol>' : '') +
+    /* Special mode (§2.12): for dead languages the timeline is the primary
+       panel — a find-spot's dates matter more than its history prose. */
+    (ATLAS.timelineFirst
+      ? '<h3>Timeline</h3>' + timelineHTML(n) + '<h3>History</h3>' + historyHTML(n)
+      : '<h3>History</h3>' + historyHTML(n) + '<h3>Timeline</h3>' + timelineHTML(n)) +
     (feat && feat.length ? '<h3>What makes it distinctive</h3><ul class="feat">' +
       feat.map((x) => '<li>' + x + '</li>').join('') + '</ul>' : '') +
     (n.id === rootId && ATLAS.sources ? '<p class="note">' + ATLAS.sources + '</p>' : '');

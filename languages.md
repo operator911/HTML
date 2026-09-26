@@ -18,8 +18,8 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 3 | **Kra–Dai 壮侗 / 侗台** | `atlas-kradai.js` | ✅ built | 36 nodes · 114 markers · 6 branches; Zhuang macrolanguage, Jiamao's non-Hlai core, Ahom in Assam; **Saek and Bouyei figures corrected against sources (KD-108)** |
 | 4 | **Japonic & Ainu 日本語族・アイヌ語** | `atlas-japonic.js` | ✅ built | 23 nodes · 102 markers · 4 branches; two unrelated families in one file; **Yaeyama's UNESCO grade is disputed between sources (JP-104)** |
 | 5 | **Mongolic 蒙古语族** | `atlas-mongolic.js` | ✅ built | 26 nodes · 108 markers · 4 branches; six scripts as a labelled non-genetic branch; five logged figure problems (MG-102, MG-111); Oirat has no ISO code of its own (MG-105); **the *Secret History* is not a 1240 text (MG-104)** |
-| 6 | **Silk Road lost languages 丝绸之路死语** | `atlas-silkroad.js` | 💤 planned | file does not exist yet; special mode: all-extinct, timeline-first, script chips |
-| 7 | **Tibeto-Burman 藏缅语族** | `atlas-tibetoburman.js` | 💤 planned | file does not exist yet; ~45 nodes for a 350-language family, with the honest "and 200+ more" node |
+| 6 | **Silk Road lost languages 丝绸之路死语** | `atlas-silkroad.js` | ✅ built | 34 nodes · 78 markers · 5 branches + a labelled non-genetic script branch; **special mode** (timeline-first, script + decipherment chips, inverted colour semantics); Rouran's classification disputed (SR-106); five ISO register findings incl. two false-friend codes (SR-105) |
+| 7 | **Tibeto-Burman 藏缅语族** | `atlas-tibetoburman.js` | ✅ built | 56 nodes · 164 markers · 9 branches + an honest "and 200+ more" node; **the grouping itself is not a demonstrated subgroup (TB-101)**; Karen's placement disputed (TB-109); 5 register name mismatches, 4 splits and 1 lump (TB-105) |
 | 8 | **Hmong–Mien 苗瑶语族** | `atlas-hmongmien.js` | 💤 planned | file does not exist yet; Hmongic + Mienic; diaspora to Laos, the US, French Guiana |
 | 9 | **Koreanic 朝鲜语族** | `atlas-korean.js` | 💤 planned | file does not exist yet; smallest extent; Jeju + the twentieth-century diasporas |
 | 10 | **Formosan 台湾南岛语** | `atlas-formosan.js` | 💤 planned | file does not exist yet; Austronesian homeland; Tsat/Utsul bridge to Hainan |
@@ -28,7 +28,8 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 13 | **Siberian isolate pocket** (Nivkh, Yukaghir, Chukotko-Kamchatkan, Ket, Ainu) | `atlas-siberian.js` | 💤 planned | file does not exist yet; Phase 8 capstone; the "peoples before the farmers" map |
 
 > **Do not mark a family ✅ on the strength of a plan.** As of this revision `atlas-sinitic.js`,
-> `atlas-tungusic.js`, `atlas-kradai.js`, `atlas-japonic.js` and `atlas-mongolic.js` exist on disk,
+> `atlas-tungusic.js`, `atlas-kradai.js`, `atlas-japonic.js`, `atlas-mongolic.js`,
+> `atlas-silkroad.js` and `atlas-tibetoburman.js` exist on disk,
 > and the `FAMILIES` array in `EastAsiaAtlas.html` must match this table exactly: a `status:'done'`
 > entry whose file is missing
 > loads into the "data pending" path instead of the disabled-button path, which is worse than
@@ -172,8 +173,101 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     it and then given a *duplicate* when repaired. The symptom is a silent one: the brace matcher
     terminates early and a whole branch falls outside `DATA` while the file still parses. The local
     checker must be run after **each** subtree, not at the end.
-- **Next:** Phase 5 (Silk Road lost languages, `atlas-silkroad.js`) — research first, then the sketch
-  geometry.
+- **2026-09-26 · Phase 5 — Silk Road lost languages: DONE.** `atlas-silkroad.js` written (34 nodes,
+  78 markers, 19 palette classes, 5 sketch polygons), with research log `SR-101`–`SR-110` appended.
+  This is the series' **special mode** and it required engine work as well as data — the first time a
+  phase has changed `EastAsiaAtlas.html` since Phase 0.
+  - **What "special mode" turned out to mean, concretely.** `languages.md` §2.12 asked for a
+    timeline-first panel, optional script and decipherment chips, and inverted colour semantics. Three
+    **opt-in** switches were added to the engine, all backward-compatible so the five existing atlases
+    are untouched: `timelineFirst` (Timeline above History, implemented by factoring the two blocks
+    into `historyHTML()` / `timelineHTML()`); per-node `chips:[[text,class]]` with new `.chip.scr` and
+    `.chip.dec` styles; and `kinds`, which overrides the panel's type labels because "Living variety"
+    is the wrong label for a language with no speakers — this atlas says "Attested language".
+  - **A wording bug the smoke test caught, and the fix.** The engine hard-appended " speakers" to every
+    `sp` value, so a dead language rendered as **"extinct speakers"**. Rather than mangle the data to
+    fit the template, an `spSuffix` option was added (default `' speakers'`, so nothing else changes);
+    Silk Road sets it to `''`. **Worth knowing:** the same wart still exists in the five older atlases,
+    where a chip reads e.g. "≈6.3 million, by source speakers". It is cosmetic and pre-existing, and it
+    was deliberately *not* fixed here because doing it properly means editing the `sp` string of
+    roughly 150 nodes across five files — logged as a follow-up rather than smuggled into this phase.
+  - **`SR-105` is the phase's best find.** Reading the SIL register rather than recalling it turned up
+    three spelling mismatches — the register says **Tokharian** A/B, **Kitan**, **Old Turkish**, **Old
+    Uighur**, **Chorasmian** — and two false friends that would have been silently wrong: **`xru` is
+    Marriammu**, an Australian language, not Rouran; and **`xnn` is Northern Kankanay**, a Philippine
+    language, not Xiongnu. Rouran and Xiongnu have no code at all, so those nodes show no code chip.
+    Same trap class as `aib` "Ainu (China)" at `JP-105`.
+  - **`SR-106` is the logged dispute.** Vovin (2019) reads the Brāhmī Bugut and Khüis Tolgoi
+    inscriptions as the earliest attested Mongolic. The node attributes that to him by name and year
+    and calls it an argument; the companion `xiongnu` node lists Turkic / Mongolic / Yeniseian /
+    Iranian / isolate and **chooses none** — the refusal is stated in the prose as the finding.
+  - **Decipherment status is the atlas's spine**, and it is kept honest per script: Tangut
+    "deciphered", Khitan "partial" (small script largely read, large script not), Xiongnu
+    "undeciphered — no corpus", Zhangzhung "partial". `SR-108` records why "partially undeciphered
+    script" and "language not completely reconstructed" are two different claims and must not be
+    collapsed.
+  - **Link check (`SR-110`)** found two more Omniglot spelling traps: Khwarezmian is **`chorasmian.htm`**
+    (the register's spelling) and Kharoṣṭhī is **`kharosthi.htm`**, not `kharoshti.htm`. **There is no
+    Manichaean page at all** under any name tried, so that node links to the Syriac page with the
+    absence stated in the link text itself.
+  - **Verified:** `node tools/check-atlas.js` on all six files → all valid (43 · 19 · 36 · 23 · 26 ·
+    34). Headless Edge smoke test of `#silkroad`: 19 palette rules, stats row `33 nodes — all extinct
+    but one · 8 scripts on one route · 3 scripts not fully deciphered`, `aria-current="page"`, 0 error
+    markers. Deep link `#silkroad/tochB` renders all three chip kinds and confirms **Timeline above
+    History**. Regression check of `#mongolic/khalkha` confirms the `spSuffix` default is unchanged.
+- **2026-09-26 · Phase 6 — Tibeto-Burman: DONE.** `atlas-tibetoburman.js` written (56 nodes,
+  164 markers, 12 palette classes, 5 sketch polygons), with research log `TB-101`–`TB-110`.
+  The largest tree in the series so far, and the one with the most consequential caveat.
+  - **`TB-101` is the finding that shapes the whole file.** The grouping this atlas is named after
+    **has not been demonstrated to be a valid subgroup in its own right** — Benedict (1972) and
+    Matisoff both say so, and Matisoff declines to claim that his own large groupings (Kamarupan,
+    Himalayish) have any relationship to each other "other than a geographic one". The atlas
+    therefore presents the tree as **a map of scholarly usage, not a proven genealogy**, and repeats
+    that on the root node, on the `prototb` node, in the `sources` note and in the ledger. A reader
+    who deep-links straight to the reconstruction still meets it.
+  - **The scale problem, handled the way the brief asked.** The grouping has **350+ languages** and
+    the atlas shows ~55. Rather than padding the tree, it carries an explicit **"…and 200+ more
+    languages"** node whose prose says outright that what is left out is *most of the family*, and
+    that replacing it honestly means researching one region at a time rather than adding names.
+  - **`TB-105` is the richest register entry of the series.** Reading `iso-639-3.tab` rather than
+    recalling it turned up **five name mismatches** (the register says *Nepal Bhasa* not Newar,
+    *Sichuan Yi* not Nuosu, *Kachin* not Jingpho, *Lushai* not Mizo, plus Bumthangkha / Yakha /
+    Thado Chin), **four splits** (Tamang → `taj`/`tdg`/`tge`; Qiang → `cng`/`qxs`; Pumi →
+    `pmi`/`pmj`; Karen → `ksw`/`pwo`/`kyu`) and **one lump** — **Japhug, Situ and Tshobdun share a
+    single code, `jya` ("Jiarong")**, because the register does not distinguish them. That lump is
+    the exact inverse of the Tamang split, and both are stated on the nodes. Also caught: **Naxi is
+    `nxq`, not `nbf`** — `nbf` does not exist, so a recalled code would have been silently wrong.
+  - **`TB-107` corrects a half-fact.** "The Naxi have a pictographic script" is true and is routinely
+    used to imply Naxi is a written language in daily use. The sources say the opposite — Dongba is a
+    ritual **mnemonic** system, and Geba, Latin and the Fraser alphabet are all "rarely used in
+    everyday life and few people are able to read Naxi". The node separates ritual notation from
+    ordinary literacy and quotes the caution.
+  - **`TB-106` gives the Yi syllabary real numbers:** the Modern Yi script is a standardised
+    syllabary of **756 basic glyphs** based on the Liangshan dialect **plus 63** for syllables found
+    only in Chinese borrowings, standardised in **1974**. An engineered system with a defined
+    inventory, in contrast to the classical Yi script's thousands of variants.
+  - **`TB-109` is the logged dispute:** Karen's placement. Matisoff "demoted Karen but kept the
+    divergent position of Sinitic", so where Karenic sits depends on which reconstruction you
+    follow. The node says so, names both scholars, and then places Karenic with the others anyway —
+    the atlas has to draw *some* tree, and the honest move is to draw one and label it.
+  - **Link check (`TB-110`)** found three more Omniglot traps: **`jingpho.htm` is 200 but `jingpo.htm`
+    is 404**; **`newari.htm` is a 302 redirect to `ranjana.htm`** while **`newar.htm` is the direct
+    200**, so the atlas links the direct one and Ranjana separately; and **no Dzongkha, Qiang or
+    Rgyalrong page exists** under any name tried. Bonus: `akha.htm` exists, which gives the Hani/Akha
+    node a page its Chinese-side name would not have found.
+  - **Reused Phase 5's engine work with no new engine changes** — `spSuffix:''` gives clean chips
+    ("≈2 million, by source" rather than "…by source speakers"), and the script/decipherment chips
+    carry the Dongba, Geba, Yi-syllabary, Limbu-script and Tibetan-script facts.
+  - **Verified:** `node tools/check-atlas.js` on all seven files → all valid (43 · 19 · 36 · 23 · 26 ·
+    34 · 56). Headless Edge smoke test of `#tibetoburman`: 12 palette rules, stats row `56 nodes,
+    from a 350-language grouping · ≈330 million speakers, by source · 7 writing systems in the atlas`,
+    `aria-current="page"`, **0 error markers**. Deep link `#tibetoburman/nuosu` renders all three
+    script chips, the ISO chip `iii (type L — register name "Sichuan Yi"; ii)`, and a clean `sp` chip.
+- **Next:** Phase 7 — Hmong–Mien (§2.8), Koreanic (§2.6), Formosan (§2.10), Turkic (§2.9, needs a
+  scope decision first) and Austroasiatic (§2.11), in whatever order appetite dictates; then Phase 8,
+  the optional Siberian capstone (§2.13).
+- **Next:** Phase 6 (Tibeto-Burman, `atlas-tibetoburman.js`) — the big one, ~45 nodes for a
+  350-language family, sharing ancestor nodes with Sinitic.
 
 
 ---
@@ -550,7 +644,7 @@ Tashkent to tell the diaspora story.
 **Sources.** Lee & Ramsey, *The Korean Language* · Martin, *Reference Grammar of Korean* ·
 Ramer on Koryo-mar · UNESCO (Jeju) · Ethnologue/Glottolog.
 
-### 2.7 Tibeto-Burman 藏缅语族 — 💤 planned
+### 2.7 Tibeto-Burman 藏缅语族 — ✅ built (`atlas-tibetoburman.js`, 56 nodes · 164 markers)
 
 **Pitch.** The rest of Sino-Tibetan: the natural "volume II" of the Sinitic atlas, sharing
 its ancestor nodes. From Tibetan's Buddhist literary tradition to the Yi syllabary still in
@@ -712,7 +806,7 @@ Austroasiatic and Kra-Dai linguists still unpack" line), `hainan` (Cham refugees
 Austroasiatic classification · Ferlus on Vietic and tonogenesis · Thompson, *Vietnamese
 Reference Grammar* · Diffloth's Munda work · Ethnologue/Glottolog.
 
-### 2.12 Silk Road lost languages 丝绸之路死语 — 💤 planned (special mode)
+### 2.12 Silk Road lost languages 丝绸之路死语 — ✅ built (`atlas-silkroad.js`, 34 nodes · 78 markers · special mode)
 
 **Pitch.** A historical atlas where *every* node is extinct or dormant, and every story is a
 rediscovery: birch-bark Gāndhārī scrolls surfacing in 1994, Sogdian "Ancient Letters"
@@ -781,8 +875,8 @@ the sketch-geometry workflow are well proven.
 | **2** | Kra–Dai (§2.3) | `atlas-kradai.js` — 36 nodes, 114 markers; reuses the south-China extent; cross-atlas links live in both directions | ✅ done |
 | **3** | Japonic & Ainu (§2.5) | forces the new sketch-geometry workflow (Japan arc, Ryukyus, Sakhalin) | ✅ done — `atlas-japonic.js`, 23 nodes, 102 markers, 11 sketch polygons; `JP-102` self-correction, `JP-104` source conflict |
 | **4** | Mongolic (§2.4) | script-history spine; Shirongolic cluster and Kalmyk outliers | ✅ done — `atlas-mongolic.js`, 26 nodes, 108 markers, 7 sketch polygons; `MG-104` two-part self-correction, `MG-102` four speaker conflicts, `MG-105` ISO findings, `MG-111` re-check (unlogged Oirat figure, self-contradicting source, one unsourced number removed) |
-| **5** | Silk Road lost languages (§2.12) | validates "special mode" (all-extinct, timeline-first, script chips) | 💤 not started |
-| **6** | Tibeto-Burman (§2.7) | the big one; shared ancestor nodes with Sinitic | 💤 not started |
+| **5** | Silk Road lost languages (§2.12) | validates "special mode" (all-extinct, timeline-first, script chips) | ✅ done — `atlas-silkroad.js`, 34 nodes, 78 markers, 5 sketch polygons; three opt-in engine switches added (`timelineFirst`, per-node `chips`, `kinds`) plus an `spSuffix` wording fix; `SR-105` ISO register findings, `SR-106` Rouran dispute |
+| **6** | Tibeto-Burman (§2.7) | the big one; shared ancestor nodes with Sinitic | ✅ done — `atlas-tibetoburman.js`, 56 nodes, 164 markers, 5 sketch polygons; **the family's own premise is disputed and stated on the root node** (`TB-101`); Karen's placement disputed (`TB-109`); register findings at `TB-105` |
 | **7** | Hmong–Mien (§2.8) · Koreanic (§2.6) · Formosan (§2.10) · Turkic (§2.9, scope decision) · Austroasiatic (§2.11) | in whatever order appetite dictates | 💤 not started |
 | **8** | Siberian isolate pocket (§2.13) | optional capstone | 💤 not started |
 

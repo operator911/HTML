@@ -45,12 +45,12 @@ it is checked — never reconstructed from memory afterwards.
 | Mongolic | 11 | 8 | 1 | 1 | — |
 | Japonic & Ainu | 10 | 8 | 1 | 1 | — |
 | Koreanic | 0 | 0 | 0 | 0 | atlas not written |
-| Tibeto-Burman | 0 | 0 | 0 | 0 | atlas not written |
+| Tibeto-Burman | 10 | 9 | 1 | 0 | — |
 | Hmong–Mien | 0 | 0 | 0 | 0 | atlas not written |
 | Turkic | 0 | 0 | 0 | 0 | atlas not written |
 | Formosan | 0 | 0 | 0 | 0 | atlas not written |
 | Austroasiatic | 0 | 0 | 0 | 0 | atlas not written |
-| Silk Road | 0 | 0 | 0 | 0 | atlas not written |
+| Silk Road | 10 | 9 | 1 | 0 | — |
 | Siberian isolates | 0 | 0 | 0 | 0 | atlas not written |
 
 > **Corrected 2026-09-26.** This table previously carried invented counts for ten atlases that
@@ -60,16 +60,16 @@ it is checked — never reconstructed from memory afterwards.
 > are actually present in this file, and a family with no atlas gets 0 across the row.
 >
 > **Files on disk as of 2026-09-26:** `atlas-sinitic.js`, `atlas-tungusic.js`, `atlas-kradai.js`,
-> `atlas-japonic.js` and `atlas-mongolic.js` — Phases 0–4. Their rows above are the only ones
-> backed by an atlas; the remaining eight families read 0 because nothing has been researched for
-> them yet, not because a search came up empty.
+> `atlas-japonic.js`, `atlas-mongolic.js`, `atlas-silkroad.js` and `atlas-tibetoburman.js` —
+> Phases 0–6. Their rows above are the only ones backed by an atlas; the remaining six families read
+> 0 because nothing has been researched for them yet, not because a search came up empty.
 
 > **Phase 0.5 status: SKIPPED.** The user confirmed on 2026-09-26 that the Sinitic
 > verification had already been carried out at an earlier time, so the sweep was not re-run
 > in this session. The 42 targets below therefore remain `⬜ unverified` and must not be
 > treated as checked. Recorded so a later session does not mistake the omission for a pass.
 
-> **Honesty note on scope.** Only Phases 0–4 have been carried out. For those, each atlas's
+> **Honesty note on scope.** Only Phases 0–6 have been carried out. For those, each atlas's
 > load-bearing dates, figures and classifications were checked with targeted searches and
 > logged below with the URL actually fetched; less load-bearing colour in the prose is
 > written from the standard works named in each atlas's `sources` note and is flagged in the
@@ -203,10 +203,13 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
       headless Edge smoke test of `#mongolic` and `#mongolic/kalmyk` passes. `status:'done'` in
       `EastAsiaAtlas.html`.
 
-### Koreanic · Tibeto-Burman · Hmong–Mien · Turkic · Formosan · Austroasiatic · Silk Road
+### Koreanic · Hmong–Mien · Turkic · Formosan · Austroasiatic
 - [ ] ⬜ _section to be seeded at the start of each phase, from the brief's dates, names, figures and classifications_
 - [ ] ⬜ **None of these atlases has been written.** Their rows in the Counters table read 0 and their
       status in `languages.md` §0 is 💤 planned. Do not seed entries here until research actually happens.
+
+> **Silk Road (Phase 5) and Tibeto-Burman (Phase 6) have moved out of this queue** — their atlases
+> are written and their logs (`SR-101`–`SR-110`, `TB-101`–`TB-110`) are below.
 
 ## Tungusic (Phase 1) — research log
 
@@ -596,6 +599,235 @@ as Phase 3, so wording could be quoted exactly.
 - **Confidence:** high for all three. Problems 1 and 2 are direct readings of saved dumps; problem 3 is an absence — the figure could not be found in any source consulted, which is why it was removed rather than re-hedged.
 - **Action:** the atlas's `sources` note now says **five** logged figure problems rather than four, and names the Oirat and "Mongolian proper" scope issues alongside the original three. The `[MG-102]` heading said "three figures" while its own body logged four; corrected to "four". The Disputed table below gains two rows.
 
+## Silk Road lost languages (Phase 5) — research log
+
+**Brief:** `languages.md` §2.12. **Atlas:** `atlas-silkroad.js` — 34 nodes · 78 markers · 19 palette
+classes · 5 sketch polygons. **Special mode:** the first atlas in the series with an all-extinct
+subject, so three engine switches were added for it (all opt-in and backward-compatible) — see
+`[SR-110]`. Sources were fetched with `Special:Export` and the wikitext dumps kept in
+`/tmp/wpsr/*.xml`; the ISO register used is the same `iso-639-3.tab` retrieved for Phase 4.
+
+### [SR-101] The framing: this is not a family, and the atlas says so
+- **Claim as written:** "The Silk Road was not one road and not one language… a dozen unrelated languages met, borrowed from each other, and left their paperwork behind in a desert that preserves paper better than any archive."
+- **Appears in:** `atlas-silkroad.js` → node `silkroad` (root)
+- **Verdict:** verified as a framing statement, with the classification caveat made explicit
+- **Source:** *Tocharian languages*, *Sogdian language*, *Bactrian language*, *Gāndhārī language*, *Tangut language*, *Khitan language*, *Old Turkic*, *Saka language*, Wikipedia · all retrieved 2026-09-26 via `Special:Export`
+- **What the sources say:** each article independently confirms the family assignment used in the tree — Tocharian is Indo-European; Saka is Eastern Iranian; Sogdian is Iranian; Bactrian is Iranian ("written predominantly in an alphabet based on the Greek script"); Gāndhārī is Middle Indo-Aryan (a Prakrit); Tangut is Sino-Tibetan; Khitan is para-Mongolic; Jurchen is Tungusic; Old Turkic splits into "the earlier Orkhon Turkic and the later Old Uyghur".
+- **Confidence:** high for every family assignment except Rouran and Xiongnu, which are handled separately at `[SR-106]`
+- **Action:** the root node states outright that these are not one family, and the tree groups by family rather than pretending to a single ancestor. The `scripts` branch carries an explicit "not a genetic subgroup" warning in its own prose, repeating the device used by `atlas-mongolic.js`.
+
+### [SR-102] Tocharian A and B: the names, the range, and the "surprise"
+- **Claim as written:** "Tocharian A, also called *East Tocharian* or *Turfanian*… Tocharian B, also called *West Tocharian* or *Kuchean*… in use across the whole area from Turfan in the east to Tumshuq in the west."
+- **Appears in:** `atlas-silkroad.js` → nodes `tocharian`, `tochA`, `tochB`
+- **Verdict:** verified
+- **Source:** *Tocharian languages*, Wikipedia · https://en.wikipedia.org/wiki/Tocharian_languages · retrieved 2026-09-26
+- **What the source says:** the two are "Tocharian A (also ''East Tocharian'' or ''Turfanian'') and Tocharian B (''West Tocharian'' or ''Kuchean'')"; and "Tocharian B was more actively spoken in the entire area from Turfan in the east to Tumshuq in the west". The famous Indo-European cognate set is quoted in the article with the "honey"/"mead" comparison against Greek and Old Church Slavonic, which is the basis for the node's claim that the comparisons "established… that Tocharian belongs to Indo-European".
+- **Confidence:** high
+- **Action:** the node uses the alternative names, gives B the wider range, and states that the letters A/B are conventional and imply no chronology — a point the article's own presentation can mislead on.
+- **⚠ A date the atlas deliberately does NOT state precisely:** the node says Tocharian is "extinct by the 9th c." and the timeline says "9th–10th c." for the end. The articles give the Uyghur movement into the Tarim (c. 840–860) and the last datable documents (10th c.) but no single extinction year, so the atlas uses ranges. Do not "sharpen" these to a year.
+
+### [SR-103] The Sogdian “Ancient Letters”: 313–314 CE, found 1907, and the Mount Mugh archive
+- **Claim as written:** "The 'Ancient Letters' — five letters, four of them more or less complete, on paper and silk — were found by Aurel Stein in 1907 in an abandoned watchtower near Dunhuang, and are dated by their contents to 313–314 CE."
+- **Appears in:** `atlas-silkroad.js` → nodes `sogdian`, `sogdscript`; and the root timeline
+- **Verdict:** verified for the find-spot, the finder and the date; the "five letters, four more or less complete" count is a convention of the secondary literature and is stated as such
+- **Source:** *Sogdian language*, Wikipedia · https://en.wikipedia.org/wiki/Sogdian_language · retrieved 2026-09-26
+- **What the source says:** the letters were found "in an abandoned watchtower near [[Dunhuang]] in 1907, dating to the end of the Western Jin dynasty"; a cited table gives "'Ancient Letters' 313 CE to 314 CE". The article's reference list also names "Sogdian Ancient Letter No." individually, which is where the conventional numbering comes from.
+- **Confidence:** high for 1907 / Dunhuang / 313–314
+- **Action:** the node gives all three facts and attributes the archive to Stein. The "Ancient Letters" anchor the whole Sogdian entry because they are the oldest substantial Sogdian texts and because their contents — merchants writing home about goods and prices — illustrate the lingua-franca claim directly.
+
+
+### [SR-104] Bactrian: Greek script, the *sho* letter, and the 1993 Rabatak inscription
+- **Claim as written:** "the only Iranian language ever written in the Greek alphabet… with the addition of one letter — *sho* (ϸ)… the Rabatak inscription, found in 1993 near Surkh Kotal."
+- **Appears in:** `atlas-silkroad.js` → node `bactrian`
+- **Verdict:** verified
+- **Source:** *Bactrian language*, Wikipedia · https://en.wikipedia.org/wiki/Bactrian_language · retrieved 2026-09-26
+- **What the source says:** "The Bactrian script was directly adapted from the [[Greek script]] (here in grey), with the addition of the letter [[Sho (letter)|sho]] (ϸ)"; "Bactrian, which was written predominantly in an alphabet based on the [[Greek script]], was known natively as αριαο [arjaː] ('[[Arya]]')"; "The [[Rabatak inscription]] is an inscription written on a rock in the Bactrian language and the Greek script, which was found in 1993 at the site of [[Robatak, Afghanistan|Rabatak]], near [[Surkh Kotal]] in [[Afghanistan]]."
+- **Confidence:** high — the 1993 date and the Surkh Kotal location are both stated explicitly
+- **Action:** the node carries the script fact, the endonym, and the inscription with its date and place. The Rabatak inscription also gets its own marker so the find-spot is visible on the map.
+
+### [SR-105] ⚠ The ISO 639-3 register: three spelling mismatches and two false friends
+- **Claim as written:** every ISO code quoted in `atlas-silkroad.js`.
+- **Appears in:** `atlas-silkroad.js` → `const ISO`
+- **Verdict:** verified against the register — and the register disagrees with common usage in three places
+- **Source:** SIL ISO 639-3 register, `iso-639-3.tab` (7,928 lines), retrieved 2026-09-26 · https://iso639-3.sil.org/sites/iso639-3/files/downloads/iso-639-3.tab
+- **What the register says, code by code:** `xto` = **"Tokharian A"** and `txb` = **"Tokharian B"** — the register spells it *Tokharian*, not *Tocharian*; `zkt` = **"Kitan"**, not *Khitan*; `otk` = **"Old Turkish"**, not *Old Turkic*; `oui` = **"Old Uighur"**; `xco` = **"Chorasmian"**, not *Khwarezmian*. All five are language type **H** (historical). `kho` (Khotanese), `xtq` (Tumshuqese), `sog` (Sogdian), `xbc` (Bactrian), `pgd` (Gāndhārī), `txg` (Tangut), `xzh` (Zhang-Zhung), `juc` (Jurchen) are all type **H**. **`yai` = "Yagnobi" is type L — living**, which is the register confirming the atlas's central claim about Yaghnobi.
+- **The two false friends, which are the reason this entry exists:**
+  - **`xru` is *Marriammu*** — an Australian Aboriginal language — and **not Rouran**.
+  - **`xnn` is *Northern Kankanay*** — a Philippine language — and **not Xiongnu**.
+  Both codes look like they should belong to this atlas's languages and neither does. **Rouran and Xiongnu have no 639-3 code at all**, which is the correct state of affairs for languages attested only in fragments. The atlas shows **no** code chip for either node rather than a plausible-looking wrong one. This is the same class of trap as `aib` "Ainu (China)" recorded at `[JP-105]`.
+- **Confidence:** high — read directly out of the register file, not recalled
+- **Action:** the `ISO` map quotes the register's own spellings and flags each mismatch inline, so a reader comparing the atlas to the register is not left thinking the atlas made a typo.
+
+
+### [SR-106] ⚠ DISPUTED — Rouran's classification, and why the atlas refuses to place Xiongnu
+- **Claim as written:** "Alexander Vovin argued in 2019 that their language is the earliest attested Mongolic… presented as an argument rather than a settled fact."
+- **Appears in:** `atlas-silkroad.js` → nodes `relic`, `rouran`, `xiongnu`
+- **Verdict:** **disputed** — reported as a live scholarly argument, not as a finding
+- **Source:** *Rouran Khaganate*, Wikipedia · https://en.wikipedia.org/wiki/Rouran_Khaganate · retrieved 2026-09-26
+- **What the source says:** the article cites "Vovin, Alexander, 'A Sketch of the Earliest Mongolic Language: the Brāhmī Bugut and Khüis Tolgoi Inscriptions'" for the Mongolic reading, and separately notes that "the [[Book of Wei]] connected them to [[Proto-Mongols|Proto-Mongolic]] [[Donghu people|Donghu]]". It also records an etymological proposal deriving *Róurán* as \*nönör and comparing it to Mongolic нөкүр *nökür* "friend, comrade, companion". So the article presents the Mongolic connection as supported but argued from etymologies and a small inscriptional corpus, not demonstrated.
+- **Confidence:** medium — this is the atlas's single logged dispute for the phase, and it is a dispute over an *argument*, not over a fact
+- **Action:** the `rouran` node attributes the claim to Vovin by name and year, calls it an argument, and adds the honest caveat that "a handful of Brāhmī inscriptions is not a corpus". The `xiongnu` node goes further and lists Turkic, Mongolic, Yeniseian, Iranian and "isolate" as competing proposals without choosing — the refusal to classify is stated in the prose as the finding.
+
+### [SR-107] Tangut: the script, the 5,863 characters, and the Khara-Khoto library
+- **Claim as written:** "a collection of nearly 5,800 characters… a 2004 count put the known inventory at 5,863 characters, excluding variants… the library recovered from the ruined city of Khara-Khoto by Pyotr Kozlov's expedition in 1909."
+- **Appears in:** `atlas-silkroad.js` → nodes `sinotibetan`, `tangut`
+- **Verdict:** verified
+- **Sources:** *Tangut script*, Wikipedia · https://en.wikipedia.org/wiki/Tangut_script · and *Tangut language*, Wikipedia · https://en.wikipedia.org/wiki/Tangut_language · both retrieved 2026-09-26
+- **What the sources say:** "The '''Tangut script''' is a [[logographic]] writing system, formerly used for writing the extinct [[Tangut language]]"; "According to a 2004 count, 5,863 Tangut characters are known, excluding variants"; and the often-quoted judgement that it is "one of the most inconvenient of all scripts, a collection of nearly 5,800 characters of the same kind as Chinese characters but rather more complicated; very few are made up of as few as four strokes and most are made up of a good many more, in some cases nearly twenty". The language article gives "The Western Xia was annexed by the [[Mongol Empire]] in 1227."
+- **Confidence:** high for the character count, the script type and 1227
+- **Action:** the node quotes the 5,863 figure with its 2004 date and attributes the "most inconvenient" judgement as a quotation rather than the atlas's own verdict. The 1909 Kozlov removal is given as the reason the language became readable, and the timeline marks it as a separate event from the 1227 conquest — the point being that the *state* ended in 1227 but the *evidence* was recovered in 1909.
+
+### [SR-108] Khitan: two mutually exclusive scripts, one still partly unread
+- **Claim as written:** "Khitan was written using two mutually exclusive writing systems… the small script, which was a syllabary, was used until the Jurchen-speaking Jin dynasty replaced it with the Jurchen script in 1191. The large script was logographic like Chinese… Owing to a narrow corpus of known words and a partially undeciphered script, the language has yet to be completely reconstructed."
+- **Appears in:** `atlas-silkroad.js` → nodes `paramongolic`, `khitan`, `jurchen`
+- **Verdict:** verified, and the decipherment status is the load-bearing part
+- **Source:** *Khitan language*, Wikipedia · https://en.wikipedia.org/wiki/Khitan_language · retrieved 2026-09-26
+- **What the source says:** all four sentences above are close paraphrases of the article, which cites Janhunen (2006) at pp. 393 and 395 for the small script's syllabary status and the large script's logographic character. The article's own summary is that "the language has yet to be completely reconstructed" — which is a *different* claim from "the script is undeciphered", and the atlas keeps them apart.
+- **Confidence:** high for the two-script distinction and the 1191 date
+- **Action:** the node's chip reads **"partial"**, not "deciphered", and the feature list spells out the distinction that the small script is largely read while the large script is not. This is the atlas's clearest case of a language that is *not yet* fully readable, and it is deliberately contrasted with Tangut, whose chip reads "deciphered".
+
+
+### [SR-109] Old Turkic: Orkhon and Uyghur, Yadrintsev 1889, Thomsen 1893
+- **Claim as written:** "Old Turkic can generally be split into two dialects, the earlier Orkhon Turkic and the later Old Uyghur… the runiform alphabet was deciphered by Vilhelm Thomsen in 1893… named after the Orkhon Valley where early 8th-century inscriptions were discovered in an 1889 expedition by Nikolai Yadrintsev."
+- **Appears in:** `atlas-silkroad.js` → nodes `turkic`, `orkhon`, `olduyghur`, `runiform`; and the root timeline
+- **Verdict:** verified
+- **Source:** *Old Turkic*, Wikipedia · https://en.wikipedia.org/wiki/Old_Turkic · retrieved 2026-09-26
+- **What the source says:** "Old Turkic can generally be split into two dialects, the earlier [[Orkhon Turkic language|Orkhon Turkic]] and the later [[Old Uyghur]]"; "The [[Old Turkic script|Turkic runiform alphabet]] of Orkhon Turkic was deciphered by [[Vilhelm Thomsen]] in 1893"; "The script is named after the [[Orkhon Valley]] in [[Mongolia]] where early 8th-century inscriptions were discovered in an 1889 expedition by [[Nikolai Yadrintsev]]". The article also cites Talat Tekin's *A Grammar of Orkhon Turkic*, which is the source named in the atlas's `sources` note.
+- **Confidence:** high — all four facts are stated directly
+- **Action:** both dates (1889 find, 1893 decipherment) appear in the timeline and in the `runiform` node, and the node warns explicitly that "runiform" is a description of appearance and **not** a claim of relation to the Germanic runes. That warning is included because the resemblance is the single most common misconception about this script.
+
+### [SR-110] Link health, and the special-mode engine work the phase required
+- **Claim as written:** every `SOUND` entry in `atlas-silkroad.js` is a URL that was requested before being written down.
+- **Appears in:** `atlas-silkroad.js` → `const SOUND`; and `EastAsiaAtlas.html` for the engine changes
+- **Verdict:** verified — 32 candidate URLs requested 2026-09-26
+- **What the link check found:** **200** for `tocharian`, `kharosthi`, `brahmi`, `sogdian`, `chorasmian`, `yaghnobi`, `orkhon`, `tangut`, `khitan`, `jurchen`, `bactrian`, `uyghur`, `aramaic`, `syriac`, `runic`, `phagspa`. **404** for `kharoshti`, `khwarezmian`, `manichaean`, `manichaean_script`, `manichaean_alphabet`, `old_turkic`, `old_uyghur`, `uighur`, `saka`, `khotanese`, `sogdian_script`, `brahmi_script`, `kharosthi_script`, `zhangzhung`, `bon`, `tangut_script`, `khitan_small`, `chinese_script`, `todo`, `xixia`.
+  - **Two spelling traps, both recorded so a later session does not repeat them:** Omniglot's Khwarezmian page is spelled **`chorasmian.htm`** — the register's spelling, not the common one — and Kharoṣṭhī is **`kharosthi.htm`**, *not* `kharoshti.htm`.
+  - **There is no Manichaean page on Omniglot under any name tried.** The `manichaean` node therefore links to the Syriac page with the absence stated in the link text itself, rather than to a guessed URL.
+  - **No page exists** for Saka, Khotanese, Tumshuqese, Gāndhārī, Zhangzhung, Rouran or Xiongnu, so those nodes carry an **empty** `sound` list and the engine's search fallback covers them.
+- **The special-mode engine work (the phase's other deliverable).** `languages.md` §2.12 asks for a timeline-first panel, optional script and decipherment chips, and inverted colour semantics. Three opt-in switches were added to `EastAsiaAtlas.html`, all backward-compatible — the five existing atlases render identically:
+  1. **`timelineFirst`** — renders the Timeline above the History prose. Implemented by factoring the two blocks into `historyHTML()` / `timelineHTML()` so either order is a one-line choice.
+  2. **per-node `chips:[[text,class]]`** — an author-supplied chip list, rendered after the standard chips, with new `.chip.scr` (dashed) and `.chip.dec` / `.chip.dec.und` styles for scripts and decipherment status.
+  3. **`kinds`** — overrides the panel's type labels, because "Living variety" is the wrong label for a language with no speakers; this atlas uses "Attested language".
+  A fourth change was made after the first smoke test caught a wording bug: the engine hard-appended the word " speakers" to every `sp` value, so a dead language rendered as **"extinct speakers"**. Added **`spSuffix`** (default `' speakers'`, so every existing atlas is unaffected); Silk Road sets it to `''` and writes self-contained `sp` strings.
+- **Verified:** `node tools/check-atlas.js` on all six atlas files → all valid (sinitic 43 · tungusic 19 · kradai 36 · japonic 23 · mongolic 26 · silkroad 34). Headless Edge smoke test of `#silkroad`: title "Silk Road lost languages — East Asian Language Atlas", 19 palette rules generated, stats row `33 nodes — all extinct but one · 8 scripts on one route · 3 scripts not fully deciphered`, nav button `aria-current="page"`, **0 error markers**. Deep link `#silkroad/tochB` renders the node with all three chip kinds visible — `Brāhmī (Tocharian variant)` (`.scr`), `deciphered` (`.dec`) and `ISO 639-3: txb (type H — register spelling "Tokharian B")` — and the panel confirmed **Timeline above History**. A regression check of `#mongolic/khalkha` confirmed the `spSuffix` default still appends " speakers" for the older atlases.
+
+
+## Tibeto-Burman (Phase 6) — research log
+
+**Brief:** `languages.md` §2.7. **Atlas:** `atlas-tibetoburman.js` — 56 nodes · 164 markers · 12 palette
+classes · 5 sketch polygons. Sources fetched with `Special:Export` into `/tmp/wptb/*.xml`; the ISO
+register is the same `iso-639-3.tab` used for Phases 4 and 5.
+
+### [TB-101] ⚠ THE HEADLINE — "Tibeto-Burman" is not a demonstrated subgroup
+- **Claim as written:** the atlas is *titled* Tibeto-Burman, and the root node says plainly that the title describes a conventional grouping rather than a proven one.
+- **Appears in:** `atlas-tibetoburman.js` → nodes `tibetoburman` (root) and `prototb`; and in the `sources` note
+- **Verdict:** **verified as a live critical position** — and it is the single most important thing to know about this atlas
+- **Source:** *Tibeto-Burman languages*, Wikipedia · https://en.wikipedia.org/wiki/Tibeto-Burman_languages · retrieved 2026-09-26
+- **What the source says:** "…Benedict (1972) and later [[James Matisoff]], Tibeto-Burman has not been demonstrated to be a valid subgroup in its own right." The same article records that "[[James Matisoff]] proposes a modification of Benedict that demoted Karen but kept the divergent position of Sinitic", and that "Matisoff makes no claim that the families in the Kamarupan or Himalayish branches have a special relationship to one another other than a geographic one."
+- **Why this matters for the whole file:** three consequences, all carried into the atlas rather than buried:
+  1. **The tree is a map of usage, not a genealogy.** The root node says so, and the `prototb` node repeats it, so a reader who deep-links to the reconstruction still meets the caveat.
+  2. **Some of the tree's own groupings are openly geographic.** The `bodish` and `sal` nodes are labelled as groupings in their own prose rather than presented as clades.
+  3. **Karen's position is genuinely unsettled** — see `[TB-109]`, a separate entry because the demotion of Karen is a specific, checkable claim rather than part of the general caveat.
+- **Confidence:** high that this is the standard critical position; **the atlas does not attempt to resolve it**, because resolving it is a research programme, not a phase.
+- **Action:** the caveat is stated on the root node, in the `prototb` node, in the `sources` note, and here. The repetition is deliberate: a reader arriving at any one of those points should not be able to miss it.
+
+### [TB-102] Old Tibetan: mid-7th to early 9th century, and the Dunhuang archive
+- **Claim as written:** "Old Tibetan is the earliest recorded stage of the language, 'reflected in documents from the adoption of writing by the Tibetan Empire in the mid-7th century to the early 9th century'… Its most important archive is unexpected: the sealed cave library at Dunhuang."
+- **Appears in:** `atlas-tibetoburman.js` → nodes `oldtibetan`, `tibetic`; and the root timeline
+- **Verdict:** verified for the date range and the script's adoption
+- **Source:** *Old Tibetan*, Wikipedia · https://en.wikipedia.org/wiki/Old_Tibetan · retrieved 2026-09-26
+- **What the source says:** Old Tibetan is "reflected in documents from the adoption of writing by the Tibetan Empire in the mid-7th century to the early 9th century". The article also notes that "most consonants could be palatalized, and the palatal series from the Tibetan script represents palatalized coronals" — a detail used in the node's description of the script's design.
+- **Confidence:** high for the date range
+- **Action:** the node gives the range as a range, and the atlas uses the Dunhuang cave library as the anchor because it is where the Tibetan material was actually recovered — the same device the Silk Road atlas uses for its find-spots.
+
+
+### [TB-103] Dzongkha: 640,000 speakers, and the one Tibetic national language
+- **Claim as written:** "Dzongkha is the national language of Bhutan… The source gives total speakers as <b>640,000</b>."
+- **Appears in:** `atlas-tibetoburman.js` → node `dzongkha`
+- **Verdict:** verified
+- **Source:** *Dzongkha*, Wikipedia · https://en.wikipedia.org/wiki/Dzongkha · retrieved 2026-09-26
+- **What the source says:** the infobox gives "speakers2 = Total speakers: 640,000", and the lead describes it as "a [[Tibeto-Burman languages|Tibeto-Burman language]] in the [[Tibetic languages|Tibetic]] language family that is primarily spoken by the [[Bhutanese people|Bhutanese people]]".
+- **Confidence:** high for the figure and the classification
+- **Action:** the node quotes 640,000 with "by source" and states the complication the figure hides — that Bhutan is linguistically diverse, with Sharchop in the east and Nepali-speaking communities in the south, and that Dzongkha is the western region's language elevated to national use. **The atlas does not present Dzongkha as "the language of Bhutan".**
+
+### [TB-104] The Ladakhi–Balti border: one continuum, three states
+- **Claim as written:** "Ladakhi is a Tibetan language in an Indian territory, next to Balti (a Tibetan language in Pakistan), with Chinese-administered Tibet to the east — so the same dialect continuum is divided between three states with three different language policies."
+- **Appears in:** `atlas-tibetoburman.js` → nodes `ladakhi`, `balti`
+- **Verdict:** verified as a geographic and political statement; the Tibetic classification of both is standard
+- **Sources:** *Ladakhi language*, *Balti language*, Wikipedia · retrieved 2026-09-26
+- **What the sources say:** both are classified as Western Tibetic, and the register codes them separately (`lbj`, `bft`). The Balti material establishes the Perso-Arabic literary context — most Balti speakers are Muslim — which is the basis for the node's "a language family is not a culture" feature.
+- **Confidence:** high for the classification and the political division; **medium** for the degree of mutual intelligibility between them, which the atlas therefore does not assert.
+- **Action:** the two nodes are written as a pair, each pointing at the same fact from its own side of the border. The atlas deliberately does **not** claim Ladakhi and Balti are mutually intelligible — the sources do not make that claim cleanly.
+
+### [TB-105] ⚠ The ISO register: five name mismatches, four splits and one lump
+- **Claim as written:** every ISO code quoted in `atlas-tibetoburman.js`.
+- **Appears in:** `atlas-tibetoburman.js` → `const ISO`
+- **Verdict:** verified against the register — and this phase's register findings are the richest of the series so far
+- **Source:** SIL ISO 639-3 register, `iso-639-3.tab` (7,928 lines), retrieved 2026-09-26 · https://iso639-3.sil.org/sites/iso639-3/files/downloads/iso-639-3.tab
+- **Five NAMES the register uses that the literature does not:**
+  - `new` is **"Nepal Bhasa"**, not *Newar* — the register uses the official Nepali government name.
+  - `iii` is **"Sichuan Yi"**, not *Nuosu*.
+  - `kac` is **"Kachin"**, not *Jingpho*.
+  - `lus` is **"Lushai"**, not *Mizo* — the older external label.
+  - `kjz` is **"Bumthangkha"**; `ybh` is **"Yakha"**; `tcz` is **"Thado Chin"**.
+- **Four nodes the register SPLITS across several codes:**
+  - **Tamang** → `taj` (Eastern Tamang), `tdg` (Western Tamang), `tge` (Eastern Gorkha Tamang). There is no single "Tamang" code.
+  - **Qiang** → `cng` (Northern Qiang), `qxs` (Southern Qiang).
+  - **Pumi** → `pmi` (Northern Pumi), `pmj` (Southern Pumi).
+  - **Karen** → `ksw` (S'gaw), `pwo` (Pwo *Western* Karen), `kyu` (Western Kayah) — so even `pwo` and `kyu` are narrower than the atlas's node names.
+- **One node the register LUMPS:** **Japhug, Situ and Tshobdun share the single code `jya` ("Jiarong")**. The register does not distinguish them, even though the atlas — following the descriptive literature — treats them as three languages. **This is the exact inverse of the Tamang case, and both are stated on the nodes.**
+- **One code that is not what it looks like:** `nbf` is **not** Naxi. Naxi is **`nxq`**. `nbf` does not exist in the register at all, so a code recalled from memory would have been silently wrong.
+- **Confidence:** high — every code read out of the register file, not recalled
+- **Action:** the `ISO` map quotes the register's own names, states the scope where a node's name is broader or narrower than its code, and the atlas's `sources` note points at this entry.
+
+
+### [TB-106] Nuosu Yi: the 1974 syllabary, and the exact glyph count
+- **Claim as written:** "The Modern Yi script (ꆈꌠꁱꂷ <i>nuosu bburma</i>) is a standardized syllabary derived from the classic script in 1974. There are 756 basic glyphs based on the Liangshan dialect, plus 63 for syllables only found in Chinese borrowings."
+- **Appears in:** `atlas-tibetoburman.js` → nodes `burmic`, `nuosu`
+- **Verdict:** verified, including both numbers
+- **Source:** *Nuosu language*, Wikipedia · https://en.wikipedia.org/wiki/Nuosu_language · retrieved 2026-09-26
+- **What the source says:** verbatim — "The Modern Yi script ({{lang|ii|ꆈꌠꁱꂷ}} {{transliteration|ii|''nuosu bburma''}} {{IPA|[nɔ̄sū bʙ̝̄mā]}} 'Nosu script') is a standardized [[syllabary]] derived from the classic script in 1974." and "There are 756 basic glyphs based on the Liangshan dialect, plus 63 for syllables only found in Chinese borrowings." The article also locates it: "Nuosu is mainly spoken in the [[Liangshan Yi Autonomous Prefecture]], [[Sichuan]]."
+- **Confidence:** high — both figures and the 1974 date are stated directly
+- **Action:** the node gives **756 + 63** as a specific, checkable design rather than a vague "hundreds of characters", because the point being made is that this system was *engineered* — standardised on one dialect with a defined inventory — in contrast to the classical Yi script's thousands of regional variants. This is one of the few Tibeto-Burman writing systems in daily use, and the atlas says so with numbers rather than adjectives.
+
+### [TB-107] Naxi Dongba: a ritual mnemonic, not an everyday script
+- **Claim as written:** "The <b>Dongba</b> script is a system of pictographic characters used by the <i>dongba</i> ritual specialists — but it is not a script for writing in the ordinary sense: it is a mnemonic system for reciting ritual texts, in which one glyph can cue a whole phrase."
+- **Appears in:** `atlas-tibetoburman.js` → node `naxi`
+- **Verdict:** verified, and the distinction is the entry's whole purpose
+- **Source:** *Naxi language*, Wikipedia · https://en.wikipedia.org/wiki/Naxi_language · retrieved 2026-09-26
+- **What the source says:** the article illustrates "Naxi manuscript, displaying both pictographic ''dongba'' and smaller syllabic ''geba''", and states that Naxi "can be written in the [[Geba syllabary]], [[Latin script]] or [[Fraser alphabet]], but they are rarely used in everyday life and few people are able to read Naxi." It also cites the standard reference works on the pictographic corpus, including a "dictionary of Naxi pictographic characters" (纳西象形文字谱).
+- **Confidence:** high for the two-script distinction and for the "rarely used in everyday life" statement
+- **Action:** the node separates the ritual script from ordinary literacy and quotes the source's own caution. **This is a deliberate correction of a widely repeated half-fact** — "the Naxi have a pictographic script" is true and is routinely used to imply that Naxi is a written language in daily use, which the source explicitly denies. The atlas also notes that Lijiang's tourism trades on Dongba imagery while the language recedes, because that is the situation a reader is most likely to encounter.
+
+### [TB-108] Burmese: the Pyu inheritance, and a register rather than a tone
+- **Claim as written:** "Burmese is 'a Tibeto-Burman language spoken in Myanmar, where it is the official language, lingua franca, and the native language of the Bamar, the country's largest ethnic group'… Its script descends from the Brāhmī-derived script of the Pyu."
+- **Appears in:** `atlas-tibetoburman.js` → nodes `burmic`, `burmese`, `rakhine`
+- **Verdict:** verified for the quotation and the classification; the Pyu script lineage is the standard account
+- **Source:** *Burmese language*, Wikipedia · https://en.wikipedia.org/wiki/Burmese_language · retrieved 2026-09-26
+- **What the source says:** the lead gives the quoted sentence and calls Burmese "a [[Tibeto-Burman languages|Tibeto-Burman language]] spoken in [[Myanmar]]… where it is the [[official language]], [[lingua franca]], and the native language of the [[Bamar people|Bamar]], the country's largest ethnic group". The article also records that "speakers continue to refer to the language as ''Burmese'', after ''Burma'' — a name with co-official status until 1989".
+- **Confidence:** high for the quotation and the official status; the Pyu descent is stated as the standard account, and the node's timeline places the Pyu city-states at c. 2nd–9th c. CE with the Myazedi inscription at c. 1113.
+- **Action:** the node uses the quoted definition, and the script's Indian ancestry is presented as the general structural fact about this family rather than as a Burmese peculiarity — the same point is made on the Tibetan, Newar and Limbu nodes.
+
+
+### [TB-109] ⚠ DISPUTED — Karen's position in the family
+- **Claim as written:** "Karenic is the branch that gave the comparative literature one of its long-running arguments… Matisoff's formulation… is that he 'proposes a modification of Benedict that demoted Karen but kept the divergent position of Sinitic'. So Karen's exact position is a matter of which reconstruction you follow."
+- **Appears in:** `atlas-tibetoburman.js` → node `karenic`
+- **Verdict:** **disputed** — reported as an unsettled question, not as a fact
+- **Source:** *Tibeto-Burman languages*, Wikipedia · https://en.wikipedia.org/wiki/Tibeto-Burman_languages · retrieved 2026-09-26
+- **What the source says:** the classification discussion gives Benedict's placement, Matisoff's modification ("demoted Karen but kept the divergent position of Sinitic"), and the underlying critical position that Tibeto-Burman as a whole is not demonstrated (see `[TB-101]`). The atlas therefore has a specific, attributable claim to hedge rather than a general one.
+- **Confidence:** medium — the dispute is over *placement*, not over Karenic being a valid group, which is not in doubt
+- **Action:** the `karenic` node states that Karen's exact position depends on which reconstruction you follow, names Benedict and Matisoff, and then places Karenic with the other branches anyway — because the atlas has to draw *some* tree, and the honest thing is to draw one and say what it is. The same device is used for Rouran at `[SR-106]`.
+
+### [TB-110] Link health, and the phase's verification
+- **Claim as written:** every `SOUND` entry in `atlas-tibetoburman.js` is a URL that was requested before being written down.
+- **Appears in:** `atlas-tibetoburman.js` → `const SOUND`
+- **Verdict:** verified — 37 candidate URLs requested 2026-09-26
+- **What the link check found:** **200** for `tibetan`, `burmese`, `yi`, `naxi`, `limbu`, `mizo`, `karen`, `bodo`, `garo`, `lisu`, `lahu`, `hani`, `ladakhi`, `balti`, `sherpa`, `tamang`, `gurung`, `jingpho`, `akha`, `newar`, `ranjana`, `bai`. **404** for `dongba`, `jingpo`, `qiang`, `rgyalrong`, `dzongkha`, `newah`, `kachin`, `qiangic`, `dzonkha`, `bhutanese`, `tibetan_script`, `burmese_script`, `rGyalrong`.
+  - **Three traps worth recording:** Omniglot's Jingpho page is **`jingpho.htm`** — `jingpo.htm` is 404. Its Newari page (`newari.htm`) is a **302 redirect to `ranjana.htm`**, the script page; **`newar.htm` is the direct 200**, so the atlas uses the direct one and links Ranjana separately. And **there is no Dzongkha, Qiang or Rgyalrong page under any name tried**, so those nodes carry an empty list.
+  - **One bonus:** `akha.htm` exists, which gives the Hani/Akha node a page its Chinese-side name (Hani) would not have found on its own — a small illustration of why the atlas carries both names.
+- **Verified:** `node tools/check-atlas.js` on all seven atlas files → all valid (sinitic 43 · tungusic 19 · kradai 36 · japonic 23 · mongolic 26 · silkroad 34 · tibetoburman 56). Headless Edge smoke test of `#tibetoburman`: title "Tibeto-Burman — East Asian Language Atlas", 12 palette rules generated, stats row `56 nodes, from a 350-language grouping · ≈330 million speakers, by source · 7 writing systems in the atlas`, nav button `aria-current="page"`, **0 error markers**. Deep link `#tibetoburman/nuosu` renders three script chips (`Modern Yi syllabary (1974)`, `756 + 63 glyphs`, `in daily use`), the ISO chip `iii (type L — register name "Sichuan Yi"; ii)`, and the `sp` chip reading `≈2 million, by source` with no stray " speakers" — confirming the `spSuffix` option added in Phase 5.
+
+
 ## Disputed / conflicting sources
 
 Tracked separately per family so the atlas prose can hedge the right sentences.
@@ -617,6 +849,18 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 | Mongolic | Oirat's speaker count | 368,000 with 655,372 ethnic Oirats (the Oirat infobox, 2007–2010) vs. 360,000 for Kalmyk–Oirat combined (Janhunen, via the family article); the infobox's own 58% implies ≈380,000, not 368,000 | all three figures given with scope stated, and the infobox's internal mismatch flagged — see `[MG-111]` |
 | Mongolic | Inner Mongolia's size vs. Mongolia's | "Mongolian speakers in China is still larger than in the state of Mongolia" (the Mongolian article) vs. that article's own figures — Mongolia ≈3.6m (2014), Inner Mongolia ≈2.1m, all China ≈2.9m | the claim is reported as a claim, with the figures that undercut it — see `[MG-111]` |
 | Mongolic | Moghol's status | "few" speakers (1982) vs. Glottolog "extinct" | both reported — see `[MG-109]` |
+| Silk Road | Rouran's classification | earliest attested Mongolic (Vovin 2019, on the Brāhmī Bugut and Khüis Tolgoi inscriptions) vs. unclassified / too thin to classify | attributed to Vovin by name and year, called an argument, with the "a handful of inscriptions is not a corpus" caveat — see `[SR-106]` |
+| Silk Road | Xiongnu's classification | Turkic / Mongolic / Yeniseian / Iranian / isolate — all proposed | **no** affiliation chosen; the refusal is stated in the prose as the finding — see `[SR-106]` |
+| Silk Road | Khitan's readability | "partially undeciphered" (large script) vs. "the language has yet to be completely reconstructed" — two different claims | kept apart: the chip reads "partial", not "deciphered" — see `[SR-108]` |
+| Silk Road | ISO codes that look right and are not | `xru` looks like Rouran but is Marriammu (Australia); `xnn` looks like Xiongnu but is Northern Kankanay (Philippines) | no code chip shown for either node rather than a wrong one — see `[SR-105]` |
+| Silk Road | Register vs. common spellings | register has Tokharian A/B, Kitan, Old Turkish, Old Uighur, Chorasmian; the literature and this atlas use Tocharian, Khitan, Old Turkic, Old Uyghur, Khwarezmian | the `ISO` map quotes the register's spelling and flags the mismatch inline — see `[SR-105]` |
+| Tibeto-Burman | ⚠ **The grouping itself** | "Tibeto-Burman" as a valid subgroup vs. **not demonstrated to be one** (Benedict 1972; Matisoff) | the caveat is on the root node, the `prototb` node and the `sources` note; the tree is presented as a map of usage, not a genealogy — see `[TB-101]` |
+| Tibeto-Burman | Karen's placement | divergent member of Tibeto-Burman (Matisoff's modification of Benedict) vs. a separate branch of Sino-Tibetan | both named, attributed, and the node says placement depends on the reconstruction — see `[TB-109]` |
+| Tibeto-Burman | Register names vs. literature | register has Nepal Bhasa, Sichuan Yi, Kachin, Lushai, Bumthangkha, Yakha, Thado Chin | register name quoted with the common one given — see `[TB-105]` |
+| Tibeto-Burman | Register splits vs. atlas nodes | Tamang → taj/tdg/tge; Qiang → cng/qxs; Pumi → pmi/pmj; Karen → ksw/pwo/kyu | scope stated on each node — see `[TB-105]` |
+| Tibeto-Burman | Register lumps vs. atlas nodes | Japhug, Situ and Tshobdun share **one** code, `jya` ("Jiarong") | stated on all three nodes — the inverse of the Tamang case — see `[TB-105]` |
+| Tibeto-Burman | Naxi's code | `nbf` does not exist; Naxi is `nxq` | code verified from the register, not recalled — see `[TB-105]` |
+| Tibeto-Burman | Dongba script's status | "the Naxi have a pictographic script" (widely repeated) vs. the sources' own "rarely used in everyday life and few people are able to read Naxi" | ritual mnemonic separated from ordinary literacy, with the source's caution quoted — see `[TB-107]` |
 
 ---
 
@@ -628,4 +872,4 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 4. Update the counters table at the top of this file.
 5. If a session is interrupted, the file — not the conversation — is the source of truth.
 
-*Last updated: 2026-09-26 — Phase 4 (Mongolic) researched and logged: entries `MG-101`–`MG-110`, one self-correction (`MG-104`, the *Secret History*'s date) and four logged source conflicts. Phases 3 (`JP-101`–`JP-110`) and 2 (`KD-101`–`KD-109`) also complete. Ledger created the same day; 42 Sinitic verification targets still seeded and unchecked.*
+*Last updated: 2026-09-26 — Phase 6 (Tibeto-Burman) researched and logged: entries `TB-101`–`TB-110`, one logged dispute (`TB-109`, Karen's placement) and the series' most consequential caveat (`TB-101`: the grouping itself is not a demonstrated subgroup). The ISO register findings at `TB-105` are the richest of the series — five name mismatches, four splits and one lump. Phases 0–6 complete; Phase 0.5 (Sinitic retrofit) skipped by instruction, so its 42 targets remain seeded and unchecked. Phases 7–8 not started: Hmong–Mien, Koreanic, Formosan, Turkic, Austroasiatic and the Siberian capstone.*
