@@ -42,7 +42,7 @@ it is checked — never reconstructed from memory afterwards.
 | Sinitic (retrofit) | 0 | 0 | 0 | 0 | 42 seeded targets below — **sweep skipped by instruction (Phase 0.5)** |
 | Tungusic | 8 | 8 | 0 | 0 | — |
 | Kra–Dai | 9 | 9 | 0 | 0 | — |
-| Mongolic | 0 | 0 | 0 | 0 | atlas not written |
+| Mongolic | 10 | 8 | 1 | 1 | — |
 | Japonic & Ainu | 10 | 8 | 1 | 1 | — |
 | Koreanic | 0 | 0 | 0 | 0 | atlas not written |
 | Tibeto-Burman | 0 | 0 | 0 | 0 | atlas not written |
@@ -56,21 +56,25 @@ it is checked — never reconstructed from memory afterwards.
 > **Corrected 2026-09-26.** This table previously carried invented counts for ten atlases that
 > have never been researched — Mongolic 6, Japonic 6, Koreanic 6, Tibeto-Burman 7, Hmong–Mien 5,
 > Turkic 6, Formosan 6, Austroasiatic 6, Silk Road 7, Siberian 5 — and the note below claimed
-> Phases 1–8 had all been built. Neither was true. Only `atlas-sinitic.js`, `atlas-tungusic.js`
-> and `atlas-kradai.js` exist; the counters above now count only entries that are actually
-> present in this file, and a family with no atlas gets 0 across the row.
+> Phases 1–8 had all been built. Neither was true. The counters above now count only entries that
+> are actually present in this file, and a family with no atlas gets 0 across the row.
+>
+> **Files on disk as of 2026-09-26:** `atlas-sinitic.js`, `atlas-tungusic.js`, `atlas-kradai.js`,
+> `atlas-japonic.js` and `atlas-mongolic.js` — Phases 0–4. Their rows above are the only ones
+> backed by an atlas; the remaining eight families read 0 because nothing has been researched for
+> them yet, not because a search came up empty.
 
 > **Phase 0.5 status: SKIPPED.** The user confirmed on 2026-09-26 that the Sinitic
 > verification had already been carried out at an earlier time, so the sweep was not re-run
 > in this session. The 42 targets below therefore remain `⬜ unverified` and must not be
 > treated as checked. Recorded so a later session does not mistake the omission for a pass.
 
-> **Honesty note on scope.** Only Phases 0–3 have been carried out. For those, each atlas's
+> **Honesty note on scope.** Only Phases 0–4 have been carried out. For those, each atlas's
 > load-bearing dates, figures and classifications were checked with targeted searches and
 > logged below with the URL actually fetched; less load-bearing colour in the prose is
 > written from the standard works named in each atlas's `sources` note and is flagged in the
 > entry where it was not independently re-fetched. Where a figure is a range, the prose says
-> "by source". Nothing here is cited that was not read. Phases 4–8 are unwritten: their
+> "by source". Nothing here is cited that was not read. Phases 5–8 are unwritten: their
 > sections in this file are empty by design, not by omission.
 
 ---
@@ -173,7 +177,24 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
 - [x] Proto-Japonic, the Yayoi spread, Old Japanese `ojp`, and the Ryukyu annexation timeline — `[JP-109]`
 - [x] Link health for every Omniglot URL in `SOUND` — `[JP-110]`
 
-### Mongolic · Koreanic · Tibeto-Burman · Hmong–Mien · Turkic · Formosan · Austroasiatic · Silk Road
+### Mongolic (Phase 4) — ✅ done
+- [x] Family size, the absence of established living relatives, para-Mongolic and the Altaic dispute — `[MG-101]`
+- [x] The Janhunen/Nugteren speaker table and its conflicts with Wikipedia's own infoboxes — `[MG-102]`
+- [x] Script spine: Uyghur-derived 1204, ʼPhags-pa 1269, Galik 1587, Clear Script 1648, Vagindra, Cyrillic 1941/1946 — `[MG-103]`
+- [x] ⚠ The *Secret History*'s date — the brief's "1240" corrected — `[MG-104]`
+- [x] ISO findings: `mon`/`bua` macrolanguages, `xwo` Extinct, `xng`/`cmg` historical, Oirat uncoded — `[MG-105]`
+- [x] Kalmyk: the 1630 Volga migration, the Khanate, and Europe's only Buddhist-majority polity — `[MG-106]`
+- [x] The Shirongolic cluster and its three scripts (Latin, Arabic, Tibetan) — `[MG-107]`
+- [x] The mixed Sinitic–Mongolic languages Tangwang and Wutun — the cross-link into Sinitic — `[MG-108]`
+- [x] Moghol, Dagur's historical Manchu script, Khamnigan, and the Manchu/Xibe script lineage — `[MG-109]`
+- [x] Link health for every Omniglot URL in `SOUND` — `[MG-110]`
+- [x] **Atlas built:** `atlas-mongolic.js` — 26 nodes · 108 markers · 4 branches · 9 palette classes ·
+      7 sketch polygons (Mongolia, Buryatia, Kalmykia, Xinjiang, Gansu–Qinghai, Manchuria, Herat).
+      `node tools/check-atlas.js` passes (26 nodes · 108 markers · 26 iso · 26 features) and the
+      headless Edge smoke test of `#mongolic` and `#mongolic/kalmyk` passes. `status:'done'` in
+      `EastAsiaAtlas.html`.
+
+### Koreanic · Tibeto-Burman · Hmong–Mien · Turkic · Formosan · Austroasiatic · Silk Road
 - [ ] ⬜ _section to be seeded at the start of each phase, from the brief's dates, names, figures and classifications_
 - [ ] ⬜ **None of these atlases has been written.** Their rows in the Counters table read 0 and their
       status in `languages.md` §0 is 💤 planned. Do not seed entries here until research actually happens.
@@ -460,6 +481,100 @@ exactly rather than re-paraphrased from memory.
 - **ISO register check:** `awk` over `iso-639-3.tab` confirms `jpn` (also `ja`), `ojp` (**type H**, historical), `ain` (labelled "Ainu (Japan)"), `jsl` (Japanese Sign Language), `jks` (Amami Koniya Sign Language), and the eleven Ryukyuan codes `kzg`, `ryn`, `ams`, `tkn`, `okn`, `yox`, `xug`, `ryu`, `mvi`, `rys`, `yoi`. **There is no code for Hachijō, Sakhalin Ainu or Kuril Ainu.** Watch the false friend: the register also carries `aib` **"Ainu (China)"**, an unrelated Turkic language of Xinjiang — the atlas must use `ain` and must not abbreviate it to "Ainu" without the qualifier.
 - **Action:** the SOUND map carries only the 200s. Nodes with no Omniglot page (Kunigami, Sakhalin Ainu, Kuril Ainu, and the dialect-cluster nodes) carry an **empty list** rather than a guessed or 404 link; the engine's YouTube-search fallback covers them. Recorded so a later session does not "fill in the gaps" with plausible URLs.
 
+## Mongolic (Phase 4) — research log
+
+All URLs below were fetched or search-confirmed on **2026-09-26**, by the same raw-wikitext method
+as Phase 3, so wording could be quoted exactly.
+
+### [MG-101] The family: roughly 6.3 million, and no established living relatives
+- **Claim as written:** "Mongolic is a family of about 6.3 million speakers across Mongolia, Inner Mongolia, Buryatia, Kalmykia, Xinjiang and the Gansu–Qinghai highlands. It has no convincingly established living relatives; its closest relatives are the extinct para-Mongolic languages, Khitan among them. The Altaic and Transeurasian groupings are proposals, not results."
+- **Appears in:** `atlas-mongolic.js` → node `mongolic` (root)
+- **Verdict:** verified
+- **Source:** *Mongolic languages*, Wikipedia · https://en.wikipedia.org/wiki/Mongolic_languages · retrieved 2026-09-26
+- **What the source says:** lead — "spoken by the [[Mongolic peoples]] in North Asia, East Asia, Central Asia, and Eastern Europe mostly in Mongolia and surrounding areas and in Kalmykia and Buryatia"; the best-known member, Mongolian, has "an estimated 5.7+ million speakers" (Svantesson et al. 2005, p. 141). Classification — "The Mongolic languages have no convincingly established living relatives. The closest relatives of the Mongolic languages appear to be the [[para-Mongolic languages]], which include the extinct [[Khitan language|Khitan]], [[Tuyuhun language|Tuyuhun]], and possibly also [[Tuoba language|Tuoba]] languages." On Altaic: "A few linguists have grouped Mongolic with Turkic, Tungusic and possibly Koreanic or Japonic as part of the controversial Altaic family"; of Robbeets' "Transeurasian" superfamily, "this view has been severely criticized" (citing Tian et al. 2022). Janhunen is quoted for the homeland: "the Mongolic homeland was located further to the east, in western Manchuria" (Janhunen 2003, p. 203), while "Mongolia is primarily the source region of the Turkic language family".
+- **Confidence:** high for the classification statements and the homeland; medium for the total, which is my own sum of the source's own table (see `[MG-102]`) rather than a figure the article states
+- **Action:** the root gives "about 6.3 million, by source" and names the sum's origin rather than presenting it as a published count. The Altaic/Transeurasian material is presented as a proposal that has been criticised, not as a finding.
+
+### [MG-102] The speaker table, and three figures that disagree with Wikipedia's own infoboxes
+- **Claim as written:** the per-language figures in `atlas-mongolic.js`, e.g. "Mongolian proper 5.2 million · Buryat 330,000 · Kalmyk–Oirat 360,000 · Dagur 96,000 · Santa 200,000 · Monguor 150,000 · Eastern Yugur 4,000 · Bonan 6,000 · Khamnigan 2,000 · Kangjia 1,000 · Moghol extinct".
+- **Appears in:** `atlas-mongolic.js` → nodes `khalkha`, `peripheral`, `buryat`, `oirat`, `kalmyk`, `dagur`, `santa`, `monguor`, `yugur`, `bonan`, `khamnigan`, `kangjia`, `moghol`
+- **Verdict:** verified as a citation, with conflicts logged
+- **Source:** *Mongolic languages*, Wikipedia (the Janhunen 2006 / Nugteren 2011 table) · https://en.wikipedia.org/wiki/Mongolic_languages · versus the individual language articles · all retrieved 2026-09-26
+- **What the source says:** the family article's table, "classification and numbers of speakers follow Janhunen (2006)… except for Southern Mongolic, which follows Nugteren (2011)", gives Dagur 96,000; Khamnigan Mongol 2,000; Buryat 330,000; Mongolian proper 5.2 million; Kalmyk–Oirat 360,000; Eastern Yugur 4,000; Monguor 150,000; Bonan 6,000; Santa (Dongxiang) 200,000; Kangjia 1,000; and **Moghol "(extinct)"**, citing Glottolog. Southern Mongolic is annotated "part of a Gansu–Qinghai Sprachbund". **The conflicts:** the Buryat article's own infobox says **436,300** (2017–2020, Ethnologue e26) against the table's 330,000; the Kalmyk article says **110,000** (2021) where the table gives 360,000 for Kalmyk–Oirat *combined*; the Dagur article says **91,000** (1999, e18) against 96,000. The Mongolian article's infobox gives **5.047380 million sigfig 1 → 5 million** (2020–2022, e28/`mon`), i.e. the macrolanguage, against the table's 5.2 million for "Mongolian proper".
+- **Confidence:** high that these are the figures each source gives; the differences are not resolvable from these pages
+- **Action:** the atlas gives the Janhunen/Nugteren table figures with "by source", and where a Wikipedia infobox disagrees by a wide margin (Buryat, Kalmyk, Dagur) the node says so rather than silently choosing one. Summed, the table gives **6,349,000**, which is where the root's "about 6.3 million" comes from.
+
+### [MG-103] The script spine: 1204, 1269, 1587, 1648, 1941/1946 — and 2025
+- **Claim as written:** "Mongolian is one of the most-written languages in the world. The vertical Uyghur-derived script was adopted by Genghis Khan in 1204; ʼPhags-pa was designed by Drogön Chögyal Phagpa for Kublai Khan in 1269; the Galik alphabet was created in 1587; the Clear Script by Zaya Pandita in 1648; Cyrillic was made mandatory in 1941 and had displaced the traditional script by 1946; and in 2020 Mongolia announced both scripts would be used officially by 2025."
+- **Appears in:** `atlas-mongolic.js` → nodes `mongolic`, `middlemongol`, `oirat`, `buryat`, `khalkha`
+- **Verdict:** verified, with one date discrepancy between sources noted
+- **Source:** *Mongolian language* · https://en.wikipedia.org/wiki/Mongolian_language · *Mongolian script* · https://en.wikipedia.org/wiki/Mongolian_script · *ʼPhags-pa script* · https://en.wikipedia.org/wiki/%CA%BCPhags-pa_script · *Clear Script* · https://en.wikipedia.org/wiki/Clear_Script · *Vagindra script* · https://en.wikipedia.org/wiki/Vagindra_script · all retrieved 2026-09-26
+- **What the sources say:** *Mongolian script* — "was the first writing system created specifically for the Mongolian language, and was the most widespread until the introduction of Cyrillic in **1946**"; "The script is a co-official script in Mongolia since **2025**, alongside the Cyrillic script for the language. It is also the official written form being taught in schools for Mongolian ethnic students in the Inner Mongolia Autonomous Region"; "Derived from the [[Old Uyghur alphabet]], it is a true alphabet, with separate letters for consonants and vowels"; it "has been adapted for such languages as Oirat and Manchu", and "Alphabets based on this classical vertical script continue to be used in Mongolia and Inner Mongolia to write Mongolian, Xibe and, experimentally, Evenki". Descendants listed in its infobox: **Galik alphabet, Manchu alphabet (→ Dagur and Xibe alphabets), Clear Script (Oirat), Vagindra script (Buryat), Evenki alphabet**. Also: "Computer operating systems have been slow to adopt support for the Mongolian script; almost all have incomplete support or other text rendering difficulties." *Mongolian language* — "The traditional Mongolian script was first adopted by Genghis Khan in **1204**", developed from the Uyghur script, with the Uyghur elite who shared the knowledge named as Tata-tonga, Bilge Buqa, Kara Igach Buyruk and Mengsus; the **Galik** alphabet was created in **1587** by Ayuush Güüsh, inspired by the 3rd Dalai Lama, for Tibetan and Sanskrit transcription (later Chinese), and in 1917 three Galik letters were repurposed for Mandarin retroflex consonants and remain in use in Inner Mongolia; a short-lived Latin attempt ran 1930–1932; "In **1941**, the Latin alphabet was adopted, though it lasted only two months"; "The Cyrillic alphabet … was made mandatory by government decree in **1941**"; literacy rose "from 17.3% to 73.5% between 1941 and 1950" where earlier campaigns with the traditional script had managed only 3.0% → 17.3% (1921–1940); a 1991–1994 reintroduction attempt "failed in the face of popular resistance"; "In March 2020, the Mongolian government announced plans to use both Cyrillic and the traditional Mongolian script in official documents by 2025." *ʼPhags-pa* — "an alphabet designed by the Tibetan monk and State Preceptor … Drogön Chögyal Phagpa (1235–1280) for Kublai Khan … as a unified script for the written languages within the Yuan"; time "**1269 – c. 1660**"; "actual use of this script was limited to about a hundred years during the Mongol-led Yuan dynasty, and it fell out of use with the advent of the Ming dynasty"; its child is **Zanabazar's square script**. *Clear Script* — "an alphabet created in **1648** by the Oirat Lamaist monk Zaya Pandita for the Oirat language", built on the Mongolian script to distinguish all sounds of the spoken language and to ease transcription of Sanskrit and Tibetic, assigning symbols to vowels and adding diacritics for vowel length and voicing; still in use ("ca. 1648 – today"). *Vagindra* — "Proposed script for the Buryat-Mongol language", also called the Buryat-Mongol script, created by **Agvan Dorzhiev**.
+- **Confidence:** high for all the dates; **the 1941/1946 point is a discrepancy between two Wikipedia articles** and is recorded rather than resolved
+- **Action:** the atlas says Cyrillic was "decreed in 1941 and had displaced the traditional script by 1946", which is what the two sources jointly say, and cites both. The ʼPhags-pa experiment is a separate node from the traditional script so the two are not conflated.
+
+### [MG-104] ⚠ SELF-CORRECTION — the *Secret History* is not "1240"
+- **Claim as written (in `languages.md` §2.4 as first drafted):** the tree sketch read "Middle Mongolian (Secret History of the Mongols, **1240**; 'Phags-pa, 1269)".
+- **Appears in:** `languages.md` §2.4 tree sketch; the corrected form is in `atlas-mongolic.js` → node `secret`
+- **Verdict:** superseded — 1240 is not a date either source gives
+- **Source:** *Secret History of the Mongols* · https://en.wikipedia.org/wiki/Secret_History_of_the_Mongols · and *Middle Mongol* · https://en.wikipedia.org/wiki/Middle_Mongol · retrieved 2026-09-26
+- **What the source says:** the *Secret History* infobox gives "pub_date = **Disputed**". The lead: "Written for the Mongol royal family some time after the death of Genghis Khan in 1227… The date of the text is uncertain, but the colophon to the text describes the book as having been finished in the Year of the Mouse, on the banks of the Kherlen River at Khodoe Aral, corresponding to an earliest possible figure of **1228**." And crucially: "the full Mongolian body only survived from a version made around the 15th century at the start of the Ming dynasty, where the pronunciation was transcribed into Chinese characters as a tool to help interpreters under the title *The Secret History of the Yuan Dynasty* (元朝秘史)". The Middle Mongol article adds that Atwood (2007) dates the original to **1252** in Mongolian script, and that the surviving text "reflects the pronunciation of Middle Mongol from the second half of the 14th century". It is "the oldest surviving literary work in the Mongolic languages", and about two-thirds of it also appears in the 17th-century chronicle *Altan Tobchi*.
+- **Confidence:** high
+- **Action:** `languages.md` §2.4 corrected; the atlas node gives "c. 1228 (the colophon's earliest possible date; disputed)" and states that the text we have is a Ming-era transcription, which is the fact that actually matters when using it as a linguistic source. Logged as the same failure mode as `[KD-108]` and `[JP-102]`.
+- **Also corrected in the same pass:** the §2.4 sketch called Moghol a "**colonial-era** relic". It is a relic of the **Mongol empire** — the Mongol presence in what is now Herat Province — not of nineteenth-century European colonialism. The brief is corrected above and the atlas node says "a relic of the Mongol conquests". Two errors in one brief, both caught by reading the source rather than the sketch.
+
+### [MG-105] ISO findings: two macrolanguages, two historical codes, one extinct code, one uncoded language
+- **Claim as written:** "`mon` is a macrolanguage over `khk` and `mvf`; `bua` is a macrolanguage over `bxm`, `bxr` and `bxu`; `xng` (Middle Mongolian) and `cmg` (Classical Mongolian) are historical; `xwo` (Written Oirat) is *extinct*; and Oirat has no ISO 639-3 code of its own, so the atlas shows `xal` (Kalmyk) with a note."
+- **Appears in:** `atlas-mongolic.js` → `const ISO`
+- **Verdict:** verified
+- **Source:** the SIL ISO 639-3 register, `iso-639-3.tab` and `iso-639-3-macrolanguages.tab` · https://iso639-3.sil.org/code_tables/download_tables · retrieved 2026-09-26
+- **What the source says:** `awk` over the register returns: `mon` (also 639-1 `mn`) — scope **M**, "Mongolian"; `khk` — "Halh Mongolian"; `mvf` — "Peripheral Mongolian"; `bua` — scope **M**, "Buriat"; `bxm` "Mongolia Buriat", `bxr` "Russia Buriat", `bxu` "China Buriat"; `xal` — "Kalmyk"; `xng` — **type H**, "Middle Mongolian"; `cmg` — **type H**, "Classical Mongolian"; `xwo` — **type E**, "Written Oirat"; `dta` "Daur"; `mjg` "Tu"; `sce` "Dongxiang"; `peh` "Bonan"; `kxs` "Kangjia"; `yuy` "East Yugur"; `mhj` "Mogholi"; `ykh` "Khamnigan Mongol". The macrolanguage table gives `bua ← bxm, bxr, bxu` (all status **A**) and `mon ← khk, mvf` (both status **A**). **There is no plain "Oirat" code** — the spoken Oirat language is coded as Kalmyk `xal` in practice, and Glottolog treats the two as one languoid (`kalm1243`, "Oirad-Kalmyk-Darkhat"). False friends to avoid in the same register: `ybe` is **West** Yugur, which is *Turkic*, not Mongolic — only `yuy` (East Yugur) belongs here; `mgt` is "Mongol", a language of Papua New Guinea; `oia` is "Oirata", in Indonesia; `msr` is Mongolian Sign Language.
+- **Confidence:** high — read directly out of the register
+- **Action:** the ISO map carries all of the above, including the "no code of its own" notes. West Yugur is *not* a node in this atlas; the `yugur` node is Eastern Yugur only, and its prose says so, because the two are different families sharing one ethnonym.
+
+### [MG-106] Kalmyk: 1630, the Khanate, "those who remained", and Europe's only Buddhist-majority polity
+- **Claim as written:** "The ancestors of the Kalmyks were Oirat Mongols who migrated from the southern Siberian steppes on the Irtysh and reached the lower Volga in or about 1630, expelling the Turkic-speaking Nogai. Their khanate peaked under Ayuka Khan (khan 1690–1724). The name *Kalmyk* means 'those who remained', after a large part of them moved back to Dzungaria in the 18th century. Kalmykia is the only polity in Europe where Buddhism is the majority religion."
+- **Appears in:** `atlas-mongolic.js` → nodes `oirat`, `kalmyk`
+- **Verdict:** verified
+- **Source:** *Kalmykia*, Wikipedia · https://en.wikipedia.org/wiki/Kalmykia · and *Kalmyk Oirat*, Wikipedia · https://en.wikipedia.org/wiki/Kalmyk_Oirat · retrieved 2026-09-26
+- **What the sources say:** "Kalmykia is the only [[polity]] within the [[European continent]] where [[Buddhism]] is the majority religion; the majority of [[Kalmyk people]] are [[Vajrayana]] [[Tibetan Buddhism|Tibetan Buddhists]] of the [[Gelug]] and [[Kagyu]] lineages." "The ancestors of the Kalmyks, the Oirat Mongols, migrated from the steppes of southern Siberia on the banks of the Irtysh River, reaching the Lower Volga region of Eastern Europe by the early 17th century… They reached the lower Volga region in or about **1630**. That land, however, was not uncontested pastures, but rather the homeland of the Nogai Horde, a confederation of Turkic-speaking nomadic tribes. The Kalmyks expelled the Nogais…" "The Kalmyk Khanate reached its peak of military and political power under Ayuka Khan (ruled 1672–1724, khan **1690–1724**)." "The word *Kalmyk* means 'those who remained'. Its origin is unknown but this name was known centuries before a large part of the Kalmyks moved back from the Volga River to Dzhungaria in the 18th century." The Kalmyk language article's infobox gives **110,000** speakers (2021) and scripts "Cyrillic, Latin, Clear script".
+- **Confidence:** high
+- **Action:** the Kalmyk node carries both figures — the 360,000 in Janhunen's table (which covers Kalmyk–Oirat *together*) and the 110,000 for Kalmyk alone — because they measure different things. The "only Buddhist-majority polity in Europe" claim is attributed rather than stated bare.
+
+### [MG-107] The Shirongolic cluster: five small languages, three scripts, one Sprachbund
+- **Claim as written:** "Southern Mongolic — the Shirongolic languages of the Gansu–Qinghai highlands — is Monguor (152,000), Santa/Dongxiang (200,000), Bonan (6,000), Kangjia (1,000) and Eastern Yugur (4,000). It sits in a Sprachbund, and its languages are written in three different scripts: Latin for Monguor, Arabic for Santa, and *Tibetan* for Bonan."
+- **Appears in:** `atlas-mongolic.js` → nodes `shirongolic`, `monguor`, `santa`, `bonan`, `kangjia`, `yugur`
+- **Verdict:** verified
+- **Source:** *Monguor language* · https://en.wikipedia.org/wiki/Monguor_language · *Santa language* · https://en.wikipedia.org/wiki/Santa_language · *Bonan language* · https://en.wikipedia.org/wiki/Bonan_language · *Kangjia language* · https://en.wikipedia.org/wiki/Kangjia_language · *Eastern Yugur language* · https://en.wikipedia.org/wiki/Eastern_Yugur_language · all retrieved 2026-09-26
+- **What the sources say:** *Monguor* — "speakers ≈152,000 (2000 census, e18)"; region Qinghai, Gansu; ISO `mjg`; script "**Latin script**"; dialects Mongghul (Huzhu) and Mangghuer (Minhe); Glottolog `tuuu1240` "Tu"; family Southern Mongolic > Shirongol. *Santa* — "speakers 200,000 (2007, e18)"; region "Gansu (mainly Linxia Hui Autonomous Prefecture) and Xinjiang (Ili Kazakh Autonomous Prefecture)"; ISO `sce`; scripts "**Arabic, Latin**"; family Shirongol > Baoanic. *Bonan* — "speakers 6,000 (1999, e16)"; region Gansu, Qinghai; ISO `peh`; script "**Tibetan script**" — the native name is given in Tibetan script as མ་ནི་སྐད་ཅི (*Ma ni skad ci*); family Shirongol > Baoanic. *Kangjia* — "speakers 1,000 (2007, e18)", ethnicity 2,000 (2007); region Qinghai; ISO `kxs`; family Shirongol > Baoanic. *Eastern Yugur* — "speakers 4,000 (2007, e18)", ethnicity 6,000 Yugur (2000); region Gansu; ISO `yuy`; family Southern Mongolic. The family article annotates Southern Mongolic as "part of a Gansu–Qinghai [[Sprachbund]]".
+- **Confidence:** high
+- **Action:** the cluster gets its own branch node because the Sprachbund, not the tree, is the interesting fact; the node says the internal classification is contested and that these five have converged on their neighbours as much as they have diverged from each other. Bonan's Tibetan script is called out explicitly, because it is the single most surprising script fact in the family.
+
+### [MG-108] The mixed languages: Tangwang and Wutun — the Sinitic cross-link
+- **Claim as written:** "Two Mongolic varieties are mixed languages with Mandarin: Tangwang (Mandarin–Santa) and Wutun (Mandarin–Bonan). They are the reason this atlas links into the Sinitic one."
+- **Appears in:** `atlas-mongolic.js` → nodes `shirongolic`, `santa`, `bonan` (cross-link `<a href="#sinitic/lanyin">`)
+- **Verdict:** verified
+- **Source:** *Mongolic languages*, Wikipedia, "Mixed languages" section · https://en.wikipedia.org/wiki/Mongolic_languages · retrieved 2026-09-26
+- **What the source says:** "The following are [[mixed languages|mixed]] [[Varieties of Chinese|Sinitic]]–Mongolic languages. * [[Tangwang language|Tangwang]] (mixed [[Mandarin Chinese|Mandarin]]–[[Santa language|Santa]]) * [[Wutun language|Wutun]] (mixed [[Mandarin Chinese|Mandarin]]–[[Bonan language|Bonan]])". This sits directly under the Southern Mongolic material, which the same article describes as "part of a Gansu–Qinghai Sprachbund".
+- **Confidence:** high for the existence and the pairs; **low** for anything further about their structure, which I did not fetch
+- **Action:** the atlas names the two mixed languages and nothing more — no structural claims, no percentages. This is the only Sinitic cross-link in the Mongolic file; the `hutong` loanword in `[MG-109]` is a second, weaker one.
+
+### [MG-109] Moghol in Afghanistan, Dagur's Manchu script, and the Tungusic script lineage
+- **Claim as written:** "Moghol is the family's strangest outlier: a relic of the Mongol conquests in Herat Province, Afghanistan, written in Perso-Arabic and down to 'few' speakers. Dagur, in Manchuria, historically used the *Manchu* script — and the Manchu and Xibe alphabets are themselves descended from the Mongolian script, which is the atlas's bridge into the Tungusic family."
+- **Appears in:** `atlas-mongolic.js` → nodes `moghol`, `dagur`, `khamnigan`, `mongolic` (cross-link `<a href="#tungusic/manchu">`)
+- **Verdict:** verified
+- **Source:** *Moghol language* · https://en.wikipedia.org/wiki/Moghol_language · *Dagur language* · https://en.wikipedia.org/wiki/Dagur_language · *Khamnigan Mongol* · https://en.wikipedia.org/wiki/Khamnigan_Mongol · *Mongolian script* · https://en.wikipedia.org/wiki/Mongolian_script · *Hutong* · https://en.wikipedia.org/wiki/Hutong · all retrieved 2026-09-26
+- **What the sources say:** *Moghol* — "states Afghanistan"; "region [[Herat Province]]"; "speakers 'few' (1982)"; ISO `mhj`; script "**Perso-Arabic script**"; native name مُغُلی; dialects Karez-I-Mulla and Kundur; Glottolog `mogh1245`. The family article's table lists Moghol as **"(extinct)"**, citing Glottolog. *Dagur* — "speakers China: 91,000 (1999, e18)"; region "Inner Mongolia, Heilongjiang Province, Xinjiang"; script "Latin script / Mongol script / Cyrillic script / **Manchu script** (''historically'')". *Khamnigan Mongol* — 2,000 speakers (no date); China, Russia, Mongolia; "Onon–Argun basin, Transbaikalia"; ISO `ykh`; scripts Mongolian script and Cyrillic. *Mongolian script* — "it has been adapted for such languages as Oirat and Manchu. Alphabets based on this classical vertical script continue to be used in Mongolia and Inner Mongolia to write Mongolian, Xibe and, experimentally, Evenki"; the infobox's list of descendants includes the **Manchu alphabet**, and under it the **Dagur alphabet** and **Xibe alphabet**, plus the **Evenki alphabet**. *Hutong* — the article's infobox glosses the word as a "borrowing of Middle Mongolian *quddug* ('water well')", and the body says "The term 'hutong' appeared first during the Yuan Dynasty, and is a term of Mongolian origin, meaning 'water well'."
+- **Confidence:** high for the script lineages and the Moghol facts; **medium** for Moghol's present status, since "few" dates to 1982 and Glottolog's "extinct" is a different kind of claim
+- **Action:** the Moghol node reports both — "few" speakers as of 1982, and Glottolog's listing as extinct — rather than choosing. The Tungusic cross-link is a script lineage, not a genetic one, and the prose says so.
+
+### [MG-110] Link health — Omniglot coverage for Mongolic (protocol from TU-109)
+- **Claim as written:** every `SOUND` entry in `atlas-mongolic.js` is a URL that was requested before being written down.
+- **Appears in:** `atlas-mongolic.js` → `const SOUND`
+- **Verdict:** verified — 24 candidate URLs requested 2026-09-26
+- **What the check found:** **200** for `mongolian`, `buryat`, `kalmyk`, `monguor`, `phagspa`, `xibe`, `manchu`. **404** for `mongolian_script`, `mongolian_cyrillic`, `mongolic`, `dagur`, `dongxiang`, `bonan`, `kangjia`, `yugur`, `moghol`, `clear_script`, `phags_pa`, `mongolian_alphabets`, `todo`, `todo_bichig`, `clear`, `mongolian_traditional`, `mongolian_todo`, `kalmyk_clear`, `mongol`.
+- **Action:** the SOUND map carries only the 200s. Nodes with no Omniglot page (Dagur, Santa, Bonan, Kangjia, Eastern Yugur, Moghol, Middle Mongol, Khamnigan, and the script nodes) carry an **empty list** rather than a guessed or 404 link; the engine's YouTube-search fallback covers them. Note the two traps recorded here so a later session does not repeat them: Omniglot has **no** separate page for the Mongolian *script* (only for the language), and its ʼPhags-pa page is spelled **`phagspa.htm`**, not `phags_pa.htm`.
+
 ## Disputed / conflicting sources
 
 Tracked separately per family so the atlas prose can hedge the right sentences.
@@ -475,6 +590,10 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 | Japonic | Hachijō's position | separate Japonic branch vs. divergent Japanese dialect | presented as unresolved; atlas shows it as a branch — see `[JP-105]` |
 | Japonic & Ainu | Ainu's status | "dormant"/"more or less extinct" (Dougherty 2017, Janhunen 2022) vs. rising neo-speaker numbers and official recognition | both stated; the atlas does not call Ainu extinct — see `[JP-106]`, `[JP-108]` |
 | Ainu | The Emishi | Ainu-speaking vs. Japonic (Izumo-related) speakers | presented as debated in the `ainu` node prose |
+| Mongolic | Buryat's speaker count | 330,000 (Janhunen 2006, via the family article) vs. 436,300 (Ethnologue e26, 2017–2020, via the Buryat infobox) | both figures given, "by source" — see `[MG-102]` |
+| Mongolic | Kalmyk's speaker count | 360,000 for Kalmyk–Oirat combined (Janhunen) vs. 110,000 for Kalmyk alone (2021) | both given, with the difference in scope stated — see `[MG-102]`, `[MG-106]` |
+| Mongolic | Cyrillic's date | 1941 (decreed, per two articles) vs. 1946 (traditional script displaced, per the Mongolian-script article) | stated as "decreed in 1941, displaced by 1946" — see `[MG-103]` |
+| Mongolic | Moghol's status | "few" speakers (1982) vs. Glottolog "extinct" | both reported — see `[MG-109]` |
 
 ---
 
@@ -486,4 +605,4 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 4. Update the counters table at the top of this file.
 5. If a session is interrupted, the file — not the conversation — is the source of truth.
 
-*Last updated: 2026-09-26 — Phase 3 (Japonic & Ainu) researched and logged: entries `JP-101`–`JP-110`, one self-correction (`JP-102`, Hōnichi) and one source conflict (`JP-104`, Yaeyama's UNESCO grade). Ledger created the same day; 42 Sinitic verification targets still seeded and unchecked.*
+*Last updated: 2026-09-26 — Phase 4 (Mongolic) researched and logged: entries `MG-101`–`MG-110`, one self-correction (`MG-104`, the *Secret History*'s date) and four logged source conflicts. Phases 3 (`JP-101`–`JP-110`) and 2 (`KD-101`–`KD-109`) also complete. Ledger created the same day; 42 Sinitic verification targets still seeded and unchecked.*
