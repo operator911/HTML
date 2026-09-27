@@ -22,7 +22,7 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 7 | **Tibeto-Burman 藏缅语族** | `atlas-tibetoburman.js` | ✅ built | 56 nodes · 164 markers · 9 branches + an honest "and 200+ more" node; **the grouping itself is not a demonstrated subgroup (TB-101)**; Karen's placement disputed (TB-109); 5 register name mismatches, 4 splits and 1 lump (TB-105) |
 | 8 | **Hmong–Mien 苗瑶语族** | `atlas-hmongmien.js` | ✅ built | 22 nodes · 86 markers · 2 branches (Hmongic + Mienic) + a diaspora branch; **two invented scripts shipped as `nat` values** (Pollard on A-Hmao, Pahawh Hmong on White Hmong); **the brief's "lantern writing" hook was CUT as unverifiable (HM-107)**; Kim Mun's speaker figures conflict *within one source* (HM-106); "Miao"/"Yao" label mismatch stated on the root node |
 | 9 | **Koreanic 朝鲜语族** | `atlas-korean.js` | ✅ built | 18 nodes · 78 markers · 3 historical stages as siblings of the living branch; **Jeju given its own node without resolving the language-or-dialect question (KO-101, KO-107)**; Chungcheong and Gangwon shipped *with* the note that standard dialectology puts them inside the central area (KO-105); three weak diaspora figures flagged in the prose (KO-108) |
-| 10 | **Formosan 台湾南岛语** | `atlas-formosan.js` | ✅ built | **26 nodes · 101 markers** · **the grouping is a PLACE, not a family** — `acceptance = geographic`, `glotto = none`, "up to nine separate primary subfamilies", so there is no Proto-Formosan trunk (`FO-101`) · Tsouic drawn **and marked doubtful** because all three member infoboxes say `fam2 = "Tsouic ?"` (`FO-103`) · Pazeh–Kaxabu shipped as **one node in two opposite states** — extinct 2010, alive at 12 speakers (`FO-105`) · Yami and Tsat drawn **outside** the nine branches, joined by geography only (`FO-106`) · 14 Omniglot pages verified live — the best-covered family in the series (`FO-107`) |
+| 10 | **Formosan 台湾南岛语** | `atlas-formosan.js` | ✅ built | **26 nodes · 101 markers** · **the grouping is a PLACE, not a family** — `acceptance = geographic`, `glotto = none`, "up to nine separate primary subfamilies", so there is no Proto-Formosan trunk (`FO-101`) · Tsouic drawn **and marked doubtful** because all three member infoboxes say `fam2 = "Tsouic ?"` (`FO-103`) · Pazeh–Kaxabu shipped as **one node in two opposite states** — extinct 2010, alive at 12 speakers (`FO-105`) · Yami and Tsat drawn **outside** the nine branches, joined by geography only (`FO-106`) · 14 Omniglot pages verified live — the best-covered family in the series (`FO-108`) · **prose rewritten out of development jargon** — `infobox` 25× → 0, ⚠ 30× → 2, nothing factual dropped (`FO-107`) |
 | 11 | **Turkic 突厥语族** | `atlas-turkic.js` | ✅ built | **38 nodes · 173 markers** · the widest atlas in the series — **full-family scope**, `[60, 42]` / zoom 2.6, Istanbul → Yakutsk (built to option (b) on instruction, against the brief's recommendation, `TK-101`) · **Old Turkic deliberately NOT drawn as the trunk** (`TK-110`) · Khazar shipped with its branch **stated as disputed in its own source** and its whole corpus named (`TK-109`) · Fuyu Kyrgyz given its own node rather than filed as a Khakas dialect (`TK-104`) · two new fonts validated, `Noto Sans Cyrillic` found not to exist (`TK-108`) · link health **measured**: four expected Omniglot pages do not exist (`TK-110`) |
 | 12 | **Vietic & MSEA Austroasiatic** | `atlas-austroasiatic.js` | 💤 planned | file does not exist yet; Haudricourt tonogenesis, Khmer/Mon script lineage, Munda outliers |
 | 13 | **Siberian isolate pocket** (Nivkh, Yukaghir, Chukotko-Kamchatkan, Ket, Ainu) | `atlas-siberian.js` | 💤 planned | file does not exist yet; Phase 8 capstone; the "peoples before the farmers" map |
@@ -443,7 +443,7 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
 - **2026-09-27 · Phase 7 — Formosan: DONE (fourth of five).** `atlas-formosan.js` written and
   closed out: **26 nodes · 101 markers · 26 ISO codes · 12 palette classes · four sketch polygons**
   (Taiwan, Orchid Island, Hainan, Batanes) · **11 hand-drawn core areas**. Research logged
-  `FO-101`–`FO-107`, and — the lesson from `TK-112` applied — **the prefix was checked against
+  `FO-101`–`FO-108`, and — the lesson from `TK-112` applied — **the prefix was checked against
   `research.md`'s queue before entry one was written**, which is why there was no collision this time.
   - ⚠ **The tree had to be drawn as a place, not a family.** The grouping's own infobox says
     `acceptance = geographic` and `glotto = none`, and its lead says the languages "do not form a
@@ -467,17 +467,17 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     `sketchGeo` points as **[lng, lat]**, while node markers are **[lat, lng]** and are converted by
     `showMarkers()`. The sketch geometry was first written in marker order and produced **68 "bad
     coordinate" failures**; every pair was swapped. Two conventions live in one file and only one is
-    checked. `[FO-107]`
+    checked. `[FO-108]`
   - **Link health measured, and this is the best-covered family in the series** — **fourteen**
     Omniglot pages, each confirmed by HTTP status *and* by reading the page's own `<title>` so a
     soft-404 could not pass. `siraya.htm` and `hainan_cham.htm` are 404 and those two nodes ship
     empty link lists; `seediq.htm` is 200 while the near-miss spellings `seedeq.htm` and
     `truku.htm` are both 404. **No new font was needed** — Formosan autonyms are Latin-script
-    Romanisations, so `Noto Serif` + `Noto Serif SC` cover them. `[FO-107]`
+    Romanisations, so `Noto Serif` + `Noto Serif SC` cover them. `[FO-108]`
   - ⚠ **A Wikipedia rendering artefact caught while verifying ISO codes:** Atayal, Amis and Paiwan
     pass their speaker counts through `sigfig`, so the *rendered* infobox shows 86,000 / 110,000
     / 96,000 while the *stored* values are **85,888 / 108,000 / 96,334**. The atlas ships the stored
-    figures and records the difference. `[FO-107]`
+    figures and records the difference. `[FO-108]`
   - **Verified:** `node --check atlas-formosan.js` OK; `node tools/check-atlas.js atlas-*.js` →
     **all 11 files valid**, Formosan reading `nodes 26 · markers 101 · iso 26 · features 26`.
     Headless Edge smoke tests of `#formosan/amis` and `#formosan/tsat` both pass: **13 family
@@ -486,9 +486,20 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     **回辉话（占语）** present in the rendered DOM, and `scriptfonts` requesting exactly
     `Noto+Serif` + `Noto+Serif+SC`. ⚠ **Operational note: kill stale headless Edge processes
     between smoke runs** — one did not exit and blocked the next invocation for five minutes.
-  - **Doc housekeeping done in this session:** `research.md` counters row → `| Formosan | 7 | 6 | 1 | 0 | — |`,
+  - ⚠ **A second pass was needed on the prose, and it is the most transferable lesson of this atlas.**
+    The first draft passed `node --check`, the checker and three headless smoke tests — because all
+    of them test **structure**, and the defect was one of **voice**. Read as a reader would read it,
+    the text talked about `infobox`es, "this node", and its own data-model decisions; `infobox`
+    appeared **25×**, `this node` 6×, and the ⚠ glyph **30×** against 0–2 in every other atlas.
+    All of it was rewritten to describe **languages rather than the machinery that displays them**,
+    with **nothing factual dropped**, and ⚠ cut to 2 — the two genuine structural surprises, Tsouic's
+    disputed status and Yami standing outside the nine branches. `[FO-107]`
+  - ⚠ **Left as an open series-wide question rather than changed here:** the `stats` label
+    "nodes in this atlas" appears in all eleven atlases, so changing it for Formosan alone would
+    make the set inconsistent. Recorded at `[FO-107]` for a single decision covering every atlas.
+  - **Doc housekeeping done in this session:** `research.md` counters row → `| Formosan | 8 | 7 | 1 | 0 | — |`,
     files-on-disk note updated to eleven atlases, the Formosan queue section split off from
-    Austroasiatic's and marked ✅ with the new `[FO-107]` entry appended; this file's §0 row 10 →
+    Austroasiatic's and marked ✅ with `[FO-107]` and `[FO-108]` appended; this file's §0 row 10 →
     ✅ built, §2.10 header → ✅ built with the scope note above, and the Phase 7 roadmap row updated.
 - **Next:** the last atlas of Phase 7 — **Austroasiatic (§2.11)**, including its Vietic core and the
   Munda outliers. **Check the log prefix against `research.md`'s queue section before writing entry
@@ -988,7 +999,7 @@ Golden on Turkic ethnogenesis · Ethnologue/Glottolog.
 
 > **Built as `atlas-formosan.js`** — 26 nodes · 101 markers · 9 primary branches (four of them
 > single languages) · a labelled outlying group · 12 palette classes · four sketch polygons
-> (Taiwan, Orchid Island, Hainan, Batanes) · 11 hand-drawn core areas. Research log `FO-101`–`FO-107`.
+> (Taiwan, Orchid Island, Hainan, Batanes) · 11 hand-drawn core areas. Research log `FO-101`–`FO-108`.
 > **Scope decision taken while building, and it changes the shape of the tree:** because the
 > grouping's own acceptance is **geographic** and it has **no Proto-Formosan ancestor**, the root
 > node is drawn as *a place* and the nine branches hang off it as siblings of Austronesian rather
@@ -1161,6 +1172,10 @@ never reconstructed from memory at the end.
 - [ ] ISO 639-3 codes filled; listen links (Omniglot / Forvo / YouTube fallback) checked
 - [ ] `sources` note written for the root node, naming the standard works
 - [ ] Fonts declared and loaded; native scripts render correctly
+- [ ] ⚠ **Read one whole node aloud as a reader would.** No `infobox`, no "this node", no reference
+      to the atlas's own data model or decisions, no infobox field syntax. Prose describes
+      **languages**, not the machinery that displays them — and ⚠ stays at 0–2 per atlas, not 30
+      (`FO-107`)
 - [ ] Hash routes work (`#family/node`); toggle in and out of the atlas without errors
 - [ ] Smoke-tested in a browser: filter, sketch mode, area overlay, sheet mode on narrow widths
 - [ ] Status updated in §0 of this file; `index.html` card added if it is the first atlas after Sinitic
