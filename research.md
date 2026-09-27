@@ -29,6 +29,14 @@ it is checked — never reconstructed from memory afterwards.
    `citation needed (dated August 2013)`, and a `sfnp` template citing Vovin 2013c p. 201 is
    written `sfnp citing Vovin 2013c, p. 201`. The same rule applies to `languages.md`. See
    `[DP-101]` below for the incident and the alternatives.
+9. **Reader-facing prose describes languages, not the machinery that displays them.** No `infobox`,
+   no "this node", no "script slot", no reference to the atlas's own data-model decisions
+   ("the atlas keeps both"), and **no research-log ids in shipped text** — a reader cannot use
+   `MG-111`. The reasoning behind a presentation choice belongs *here*, in this ledger; the atlas
+   states only what is true of the language or of the record. A node's prose should survive being
+   read aloud to someone who has never seen a wiki template. Enforced mechanically by
+   `node tools/check-prose.js atlas-*.js`, which strips developer comments first and fails on
+   internal vocabulary. See `[PR-101]`.
 
 ## Entry template
 
@@ -59,6 +67,7 @@ it is checked — never reconstructed from memory afterwards.
 | Formosan | 8 | 7 | 1 | 0 | — |
 | Austroasiatic | 0 | 0 | 0 | 0 | atlas not written |
 | Silk Road | 10 | 9 | 1 | 0 | — |
+| Cross-family (prose) | 1 | 1 | 0 | 0 | `PR-101` — the eleven-atlas prose sweep |
 | Siberian isolates | 0 | 0 | 0 | 0 | atlas not written |
 
 > **Corrected 2026-09-26.** This table previously carried invented counts for ten atlases that
@@ -1366,6 +1375,136 @@ All URLs below were fetched and read on **2026-09-27**. The prefix is **`TK-`**,
   - The `scriptfonts` link requests **`Noto+Serif:wght@400;600` + `Noto+Sans+Arabic:wght@400;600` + `Noto+Serif+SC:wght@500;700`** — the two new faces added by this phase. Both were validated against the Google Fonts API before registration (`[TK-108]`); `Noto Sans Cyrillic`, which was the obvious first guess, **does not exist** and returns HTTP 400.
   - The Chuvash info panel renders with the engine's new `kinds.leaf` wording ("A language" rather than "Living variety"), the ISO chip `chv`, an Omniglot link, and all three history paragraphs.
 
+## Cross-family notes — reader-facing prose
+
+These entries are not about any one family's facts. They record rules and corrections that
+apply to **every** atlas file, present and future. Prefix `PR-`.
+
+---
+
+### [PR-101] ⚠ The eleven-atlas prose sweep — internal vocabulary removed from shipped text
+
+- **Why this entry exists.** `[FO-107]` found that the Formosan atlas's reader-facing prose was
+  written in development jargon. The same check was then run across **all eleven** atlases on
+  instruction, and the problem turned out to be series-wide rather than Formosan-specific. This
+  entry records what was measured, what was changed, and the guard that now prevents recurrence.
+- **The defect, stated precisely.** The prose described **the machinery that displays the
+  languages** instead of the languages. A reader opening a node was told things like *"Its infobox
+  gives 4,500 speakers"*, *"The node therefore ships as doubtful"*, *"this node's script slot shows
+  the Latin form"*, *"The atlas keeps both rather than resolving it"* — none of which mean anything
+  to someone looking at a map, and some of which are actively misleading: an infobox is not a
+  source, and a script slot is not a fact about a language.
+- **Measured before the sweep, across all eleven files** (comments stripped first, so only
+  reader-facing strings were counted):
+
+  | term | count | worst offenders |
+  |---|---|---|
+  | `infobox` | **49** | turkic 24, mongolic 15, hmongmien 6, japonic 4 |
+  | `this node` | **17** | turkic 6, silkroad 4, hmongmien 3 |
+  | `the node` | **30** | turkic 15, hmongmien 6, mongolic 4 |
+  | bare `node` / `nodes` | **119** | turkic 38, tibetoburman 18, hmongmien 16 |
+  | `script slot` / `slot` | **20** | turkic 12, hmongmien 7 |
+  | `ships` / `shipped` | **4** | turkic 3, sinitic 1 |
+  | `reference account` / `reference infobox` | **12** | hmongmien only |
+  | `the atlas` as editorial self-reference | **171** | tibetoburman 44, turkic 38, mongolic 24 |
+  | `atlas's` | **55** | tibetoburman 17, turkic 10 |
+  | research-log ids in shipped text | **16 sites** | mongolic, tibetoburman, japonic, silkroad, formosan, hmongmien, turkic |
+- **A second defect class found during the sweep, and it was not on the original list: internal
+  research-log ids in reader-facing prose.** Seven files told the reader to *"see research.md
+  TB-101"*, or carried lines like *"See research.md MG-101 to MG-111, including the self-correction
+  at MG-104"*, or attached a log id to a figure. **A reader cannot use `MG-111`** — that is our
+  audit trail, and its proper home is this file. All sixteen sites were rewritten so the atlas
+  states what is true of the record and nothing about our bookkeeping.
+- **A third find: a UI label that read "The atlas".** `atlas-silkroad.js` carried
+  `legend: [['anc','The atlas']]` and `kinds: { root: 'The atlas' }`, so the root node's type chip
+  and its palette legend both told the reader "The atlas". Every other file names the *thing*
+  (`Proto-Turkic · the family`, `Ancestral / proto`, `The island — a geographic grouping`).
+  Silk Road's root is a route, not a family, so both now read **"The Silk Road — a route, not a
+  family"** and **"The route, not a family"**.
+- **A fourth find: the `stats` label.** All eight files that used it said **"nodes in this atlas"**
+  or **"nodes"**. Now **"languages and groups"**, keeping any qualifier where one existed
+  (`languages and groups — all extinct but one`, `languages and groups, from a 350-language
+  grouping`). This was the item deliberately left open at `[FO-107]`; it is now decided
+  series-wide.
+- **The rule applied, and it is now rule 9 above.** Reader-facing prose describes **languages**,
+  not the machinery that displays them:
+  - **No `infobox`.** State the figure with its date, or say plainly that no source is given.
+  - **No `this node` / `the node` / bare `node`.** Say "it", name the language, or say "here" /
+    "entry".
+  - **No `script slot`.** Say what is shown: "the form shown here is…", "no written form is shown".
+  - **No `ships`.** *"The node therefore ships as doubtful"* became *"It is therefore shown as
+    doubtful"*.
+  - **No `reference account`.** Either name the work, or drop the meta-attribution and state the
+    fact: *"The reference account lists five members:"* became *"Five members are listed:"*.
+  - **No editorial self-reference.** *"The atlas keeps both rather than choosing"* became *"Both are
+    reported rather than one chosen"* — which is what is actually true of the record.
+  - **No research-log ids.** The reasoning stays here; the atlas states the conclusion.
+- **Scale: roughly 330 reader-facing strings rewritten across eleven files, with nothing factual
+  dropped.** Every figure, date, dispute, caveat and citation survived; only the framing changed.
+  The diff is **286 insertions / 286 deletions** — perfectly symmetric, the signature of in-place
+  text replacement with no structural change.
+- **How it was done, because doing it by hand would have introduced errors.** Each file's hits were
+  extracted as whole *clauses* by script, rewritten as an exact old-to-new table, and applied by a
+  codemod that **asserts every rule matched** and reports any that did not. Three rules failed to
+  match on the first pass — one because the target string contained an escaped apostrophe inside a
+  single-quoted JS literal, two because the surrounding sentence differed from the extracted clause
+  — and each was fixed individually. `node --check` and `tools/check-atlas.js` ran after every
+  file, and the node / marker / ISO / feature counts are unchanged for all eleven.
+- **⚠ Deliberately left alone, with reasons, so a later session does not "fix" them:**
+  - **"the 2009 Atlas", "the highest grade the Atlas uses for Japan", "the UNESCO atlas"** (japonic,
+    sinitic, turkic) — these are the *UNESCO Atlas of the World's Languages in Danger* and the
+    *Language Atlas of China*, not this series. Four occurrences remain.
+  - **"the Sinitic atlas's … entry", "treated alongside the Japonic atlas"** (kradai, formosan,
+    turkic) — cross-references a reader can follow by clicking. Two `atlas's` remain in kradai.
+  - **31 uses of "carries" / "carry" and 13 of "the record"** — ordinary English ("it carries two
+    ISO codes", "the record there is a hole"), not jargon.
+  - **The ⚠ glyph, four uses across the series** (formosan 2, hmongmien 1, turkic 1) — within the
+    0–2-per-atlas norm set at `[FO-107]`.
+- **A fifth find: maintenance vocabulary.** Reader-facing text referred to Wikipedia's own
+  maintenance templates — *"the source carries a citation-needed tag"* (korean, turkic), *"the
+  source's own dating carries a citation-needed tag"*, and the Formosan cases fixed earlier at
+  `[FO-107]`. A reader cannot see a maintenance tag; what matters is whether the number has a
+  source. These now say so directly: *"has no source attached to it"*, *"that date is unsourced"*,
+  *"a figure for which no source is given anywhere in the record"*. The same applied to internal
+  bookkeeping phrases: *"one of the family's four logged conflicts"* became *"documented
+  disagreements"*, and *"logged figure problems"* became *"documented figure problems"*.
+- **A sixth find: the `stats` label was not the only UI string.** Silk Road's legend and root kind
+  (above) were the substantive case, but `region` values also carried prose-voice leaks —
+  *"Everywhere this atlas's markers stop"* became *"Where the markers here stop"*. Worth checking
+  every field a reader can see, not only `h`.
+- **The guard: `tools/check-prose.js`, new.** Modelled on `tools/check-atlas.js` and invoked the
+  same way (`node tools/check-prose.js atlas-*.js`). It **strips block comments first**, so
+  developer vocabulary inside a `/* … */` header is not counted, then fails on unambiguously
+  internal terms: `infobox`, `this node`, `the/a/each/its node`, `script slot`,
+  `shipped` / `ships as|both|the|them|it|with`, `acceptance`, infobox field syntax such as
+  `fam2 =`, `reference account`, `research.md`, and log ids matching the family prefixes. Terms
+  with legitimate uses (`the atlas`, `atlas's`, bare `node`) are reported as **notes to eyeball**
+  rather than failures, and an ⚠ count above 2 is noted.
+  - **Verified that it catches a regression.** A deliberately corrupted copy of `atlas-tungusic.js`
+    containing *"Its infobox gives 900 speakers, and this node ships as doubtful — see research.md
+    TU-101"* was flagged with **5 problems** and exit code 1. The prefix `TU-` is used in that test
+    string precisely because it is a *real* prefix — see `[TK-112]` on why that distinction matters.
+  - **A false positive was found and fixed while testing it.** A bare `ships` rule flagged
+    Sinitic's *"Ibn Battuta marvelled at the great ships two generations later"*, which is prose
+    about actual ships. The rule now requires `shipped` or a complement (`ships as`, `ships both`,
+    …). This is the same lesson as `[FO-107]`'s Tsat passage in miniature: a mechanical check needs
+    its own false positives read, not just its passes trusted.
+- **Current state: 11 of 11 files clean**, with three notes to eyeball, each verified as legitimate
+  (UNESCO / Language Atlas references and clickable cross-atlas links).
+- **Verified after the sweep:** `node --check` on all eleven atlas files and both tools → OK;
+  `tools/check-atlas.js atlas-*.js` → **all eleven valid**, with node / marker / ISO / feature counts
+  identical to before the sweep; `tools/check-prose.js atlas-*.js` → **no reader-facing jargon
+  found**, exit 0; headless Edge smoke test of `#turkic/turkish` → renders, 38 tree nodes,
+  `aria-current="page"` set, rewritten prose in the DOM (`"Beyond it the recorded varieties are…"`),
+  new `stats` label present, and **no jargon in the rendered page** — the single remaining
+  `script slot` hit anywhere is a CSS comment in `EastAsiaAtlas.html`, which is developer-facing and
+  correct to keep.
+- **⚠ Carried forward to the remaining atlases.** Austroasiatic (Phase 7) and any Phase 8 work must
+  be written to rule 9 from the start and pass `tools/check-prose.js` before being called done.
+  This was a defect of **voice**, which no structural validator can catch: it survived
+  `node --check`, `tools/check-atlas.js` and three headless smoke tests on the first atlas that had
+  it, and was only found by reading the rendered page.
+
 ## Disputed / conflicting sources
 
 Tracked separately per family so the atlas prose can hedge the right sentences.
@@ -1511,4 +1650,4 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 4. Update the counters table at the top of this file.
 5. If a session is interrupted, the file — not the conversation — is the source of truth.
 
-*Last updated: 2026-09-27 — Phases 0–6 complete, plus **Koreanic** (`KO-101`–`KO-109`), **Hmong–Mien** (`HM-101`–`HM-109`), **Turkic** (`TK-101`–`TK-112`) and **Formosan** (`FO-101`–`FO-108`) from Phase 7. Koreanic ships Jeju as its own node with the language-or-dialect question deliberately left open (`KO-101`, `KO-107`), and Chungcheong/Gangwon with their contested status stated in the prose rather than hidden (`KO-105`). Hmong–Mien ships two invented scripts as `nat` values with two new fonts registered (`HM-108`), **cuts** the brief's unverifiable "lantern writing" hook (`HM-107`), and reports a speaker-count conflict that exists *within a single source* (`HM-106`). Turkic was built to the **full-family scope** on instruction, against the brief's recommendation (`TK-101`), and is the widest atlas in the series — Istanbul to Yakutsk. It **does not draw Old Turkic as the trunk** (`TK-110`), states Khazar's branch as **disputed in its own source** and gives the whole surviving corpus rather than a summary (`TK-109`), and its link check was **measured rather than assumed** — four expected Omniglot pages turned out not to exist (`TK-110`). ⚠ **This session also found and fixed a log-namespace collision:** the Turkic entries were first written under `TU-`, which was already Tungusic's, and two of them had landed on the wrong side of the `## Disputed` heading (`TK-112`). **Formosan is the atlas that had to be drawn as a place rather than a family** — `acceptance = geographic`, `glotto = none`, "up to nine separate primary subfamilies" — so there is no Proto-Formosan trunk and the nine branches hang off the island as siblings (`FO-101`); **Tsouic ships with its own source's question mark** (`FO-103`), **Pazeh–Kaxabu ships extinct and alive in one node** (`FO-105`), **Yami and Tsat are drawn outside the nine branches because neither is Formosan** (`FO-106`), and link health was measured against **fourteen** Omniglot pages — the best-covered family in the series (`FO-107`). ⚠ **Formosan also produced this project's first prose defect: its reader-facing text was written in development jargon** — `infobox` 25×, "this node" 6×, ⚠ 30× — and was rewritten so it describes languages rather than the machinery that displays them, with nothing factual dropped (`FO-108`). **The rule is now in the per-atlas definition of done: read one whole node aloud before calling an atlas finished.** A cross-atlas `nat` rollout gave 59 non-Sinitic forms (`TB-111`/`TB-112`). **`DP-101` records the GitHub Pages deployment failure** — Jekyll's Liquid engine aborted the build on the MediaWiki template braces in this file's own citations — together with the brace-free logging rule (rule 8) that now prevents it, and the reproduction that verified the fix. Remaining: Austroasiatic in Phase 7, then the Siberian capstone in Phase 8. Phase 0.5 (Sinitic retrofit) is still skipped by instruction, so its 42 targets remain seeded and unchecked.*
+*Last updated: 2026-09-27 — Phases 0–6 complete, plus **Koreanic** (`KO-101`–`KO-109`), **Hmong–Mien** (`HM-101`–`HM-109`), **Turkic** (`TK-101`–`TK-112`) and **Formosan** (`FO-101`–`FO-108`) from Phase 7. Koreanic ships Jeju as its own node with the language-or-dialect question deliberately left open (`KO-101`, `KO-107`), and Chungcheong/Gangwon with their contested status stated in the prose rather than hidden (`KO-105`). Hmong–Mien ships two invented scripts as `nat` values with two new fonts registered (`HM-108`), **cuts** the brief's unverifiable "lantern writing" hook (`HM-107`), and reports a speaker-count conflict that exists *within a single source* (`HM-106`). Turkic was built to the **full-family scope** on instruction, against the brief's recommendation (`TK-101`), and is the widest atlas in the series — Istanbul to Yakutsk. It **does not draw Old Turkic as the trunk** (`TK-110`), states Khazar's branch as **disputed in its own source** and gives the whole surviving corpus rather than a summary (`TK-109`), and its link check was **measured rather than assumed** — four expected Omniglot pages turned out not to exist (`TK-110`). ⚠ **This session also found and fixed a log-namespace collision:** the Turkic entries were first written under `TU-`, which was already Tungusic's, and two of them had landed on the wrong side of the `## Disputed` heading (`TK-112`). **Formosan is the atlas that had to be drawn as a place rather than a family** — `acceptance = geographic`, `glotto = none`, "up to nine separate primary subfamilies" — so there is no Proto-Formosan trunk and the nine branches hang off the island as siblings (`FO-101`); **Tsouic ships with its own source's question mark** (`FO-103`), **Pazeh–Kaxabu ships extinct and alive in one node** (`FO-105`), **Yami and Tsat are drawn outside the nine branches because neither is Formosan** (`FO-106`), and link health was measured against **fourteen** Omniglot pages — the best-covered family in the series (`FO-107`). ⚠ **Formosan also produced this project's first prose defect: its reader-facing text was written in development jargon** — `infobox` 25×, "this node" 6×, ⚠ 30× — and was rewritten so it describes languages rather than the machinery that displays them, with nothing factual dropped (`FO-108`). **The rule is now in the per-atlas definition of done: read one whole node aloud before calling an atlas finished.** ⚠ **That finding then produced a series-wide sweep** — all eleven atlases were measured and rewritten: `infobox` 49 → 0, "this node" 17 → 0, bare `node(s)` 119 → 0, `script slot` 20 → 0, `reference account` 12 → 0, and **16 internal research-log ids removed from shipped text**; roughly 330 reader-facing strings rewritten with nothing factual dropped, plus the `stats` label decided as "languages and groups" for every atlas, and a new guard `tools/check-prose.js` that fails on internal vocabulary while ignoring developer comments (`PR-101`, rule 9). A cross-atlas `nat` rollout gave 59 non-Sinitic forms (`TB-111`/`TB-112`). **`DP-101` records the GitHub Pages deployment failure** — Jekyll's Liquid engine aborted the build on the MediaWiki template braces in this file's own citations — together with the brace-free logging rule (rule 8) that now prevents it, and the reproduction that verified the fix. Remaining: Austroasiatic in Phase 7, then the Siberian capstone in Phase 8. Phase 0.5 (Sinitic retrofit) is still skipped by instruction, so its 42 targets remain seeded and unchecked.*

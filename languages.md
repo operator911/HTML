@@ -497,6 +497,24 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
   - ⚠ **Left as an open series-wide question rather than changed here:** the `stats` label
     "nodes in this atlas" appears in all eleven atlases, so changing it for Formosan alone would
     make the set inconsistent. Recorded at `[FO-107]` for a single decision covering every atlas.
+  - ⚠ **THE SERIES-WIDE PROSE SWEEP — all eleven atlases, on instruction.** The Formosan finding
+    turned out not to be local. Measured with comments stripped, the shipped text across the series
+    contained **49 `infobox`**, **17 "this node"**, **30 "the node"**, **119 bare `node(s)`**,
+    **20 `script slot`**, **4 `ships`/`shipped`**, **12 "reference account"**, **171 editorial
+    "the atlas"** and **16 internal research-log ids** — the last of these found only because the
+    sweep was run, and arguably the worst of them, since a reader cannot use `MG-111`. Roughly
+    **330 reader-facing strings were rewritten** with nothing factual dropped (diff is 286 / 286,
+    perfectly symmetric). Four further items settled: the `stats` label is now **"languages and
+    groups"** in every atlas; Silk Road's legend and root kind no longer read **"The atlas"**;
+    log ids are gone from shipped text; and ⚠ is held to 0–2 per atlas. **A new guard,
+    `tools/check-prose.js`,** strips developer comments and fails on internal vocabulary — verified
+    to catch an injected regression (5 problems, exit 1) and debugged for a false positive it threw
+    on Sinitic's "great ships". See `[PR-101]` and the new rule 9. **11 of 11 files clean.**
+  - ⚠ **The transferable lesson, now in the definition of done above:** this defect passed
+    `node --check`, `tools/check-atlas.js` and three headless smoke tests on the first atlas that
+    had it, because all of those test **structure** and this was a failure of **voice**. It is
+    found by reading the rendered page, so `check-prose.js` now runs alongside `check-atlas.js`
+    before any atlas is called done — starting with Austroasiatic.
   - **Doc housekeeping done in this session:** `research.md` counters row → `| Formosan | 8 | 7 | 1 | 0 | — |`,
     files-on-disk note updated to eleven atlases, the Formosan queue section split off from
     Austroasiatic's and marked ✅ with `[FO-107]` and `[FO-108]` appended; this file's §0 row 10 →
@@ -1173,9 +1191,11 @@ never reconstructed from memory at the end.
 - [ ] `sources` note written for the root node, naming the standard works
 - [ ] Fonts declared and loaded; native scripts render correctly
 - [ ] ⚠ **Read one whole node aloud as a reader would.** No `infobox`, no "this node", no reference
-      to the atlas's own data model or decisions, no infobox field syntax. Prose describes
-      **languages**, not the machinery that displays them — and ⚠ stays at 0–2 per atlas, not 30
-      (`FO-107`)
+      to the atlas's own data model or decisions, no infobox field syntax, **no research-log ids**.
+      Prose describes **languages**, not the machinery that displays them — and ⚠ stays at 0–2 per
+      atlas, not 30 (`FO-107`, `PR-101`). Then run the guard:
+      **`node tools/check-prose.js atlas-<family>.js`** — it strips developer comments first and
+      fails on internal vocabulary, so a clean run means the shipped text is jargon-free.
 - [ ] Hash routes work (`#family/node`); toggle in and out of the atlas without errors
 - [ ] Smoke-tested in a browser: filter, sketch mode, area overlay, sheet mode on narrow widths
 - [ ] Status updated in §0 of this file; `index.html` card added if it is the first atlas after Sinitic
@@ -1190,6 +1210,13 @@ family**, because its own source gives it no Glottolog code and says the languag
 separate primary subfamilies" — so there is no Proto-Formosan trunk, and Yami and Tsat are drawn
 outside the nine branches because neither is Formosan. A GitHub Pages build failure (Jekyll's Liquid
 engine aborting on MediaWiki template braces in `research.md`) was diagnosed and fixed — see the
-progress log above and `research.md` `[DP-101]`. Remaining: Austroasiatic in Phase 7, then the
-optional Siberian capstone in Phase 8.*
+progress log above and `research.md` `[DP-101]`. ⚠ **All eleven atlases then went through a
+reader-facing prose sweep:** the shipped text had been describing the machinery that displays the
+languages rather than the languages — 49 `infobox`, 119 bare `node(s)`, 20 `script slot`, 171
+editorial "the atlas" and 16 internal research-log ids across the series. Roughly 330 strings were
+rewritten with nothing factual dropped, the `stats` label became "languages and groups" everywhere,
+and a new guard — **`node tools/check-prose.js atlas-*.js`** — now fails on internal vocabulary
+while ignoring developer comments. It is part of the definition of done from here on, because this
+was a defect of **voice** that no structural validator could catch. See `research.md` `[PR-101]`
+and rule 9. Remaining: Austroasiatic in Phase 7, then the optional Siberian capstone in Phase 8.*
 
