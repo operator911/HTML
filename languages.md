@@ -265,11 +265,12 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     `zh:` was holding the **Chinese name** in a slot styled as the autonym — which is correct for
     Sinitic (粤, 闽南, 客家 **are** those languages' own characters) and an exonym everywhere else
     (满语 is what *Chinese* calls Manchu; Manchu writes itself ᠮᠠᠨᠵᡠ ᡤᡳᠰᡠᠨ). New optional per-node
-    `nat` carries the language's own written form. **A Chinese exonym now rides on the right of each
-    row behind a `中文` toggle that defaults off**, so the atlas reads English-only until asked: the
-    left script slot shows `nat` when present, and `zh` only in a `zhIsNative` atlas — Sinitic, where
-    the characters *are* the native writing. The info panel follows the same rule, `nat` in gold above
-    the Chinese; the toggle is hidden entirely for Sinitic, where it would reveal nothing. Fourteen
+    `nat` carries the language's own written form. **A `中文` pill in the page header — off by default —
+    reveals every Chinese name at once**: the row slot, the header title and the family pills. The
+    header title obeys the same rule as the row, so a family's own writing stays (Sinitic 汉语, Japonic
+    日本語族 — both marked `nat` in `FAMILIES[]`) while 藏缅语族, 通古斯 and 丝路死语 are hidden until
+    asked for. The left script slot shows `nat` when present, and `zh` only in a `zhIsNative` atlas —
+    Sinitic, where the characters *are* the native writing. Fourteen
     Tibeto-Burman forms verified against Wikipedia infoboxes (བོད་སྐད་།, ཁམས་སྐད, རྫོང་ཁ་, ꆈꌠꉙ,
     नेपाल भाषा, မြန်မာဘာသာစကား, …); `Noto Sans Devanagari` added to `fonts` for Newar and Bodo, which
     would otherwise have rendered as tofu. Forms **deliberately not invented** — unwritten languages

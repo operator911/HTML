@@ -31,11 +31,9 @@ header h1 .zh{font-family:var(--native);color:var(--gold);font-weight:700;margin
 .tree-head label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:.35rem}
 #filter{width:100%;padding:.45rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:.9rem}
 #filter::placeholder{color:var(--ink-faint)}
-.tree-head-row{display:flex;gap:.45rem;align-items:center}
-.tree-head-row #filter{width:auto;flex:1 1 auto;min-width:0}
-/* Chinese names are exonyms for every family but Sinitic, so they sit on the
-   right as a secondary annotation and stay hidden until asked for (default off). */
-.cn-toggle{flex:0 0 auto;font:inherit;font-size:.72rem;line-height:1.2;padding:.36rem .5rem;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-faint);cursor:pointer;font-family:var(--native)}
+/* Chinese names are exonyms for every family but Sinitic and Japonic, so the
+   header carries a `中文` pill that reveals them — off by default. */
+.cn-toggle{margin-left:auto;flex:0 0 auto;font:inherit;font-size:.74rem;line-height:1.25;padding:.26rem .64rem;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);cursor:pointer;font-family:var(--native)}
 .cn-toggle:hover,.cn-toggle:focus-visible{border-color:var(--gold);color:var(--gold)}
 .cn-toggle[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
 #tree{flex:1 1 auto;overflow:auto;padding:.6rem .7rem 1.2rem;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
@@ -62,6 +60,8 @@ li.open>.tnode .caret{transform:rotate(90deg)}
 body.show-cn .t-cn{display:inline}
 .cn-only{display:none}
 body.show-cn .cn-only{display:block}
+/* the header title and the family pills are <span>s, so they reveal inline */
+body.show-cn .zh.cn-only,body.show-cn .fz.cn-only{display:inline}
 li.hidden{display:none}
 mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1px}
 .legend{flex:0 0 auto;padding:.6rem .9rem .7rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.3rem .85rem}
@@ -150,17 +150,15 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
   <h1><span class="zh" id="hdrZh">汉语</span><span id="hdrEn">Branches of Chinese</span></h1>
   <span class="tagline" id="hdrTag"></span>
   <div class="stats" id="hdrStats"></div>
+  <button id="cnToggle" class="cn-toggle" type="button" aria-pressed="false"
+          title="Show the Chinese name of each family and variety" aria-label="Show Chinese names">中文</button>
   <nav class="families" id="families" aria-label="Language family atlases"></nav>
 </header>
 <main class="app">
   <aside class="pane tree-pane" aria-label="Classification of the selected family">
     <div class="tree-head">
       <label for="filter">Filter varieties</label>
-      <div class="tree-head-row">
-        <input id="filter" type="search" placeholder="Filter…" autocomplete="off">
-        <button id="cnToggle" class="cn-toggle" type="button" aria-pressed="false"
-                title="Show the Chinese name of each variety" aria-label="Show Chinese names">中文</button>
-      </div>
+      <input id="filter" type="search" placeholder="Filter…" autocomplete="off">
     </div>
     <nav id="tree" aria-label="Language family tree"></nav>
     <div class="legend" id="legend" aria-hidden="true"></div>
@@ -197,6 +195,8 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
      legend[[key,label]] · view{center,zoom} · outline{color,fill} · sketchGeo
      captions{note,areas,sketch} · fonts[Noto…] · filterPlaceholder
      listen{om,fv,search} · rootId · stages[ids] · zhSuppress[str] · zhIsNative
+     FAMILIES[]: key · zh (the name in Chinese) · en · file · status
+     · nat (the family's own name, where one exists — 汉语, 日本語族)
      sources · tree · iso · features · sound · areas
      Per node: id · en · zh (the name in Chinese) · nat (the language's own
      written form, only where one is genuinely attested) · py · sp · region
@@ -210,10 +210,10 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
 /* ---- the shelf: every family this viewer knows about. `status:'planned'`
         renders the toggle button disabled, with a pointer to languages.md. ---- */
 const FAMILIES = [
-  { key: 'sinitic',       zh: '汉语',       en: 'Sinitic',           file: 'atlas-sinitic.js',       status: 'done' },
+  { key: 'sinitic',       zh: '汉语',       en: 'Sinitic',           file: 'atlas-sinitic.js',       status: 'done', nat: '汉语' },
   { key: 'tungusic',      zh: '通古斯',     en: 'Tungusic',          file: 'atlas-tungusic.js',      status: 'done' },
   { key: 'kradai',        zh: '壮侗',       en: 'Kra–Dai',           file: 'atlas-kradai.js',        status: 'done' },
-  { key: 'japonic',       zh: '日本語族',   en: 'Japonic & Ainu',    file: 'atlas-japonic.js',       status: 'done' },
+  { key: 'japonic',       zh: '日本語族',   en: 'Japonic & Ainu',    file: 'atlas-japonic.js',       status: 'done', nat: '日本語族' },
   { key: 'mongolic',      zh: '蒙古语族',   en: 'Mongolic',          file: 'atlas-mongolic.js',      status: 'done' },
   { key: 'silkroad',      zh: '丝路死语',   en: 'Silk Road lost',    file: 'atlas-silkroad.js',      status: 'done' },
   { key: 'tibetoburman',  zh: '藏缅语族',   en: 'Tibeto-Burman',     file: 'atlas-tibetoburman.js',  status: 'done' },
@@ -257,18 +257,6 @@ const $  = (s) => document.querySelector(s);
    doubles as this, because for Sinitic the Chinese characters *are* the native
    script — 粤 and 闽南 are the languages' own writing, not a Chinese exonym. */
 function nativeOf(n) { return n.nat || (ATLAS.zhIsNative ? n.zh : '') || ''; }
-/* True when the atlas has at least one Chinese name that is an exonym, i.e.
-   something for the 中文 toggle to reveal. False for Sinitic. */
-function hasExonyms(a) {
-  if (a.zhIsNative) return false;
-  let found = false;
-  (function walk(n) {
-    if (found || !n) return;
-    if (n.zh && n.zh !== n.nat) found = true;
-    (n.kids || []).forEach(walk);
-  })(a.tree);
-  return found;
-}
 const el = (id) => document.getElementById(id);
 const yt = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
 
@@ -322,7 +310,12 @@ function applyFonts(names) {
 
 /* ------------------------------------------------------------------- header */
 function applyHeader(a) {
-  el('hdrZh').textContent = a.title.zh;
+  /* The header title follows the same rule as the tree's script slot: a family's
+     own writing stays (Sinitic 汉语, Japonic 日本語族 — FAMILIES[].nat), while a
+     Chinese exonym such as 藏缅语族 is hidden until the 中文 toggle is on. */
+  const fam = FAMILIES.filter((f) => f.key === a.key)[0] || {};
+  el('hdrZh').textContent = fam.nat || a.title.zh;
+  el('hdrZh').classList.toggle('cn-only', !fam.nat);
   el('hdrEn').textContent = a.title.en;
   el('hdrTag').textContent = a.tagline || '';
   el('hdrStats').innerHTML = (a.stats || [])
@@ -333,9 +326,6 @@ function applyHeader(a) {
   filterEl.placeholder = a.filterPlaceholder || 'Filter varieties…';
   document.title = a.title.en + ' — East Asian Language Atlas';
   el('areasToggle').textContent = areasOn ? '◧ areas: on' : '◧ areas (approx.)';
-  /* Offer the Chinese toggle only where it does something: in a zhIsNative atlas
-     (Sinitic) the characters in the script slot are native writing, not exonyms. */
-  el('cnToggle').style.display = hasExonyms(a) ? '' : 'none';
 }
 function applyLegend(a) {
   el('legend').innerHTML = (a.legend || []).map(([k, n]) => {
@@ -352,7 +342,7 @@ function buildFamilies() {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.key = f.key;
-    b.innerHTML = '<span class="fz" aria-hidden="true">' + f.zh + '</span>' + f.en;
+    b.innerHTML = '<span class="fz' + (f.nat ? '' : ' cn-only') + '" aria-hidden="true">' + (f.nat || f.zh) + '</span>' + f.en;
     if (f.status !== 'done') {
       b.disabled = true;
       b.title = 'Planned — see languages.md';
