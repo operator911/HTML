@@ -270,24 +270,38 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     header title obeys the same rule as the row, so a family's own writing stays (Sinitic 汉语, Japonic
     日本語族 — both marked `nat` in `FAMILIES[]`) while 藏缅语族, 通古斯 and 丝路死语 are hidden until
     asked for. The left script slot shows `nat` when present, and `zh` only in a `zhIsNative` atlas —
-    Sinitic, where the characters *are* the native writing. Fourteen
-    Tibeto-Burman forms verified against Wikipedia infoboxes (བོད་སྐད་།, ཁམས་སྐད, རྫོང་ཁ་, ꆈꌠꉙ,
-    नेपाल भाषा, မြန်မာဘာသာစကား, …); `Noto Sans Devanagari` added to `fonts` for Newar and Bodo, which
-    would otherwise have rendered as tofu. Forms **deliberately not invented** — unwritten languages
-    (Rgyalrong, Japhug, Qiang, Pumi), Latin-orthography languages (Lisu, Lahu, Jingpho, Garo, Mizo),
-    scripts with no declared font (Limbu, Kayah, Tamang) and proto/family labels — are listed with
-    reasons at `research.md` `[TB-111]`, so a later pass does not "finish the job" by fabricating.
+    Sinitic, where the characters *are* the native writing. **The rollout is complete across all six
+    non-Sinitic atlases — 59 forms**, every one read off a Wikipedia infobox rather than recalled:
+    14 in Tibeto-Burman (བོད་སྐད་།, ཁམས་སྐད, རྫོང་ཁ་, ꆈꌠꉙ, नेपाल भाषा, မြန်မာဘာသာစကား, …), 18 in
+    Japonic (関西方言, 東北方言, 沖縄語, 宮古語, アィヌ イタㇰ, …), 10 in Tungusic (ᠮᠠᠨᠵᡠ ᡤᡳᠰᡠᠨ, На̄най хэсэни,
+    Эвэды̄ турэ̄н, …), 7 in Kra–Dai (ภาษาไทย, ພາສາລາວ, ၵႂၢမ်းတႆး, ᦅᧄᦺᦑᦟᦹᧉ, ꪼꪕꪒꪾ, …), 5 in Mongolic
+    (ᠮᠣᠩᠭᠣᠯ ᠬᠡᠯᠡ, ᡆᡕᡅᠷᠠᡑ ᡘᡄᠯᡄᠨ, хальмг келн) and 5 in Silk Road (𗼇𗟲, 𐼼𐼴𐼶𐼹𐼷𐼸, Яғнобӣ зивок).
+    Fonts were added where the script needed them — `Noto Sans Devanagari` (Newar, Bodo), `Noto Sans
+    New Tai Lue`, `Noto Sans Tai Le`, `Noto Sans Tai Viet`, `Noto Serif Ahom`, `Noto Serif Tangut`,
+    `Noto Sans Sogdian`, `Noto Sans Chorasmian`, `Noto Sans Kharoshthi`. Every new font was checked
+    against the Google Fonts API with its `cmap` parsed, which caught a **dead entry already in the
+    registry**: `Noto Sans Tangut` does not exist (the family is `Noto Serif Tangut`), so `applyFonts()`
+    had been silently dropping it. Forms **deliberately not invented** — unwritten languages (Rgyalrong,
+    Qiang, Pumi, Oroqen, Dagur, Bonan), Latin-orthography languages (Lisu, Lahu, Jingpho, Garo, Mizo,
+    Zhuang, Kam), scripts with no font (Limbu, Kayah, Tamang, Old Uyghur, Khitan, Jurchen) and
+    proto/family/branch/script-name labels — are listed with reasons at `research.md` `[TB-111]` and
+    `[TB-112]`, so a later pass does not "finish the job" by fabricating.
 
   - **Verified:** `node tools/check-atlas.js` on all seven files → all valid (43 · 19 · 36 · 23 · 26 ·
     34 · 56). Headless Edge smoke test of `#tibetoburman`: 12 palette rules, stats row `56 nodes,
     from a 350-language grouping · ≈330 million speakers, by source · 7 writing systems in the atlas`,
     `aria-current="page"`, **0 error markers**. Deep link `#tibetoburman/nuosu` renders all three
     script chips, the ISO chip `iii (type L — register name "Sichuan Yi"; ii)`, and a clean `sp` chip.
+  - **Verified after the `nat` rollout:** all seven files valid; headless Edge smoke tests of
+    `#tungusic`, `#kradai`, `#japonic`, `#mongolic`, `#silkroad` → **45/45 native strings present in
+    the rendered DOM**, and each atlas's generated `scriptfonts` link read back and confirmed to
+    request the fonts it needs. Header titles: only Japonic shows its Chinese title (日本語族, native);
+    the other four carry `cn-only` and are hidden until the toggle is on.
 - **Next:** Phase 7 — Hmong–Mien (§2.8), Koreanic (§2.6), Formosan (§2.10), Turkic (§2.9, needs a
   scope decision first) and Austroasiatic (§2.11), in whatever order appetite dictates; then Phase 8,
-  the optional Siberian capstone (§2.13).
-- **Next:** Phase 6 (Tibeto-Burman, `atlas-tibetoburman.js`) — the big one, ~45 nodes for a
-  350-language family, sharing ancestor nodes with Sinitic.
+  the optional Siberian capstone (§2.13). New atlases should carry `nat` from the start, with forms
+  read off Wikipedia infoboxes and any new font validated against the Google Fonts API before use —
+  the dead `Noto Sans Tangut` entry in `GFONT` shows what happens otherwise.
 
 
 ---

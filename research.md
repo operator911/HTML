@@ -865,7 +865,40 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
   - `lhasa` → `[བོད་སྐད་།] Lhasa Tibetan (Ü-Tsang) …… [拉萨藏语] [speakers]` — Chinese in the DOM, hidden by CSS
   - `qiang` → `[  ] Qiang …… [羌语] [speakers]` — empty script slot, English-only
   - Sinitic `yue` → `[粤] Yue (Cantonese) …… [speakers]` — no right slot at all; 粤 *is* the native script
-  - Counts per atlas: Sinitic 43/43 script slots filled, toggle hidden · Tibeto-Burman 14 filled / 42 empty, 56 behind the toggle · the other five atlases 0 filled, all names behind the toggle.
+  - Counts per atlas: Sinitic 43/43 script slots filled, toggle hidden · Tibeto-Burman 14 filled / 42 empty, 56 behind the toggle.
+  - **Superseded by [TB-112]:** the figure "the other five atlases 0 filled" was true when this entry was written and is no longer — the rollout followed immediately.
+
+### [TB-112] `nat` rolled out to the other five atlases — 45 more forms, four new fonts, one dead font reference
+
+- **What was done.** The `nat` field introduced in [TB-111] was extended from Tibeto-Burman to the five remaining shipped atlases. **45 node-level forms** were added, every one read off a Wikipedia infobox or raw wikitext rather than recalled:
+
+  | atlas | nodes | `nat` | filled |
+  |---|---|---|---|
+  | Japonic | 23 | 18 | Japanese (17) + Ainu (1) |
+  | Tungusic | 19 | 10 | Manchu script (2) + Cyrillic (8) |
+  | Kra–Dai | 36 | 7 | Thai, Lao, Myanmar, New Tai Lue, Tai Le, Tai Viet, Ahom |
+  | Mongolic | 26 | 5 | Mongolian script (3) + Clear script (1) + Cyrillic (1) |
+  | Silk Road | 34 | 5 | Tangut, Sogdian, Chorasmian, Kharoshthi, Cyrillic |
+
+- **Japonic — the Chinese and Japanese names differ by orthography, not just wording.** 关西/関西, 关东/関東, 东北/東北, 北陆/北陸, 出云/出雲, 国头/国頭, 冲绳/沖縄, 宫古/宮古. Verified against ja.wikipedia (`琉球諸語`, `日本語の方言`, `アイヌ語`). The Ryukyuan set follows ja.wikipedia's own tree: `琉球諸語` → `北琉球諸語`/`南琉球諸語` → `奄美語`, `国頭語`, `沖縄語`, `宮古語`, `八重山語`, `与那国語` — note **国頭語** with 頭, the UNESCO designation, against the atlas's simplified 国头语.
+- **⚠ The Ainu form is アィヌ イタㇰ, not アイヌ・イタㇰ.** The widely-repeated katakana autonym has a full-size イ; ja.wikipedia's infobox gives **アィヌ イタㇰ** (with small ィ, matching /aynu/), and also lists `Aynu itak` and `Айну итак`. The infobox form is used. Only `hokkaido` gets a `nat` — Sakhalin and Kuril Ainu are extinct with no modern orthography, and the atlas's own prose says Ainu "has never had a native script", so the borrowed-katakana form is applied to the one variety still written in it (`Ainu Times`) and no further.
+- **Tungusic: the family splits two ways by script.** Manchu and Xibe write in the Mongolian-derived script (`ᠮᠠᠨᠵᡠ ᡤᡳᠰᡠᠨ`, `ᠰᡞᠪᡝ ᡤᡞᠰᡠᠨ` — both from en.wikipedia infoboxes; the `Noto Sans Mongolian` font was already declared and was rendering nothing). The eight Siberian varieties write in **Cyrillic**: `На̄най хэсэни` (Nanai), `Нāнʼи хэсэни` (Ulch), `Уилта кэсэни` (Uilta), `Удиэ кэйэни` (Udege), `Орочи кэсэни` (Oroch), `Эвэды̄ турэ̄н` (Evenki), `эвэды торэн` (Even), `Неғида хэсэнин` (Negidal). Cyrillic is a borrowed script, but so is Devanagari for Newar and Bodo, which [TB-111] already accepted — the test is *the script actually in use*, not indigenous origin. Note Nanai and Ulch both give "our language" from the same root but differ (`На̄най хэсэни` / `Нāнʼи хэсэни`), and Ulch uses the letter **ʼ** (modifier apostrophe), not an ASCII apostrophe.
+- **Mongolic: three scripts in five nodes.** `ᠮᠣᠩᠭᠣᠯ ᠬᠡᠯᠡ` (Khalkha, mn.wikipedia infobox), `ᠥᠪᠥᠷ ᠮᠣᠩᠭᠣᠯ` (Peripheral — the first two words of the Inner Mongolia infobox's full Mongolian name), `ᠪᠤᠷᠢᠶᠠᠳ ᠮᠣᠩᠭᠣᠯ ᠬᠡᠯᠡᠨ` (Buryat), `ᡆᡕᡅᠷᠠᡑ ᡘᡄᠯᡄᠨ` (Oirat, Clear script), `хальмг келн` (Kalmyk). The Clear-script form uses **Todo bichig** letters, which live in the Mongolian block and so render from the already-declared `Noto Sans Mongolian`.
+- **⚠ Kra–Dai needed four fonts that did not exist under the names assumed.** New Tai Lue (`ᦅᧄᦺᦑᦟᦹᧉ`), Tai Le (`ᥖᥭᥰ ᥘᥫᥴ`), Tai Viet (`ꪼꪕꪒꪾ`) and Ahom (`𑜁𑜪𑜨 𑜄𑜩 𑜒𑜑𑜪𑜨`) were all added to `GFONT` and to the atlas's `fonts`. **Ahom is `Noto Serif Ahom`, not `Noto Sans Ahom`** — the Sans family returns HTTP 400 from the Google Fonts API. Shan needs no new font: `ၵႂၢမ်းတႆး` was checked against `Noto Sans Myanmar`'s cmap and every codepoint (U+1075, U+1082, U+1062, U+1086 …) is present.
+- **Silk Road is mostly not fixable, and that is the finding.** Of 34 nodes, 5 got a form: `𗼇𗟲` (Tangut), `𐼼𐼴𐼶𐼹𐼷𐼸` (Sogdian), `𐾸𐾲𐾰𐾻 𐾰𐾺 𐾹𐾶𐾰𐿂𐾺𐾸𐾽` (Chorasmian), `𐨒𐨌𐨣𐨿𐨢𐨌𐨪𐨁𐨌` (Gāndhārī, Kharosthi), `Яғнобӣ зивок` (Yaghnobi — the one living language here). The rest cannot take one:
+  - **`nativename` is empty** on en.wikipedia for Saka/Khotanese and the Tocharian family — so `khotanese`, `tumshuqese`, `tochA`, `tochB` keep their Chinese labels rather than a constructed form.
+  - **No Google Font exists** for Old Uyghur (`olduyghur` — confirmed absent from the Google Fonts metadata index) or for the Khitan and Jurchen scripts, so those stay as labels. Same class of omission as Limbu/Kayah/Tamang in [TB-111].
+  - **Undeciphered or unattested**: `rouran` and `xiongnu` have no known text at all.
+  - **Script-name and document nodes** (`scripts` subtree, `niyadocs`, `secret`) are not languages, so they take no autonym — consistent with [TB-111]'s treatment of proto and family labels.
+- **⚠ Latent bug found and fixed in `GFONT`.** The registry contained `'Noto Sans Tangut': 'Noto+Sans+Tangut'`, and **that family does not exist** — the Google Fonts API returns HTTP 400, so `applyFonts()`'s `.filter(Boolean)` would have silently dropped it and any atlas declaring it would have rendered Tangut as tofu. Corrected to `'Noto Serif Tangut'`. All 25 `GFONT` entries were then validated against the API: **the Tangut entry was the only dead reference.** Four more fonts were added — `Noto Sans New Tai Lue`, `Noto Sans Tai Le`, `Noto Sans Tai Viet`, `Noto Serif Ahom` — plus `Noto Sans Kharoshthi`, `Noto Sans Brahmi`, `Noto Sans Chorasmian` and `Noto Sans Phags Pa` for the historical scripts. `Noto Sans Brahmi` and `Noto Sans Phags Pa` are registered but not yet declared by any atlas (Brahmi is a candidate for Gāndhārī's second script; Phags-pa for the Mongolic `phagspa` node).
+- **Verified:**
+  - `node --check` on the inlined engine → OK. `node tools/check-atlas.js atlas-*.js` → **all 7 valid**.
+  - Smoke tests, headless Edge, `--dump-dom`, one atlas each: `#tungusic`, `#kradai`, `#japonic`, `#mongolic`, `#silkroad` → **45/45 native strings present in the rendered DOM**.
+  - Header titles behave as designed: only **Japonic** shows its Chinese title (`日本語族`, native); Tungusic `通古斯`, Kra–Dai `壮侗`, Mongolic `蒙古语族` and Silk Road `丝绸之路死语` all carry `cn-only` and are hidden until the toggle is on.
+  - Every atlas's generated `scriptfonts` link was read back from the DOM and contains the fonts it needs — e.g. Silk Road now requests `Noto+Serif+Tangut&family=Noto+Sans+Sogdian&family=Noto+Sans+Chorasmian&family=Noto+Sans+Kharoshthi`.
+- **Method note.** Forms were read from `action=raw` wikitext (the infobox `nativename` field) rather than the rendered page, because rendered Wikipedia pages put ~15 kB of navigation chrome before the content and truncated reads showed only the sidebar. Font coverage was tested by downloading each TTF and parsing its `cmap` directly (no `fonttools` in this environment), so "the font covers this string" is a measurement, not an assumption.
+
+
 
 
 

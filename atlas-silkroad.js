@@ -129,7 +129,7 @@ const DATA = {
                 ["20th c.","The corpus is recovered and identified as Saka"]],
              chips:[["Brāhmī","scr"],["deciphered","dec"]] }] },
 
-        { id:"sogdian", en:"Sogdian", zh:"粟特语", py:"Sùtè yǔ",
+        { id:"sogdian", en:"Sogdian", zh:"粟特语", nat:"𐼼𐼴𐼶𐼹𐼷𐼸", py:"Sùtè yǔ",
           sp:"extinct c. 11th c. — one descendant survives", region:"Sogdiana — Samarkand and Panjakent — with colonies from the Crimea to the Ordos",
           cls:"c-sog", mk:[[39.65,66.96,"Samarkand"],[39.50,67.61,"Panjakent (Mount Mugh archive)"],[40.14,94.66,"Dunhuang (the Ancient Letters)"],[39.0,68.6,"Yaghnob valley — the surviving descendant"]],
           h:[`Sogdian was the lingua franca of the Silk Road. For roughly four centuries — from about the fourth to the eighth — a merchant from Samarkand could travel from the Black Sea to the Chinese capital and do business in Sogdian, because Sogdian trading colonies were planted at every staging post along the way. Sogdian was, for a long stretch, the language in which the route talked to itself.`,
@@ -143,7 +143,7 @@ const DATA = {
              ["c. 11th c.","Sogdian ceases to be spoken — except in one mountain valley"]],
           kids:[
 
-           { id:"yaghnobi", en:"Yaghnobi", zh:"雅格诺比语", py:"Yǎgénuòbǐ yǔ",
+           { id:"yaghnobi", en:"Yaghnobi", zh:"雅格诺比语", nat:"Яғнобӣ зивок", py:"Yǎgénuòbǐ yǔ",
              sp:"≈12,500 speakers, by source", region:"The Yaghnob valley and the Zarafshan range, Tajikistan",
              cls:"c-live", mk:[[39.0,68.6,"Yaghnob valley"],[38.56,68.78,"Dushanbe (where many now live)"],[39.50,67.61,"Panjakent"]],
              h:[`Yaghnobi is the only language in this atlas with living speakers, and it is here for that reason: it is the <b>sole surviving descendant of Sogdian</b>, the last thread of the lingua franca that once ran the Silk Road. It is spoken in the Yaghnob valley and the surrounding Zarafshan mountains of Tajikistan — a place remote enough that the language survived the Arab conquest, the Mongol conquest and the Soviet period.`,
@@ -167,7 +167,7 @@ const DATA = {
              ["8th–9th c.","Arab conquest and Persianisation; Bactrian ceases"]],
           chips:[["Greek script (with ϸ)","scr"],["deciphered","dec"]] },
 
-        { id:"khwarezmian", en:"Khwarezmian", zh:"花剌子模语", py:"Huālàzǐmó yǔ",
+        { id:"khwarezmian", en:"Khwarezmian", zh:"花剌子模语", nat:"𐾸𐾲𐾰𐾻 𐾰𐾺 𐾹𐾶𐾰𐿂𐾺𐾸𐾽", py:"Huālàzǐmó yǔ",
           sp:"extinct, in use until at least the 13th c.", region:"Khwarezm — the lower Oxus, around Khiva and Urgench",
           cls:"c-khw", mk:[[41.38,60.36,"Khiva"],[42.32,59.15,"Konye-Urgench"],[41.55,60.63,"Toprak-Kala"]],
           h:[`Khwarezmian — also spelled Chorasmian, and known in the ISO register under that spelling — was an Eastern Iranian language of the lower Oxus, in the oasis south of the Aral Sea that is now part of Uzbekistan and Turkmenistan. It had its own script, derived from Aramaic, and its own literary and scholarly tradition.`,
@@ -186,7 +186,7 @@ const DATA = {
              ["c. 1st–3rd c. CE","Gāndhārī documents appear in the Tarim Basin — Niya and Kroraina"],
              ["1994–","Birch-bark Gāndhārī manuscripts surface in Afghanistan and Pakistan"]],
           kids:[
-           { id:"gandhari", en:"Gāndhārī", zh:"犍陀罗语", py:"Jiāntuóluó yǔ",
+           { id:"gandhari", en:"Gāndhārī", zh:"犍陀罗语", nat:"𐨒𐨌𐨣𐨿𐨢𐨌𐨪𐨁𐨌", py:"Jiāntuóluó yǔ",
              sp:"extinct", region:"Gandhāra — the Peshawar valley, Taxila and Swat; manuscripts also found in Afghanistan",
              cls:"c-ia", mk:[[34.02,71.58,"Peshawar (Gandhāra)"],[33.75,72.79,"Taxila"],[34.75,72.36,"Swat valley"]],
              h:[`Gāndhārī is a Middle Indo-Aryan language — a Prakrit — written in <b>Kharoṣṭhī</b>, a script that runs right to left and derives from Aramaic rather than from Brāhmī. It was the language of Gandhāra, and it became the language in which Buddhism first moved along the Silk Road.`,
@@ -219,7 +219,7 @@ const DATA = {
           ["1227","The Mongol Empire annexes the Western Xia"],
           ["1909","Kozlov removes the Tangut library from Khara-Khoto"]],
        kids:[
-        { id:"tangut", en:"Tangut", zh:"西夏语", py:"Xīxià yǔ",
+        { id:"tangut", en:"Tangut", zh:"西夏语", nat:"𗼇𗟲", py:"Xīxià yǔ",
           sp:"extinct by the 16th c., by source", region:"The Hexi corridor — the Western Xia capital near Yinchuan and Khara-Khoto",
           cls:"c-tan", mk:[[38.49,106.23,"Yinchuan — Western Xia capital (Xingqing)"],[41.76,101.14,"Khara-Khoto (the library city)"],[40.14,94.66,"Dunhuang"]],
           h:[`Tangut was the language of the <b>Western Xia</b> (西夏) state, founded in 1038 by the Tangut people in the Hexi corridor — the narrow strip of oasis towns between the Gobi and the Tibetan plateau that every east–west traveller had to pass through. It was a real power: it fought the Song, the Liao and the Jin, and it held the corridor for nearly two centuries.`,
@@ -714,7 +714,7 @@ window.ATLASES.silkroad = {
     areas:  '<b style="color:var(--gold)">Approximate regions of attestation</b> — coarse hand-drawn blocks showing roughly where each group\'s documents came from. They are not speech territories and not surveyed boundaries: for a dead language a block marks where the <em>evidence</em> is, and the edges are guesswork. The marker layer remains the factual one.',
     sketch: '<b style="color:var(--gold)">Schematic map</b> — a hand-drawn Tarim oasis belt, Hexi corridor, Tianshan and Bactrian–Sogdian outline, simplified from memory of the geography; the markers sit at true coordinates. Works fully offline, which matters here because several of these find-spots are in areas with poor tile coverage.'
   },
-  fonts: ['Noto Serif SC'],
+  fonts: ['Noto Serif Tangut', 'Noto Sans Sogdian', 'Noto Sans Chorasmian', 'Noto Sans Kharoshthi', 'Noto Serif SC'],
   filterPlaceholder: 'e.g. Tocharian, Sogdian, Tangut, Khitan…',
   listen: {
     om: 'https://www.omniglot.com/writing/',
