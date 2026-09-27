@@ -347,13 +347,39 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     deliberately *not* added because no node uses it. `[HM-108]` records the name for a later pass.
   - **⚠ Verification lesson worth keeping:** the two Hmong variety nodes were first given `nat`
     values that were conventional but unsourced (`Hmoob Dawb`, `Hmoob Ntsuab`). They were corrected
-    to `lus Hmoob` / `lug Moob`, which the Hmong infobox supports through its `{{Lang|mww|…}}` and
-    `{{Lang|hnj|…}}` code tags. **Infobox language-code tags are evidence.**
+    to `lus Hmoob` / `lug Moob`, which the Hmong infobox supports through its per-language-code
+    tags (`Lang` for `mww`, `Lang` for `hnj`). **Infobox language-code tags are evidence.**
   - **Verified:** `node --check` OK; `node tools/check-atlas.js atlas-hmongmien.js` → valid, 22 nodes ·
     86 markers · iso 22 · features 22. Headless Edge smoke test `#hmongmien/hmongdaw` → **0 error
     markers**, header `苗瑶语族` carrying **`cn-only`** (no native family name — the opposite of
     Koreanic), `scriptfonts` requesting `Noto+Sans+Pahawh+Hmong` + `Noto+Sans+Miao` + `Noto+Serif+SC`,
     and Pahawh codepoint **U+16B07** present in the rendered DOM.
+- **2026-09-26 · Deployment — the GitHub Pages build was failing, and is fixed.** The Actions run
+  ("pages build and deployment") aborted with
+  `github-pages 232 | Error: Liquid error (line 980): wrong number of arguments (given 1, expected 2)`
+  immediately after `Rendering: research.md`. **Cause:** Jekyll renders markdown through Liquid,
+  which reads a **double opening brace** as a variable expression and a `|` inside it as a filter
+  separator — and this project's ledger protocol quotes MediaWiki template syntax *verbatim* while
+  auditing Wikipedia infoboxes. Line 980 was the Koryo-mar `ref` field quoted at `[KO-108]`.
+  - **Nine occurrences** were found repo-wide — seven in `research.md` (lines 792, 936, 962, 980,
+    1016, 1022, 1079) and two in `languages.md` (lines 350–351) — and **all nine were rewritten
+    brace-free with their information intact**. The one place that claimed a *verbatim* quote
+    (`[TB-106]`) now says explicitly that the braces are omitted and names the templates involved.
+  - **`research.md` rule 8** now forbids brace pairs in either ledger, so this cannot silently come
+    back. `[DP-101]` records the incident, the three durable options if it recurs, and the
+    verification.
+  - **The fix was verified by reproducing the failure, not by inspection.** Liquid 5.3.0 was
+    installed locally and both ledgers were run through the same operation Jekyll performs on a
+    markdown page. The synthetic copy of the old line fails with
+    `Liquid::ArgumentError: Liquid error: wrong number of arguments (given 1, expected 2)` — *the
+    exact error text from the Actions log* — while `research.md` (1229 lines), `languages.md` (1009
+    lines) and `TODO.md` all now parse clean.
+  - **⚠ `.nojekyll` was added at the repo root, but it is *not* what fixes this.** Reading
+    `actions/jekyll-build-pages`'s `entrypoint.sh` showed it contains **no check for `.nojekyll`** —
+    it unconditionally runs the Jekyll build. So the marker is a safety net for the "Deploy from a
+    branch" path only; on the Actions path the **text fix is the load-bearing part**.
+  - Nothing in `atlas-*.js` or `EastAsiaAtlas.html` was ever at risk: Jekyll copies any file without
+    YAML front matter straight through, which is why only the two markdown ledgers broke.
 - **Next:** the rest of Phase 7 — Formosan (§2.10), Austroasiatic (§2.11) and Turkic (§2.9, scope
   decision needed: the plan recommends option (a), China + Central Asia at `[80, 42]` / zoom 4);
   then Phase 8, the optional Siberian capstone (§2.13, cross-linking Ainu to `#japonic/ainu` rather
@@ -1004,6 +1030,9 @@ never reconstructed from memory at the end.
 
 ---
 
-*Last updated: 2026-09-26 — plan drafted; research & verification protocol (§1.6–1.7), the
-GitHub Pages hosting note, and the `research.md` ledger added. No atlas files written yet.*
+*Last updated: 2026-09-26 — Phases 0–6 complete, plus Koreanic and Hmong–Mien from Phase 7; nine
+atlases on disk and wired into `FAMILIES`. A GitHub Pages build failure (Jekyll's Liquid engine
+aborting on MediaWiki template braces in `research.md`) was diagnosed and fixed — see the progress
+log above and `research.md` `[DP-101]`. Remaining: Formosan, Austroasiatic and Turkic in Phase 7
+(Turkic needs the §2.9 scope decision), then the optional Siberian capstone in Phase 8.*
 

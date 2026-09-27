@@ -21,6 +21,14 @@ it is checked — never reconstructed from memory afterwards.
    prose and the entry is tagged `disputed`.
 7. **Search languages.** English + Chinese (汉语/方言) by default; add Japanese, Korean,
    Russian, Thai, Vietnamese or Mongolian where the family requires it.
+8. **Never write two opening braces together, or an opening brace followed by a percent sign.**
+   GitHub Pages renders this file through Jekyll's Liquid engine, which reads a double-brace pair
+   as a variable expression and **aborts the whole build** — that is exactly what broke the Pages
+   deployment at `[KO-108]`. MediaWiki template syntax is therefore logged **brace-free**: a
+   `citation needed` template carrying a `date=August 2013` argument is written
+   `citation needed (dated August 2013)`, and a `sfnp` template citing Vovin 2013c p. 201 is
+   written `sfnp citing Vovin 2013c, p. 201`. The same rule applies to `languages.md`. See
+   `[DP-101]` below for the incident and the alternatives.
 
 ## Entry template
 
@@ -789,7 +797,7 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
 - **Appears in:** `atlas-tibetoburman.js` → nodes `burmic`, `nuosu`
 - **Verdict:** verified, including both numbers
 - **Source:** *Nuosu language*, Wikipedia · https://en.wikipedia.org/wiki/Nuosu_language · retrieved 2026-09-26
-- **What the source says:** verbatim — "The Modern Yi script ({{lang|ii|ꆈꌠꁱꂷ}} {{transliteration|ii|''nuosu bburma''}} {{IPA|[nɔ̄sū bʙ̝̄mā]}} 'Nosu script') is a standardized [[syllabary]] derived from the classic script in 1974." and "There are 756 basic glyphs based on the Liangshan dialect, plus 63 for syllables only found in Chinese borrowings." The article also locates it: "Nuosu is mainly spoken in the [[Liangshan Yi Autonomous Prefecture]], [[Sichuan]]."
+- **What the source says:** "The Modern Yi script (ꆈꌠꁱꂷ / ''nuosu bburma'' / [nɔ̄sū bʙ̝̄mā] 'Nosu script') is a standardized [[syllabary]] derived from the classic script in 1974." and "There are 756 basic glyphs based on the Liangshan dialect, plus 63 for syllables only found in Chinese borrowings." The article also locates it: "Nuosu is mainly spoken in the [[Liangshan Yi Autonomous Prefecture]], [[Sichuan]]." (The wiki source wraps the three renderings in its `lang`, `transliteration` and `IPA` templates; the braces are omitted here under rule 8.)
 - **Confidence:** high — both figures and the 1974 date are stated directly
 - **Action:** the node gives **756 + 63** as a specific, checkable design rather than a vague "hundreds of characters", because the point being made is that this system was *engineered* — standardised on one dialect with a defined inventory — in contrast to the classical Yi script's thousands of regional variants. This is one of the few Tibeto-Burman writing systems in daily use, and the atlas says so with numbers rather than adjectives.
 
@@ -933,7 +941,7 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
 ### [KO-104] Middle Korean: 1443 creation, October 1446 promulgation, and the 1447 texts
 
 - **Claim shipped:** Sejong created twenty-eight letters in December 1443; the *Hunmin Chŏngŭm* was promulgated in October 1446; the earliest dated texts are of 1447.
-- **Verified:** en.wikipedia `Hunminjeongeum` infobox — `pub_date = {{circa|October 1446}}`; author "Sejong the Great (base *Hunminjeongeum*)"; hangul 훈민정음 / hanja 訓民正音; the base and *Haerye* editions are in Classical Chinese, the *Eonhae* edition in Korean.
+- **Verified:** en.wikipedia `Hunminjeongeum` infobox — `pub_date = circa October 1446` (the infobox uses the "circa" template); author "Sejong the Great (base *Hunminjeongeum*)"; hangul 훈민정음 / hanja 訓民正音; the base and *Haerye* editions are in Classical Chinese, the *Eonhae* edition in Korean.
 - **Verified:** en.wikipedia `Middle Korean` infobox — `era = 11th–16th centuries`; `script = Hanja (Idu, Hyangchal, Gugyeol), Hangul`; ISO `okm`; Glottolog `midd1372`; names 중세 한국어 / 중세 조선어. The article's illustration is the *Wŏrin Ch'ŏngang Chigok* (1447).
 - **⚠ Date discipline:** the creation date (December 1443) and the promulgation date (October 1446) are different events and the atlas gives both, as the `[MG-103]` script spine does for Mongolic. The root node's timeline shows "1443 / 1446"; the Middle Korean node separates them.
 - **Shipped as linguistic claims, from the article's description of the stage:** Middle Korean was tonal (pitch marked with dots in the sources), had vowel harmony that modern Korean has largely lost, and had the vowel *arae-a* (ㆍ) that disappeared from Seoul speech in the sixteenth century. The atlas attributes these to the period rather than to a named study, which is the same level of sourcing the other atlases' prose uses for well-established descriptions.
@@ -959,7 +967,7 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
 - **Claim shipped:** Yukjin is the variety of the six garrison towns on the Tumen; Vovin argued in 2013 that it is a third Koreanic language.
 - **Verified:** en.wikipedia `Yukjin Korean` infobox — nativename given as **六鎮말 / 육진말** (Yukjin-mal) and **여섯 고을 말** (Yeoseot goeul mal); states North Korea and China; `script = Hangul`; `isoexception = dialect`; ancestors Old Korean → Middle Korean; ethnicity includes "formerly Jaegaseung". The atlas uses **육진말** as the node's `nat`, which is the form the infobox leads with.
 - **Verified:** ko.wikipedia `한국어의 방언` — "함경북도 최북부인 회령시, 온성군, 종성군, 경원군 등지의 방언은 '육진 방언'(六鎭方言)이라 하며 동북 방언과 구별하기도 한다". This gives both the garrison towns and the "distinguished from the north-eastern dialect" point.
-- **⚠ Attribution discipline:** the "third language" claim is attributed to **Vovin 2013** in the prose and in the node's features, not stated as consensus. The infobox carries it with a citation (`{{sfnp|Vovin|2013c|p=201}}`), which is what makes it quotable as one scholar's proposal rather than a settled finding.
+- **⚠ Attribution discipline:** the "third language" claim is attributed to **Vovin 2013** in the prose and in the node's features, not stated as consensus. The infobox carries it with a citation (an `sfnp` template citing Vovin 2013c, p. 201), which is what makes it quotable as one scholar's proposal rather than a settled finding.
 - **⚠ Prose/marker inconsistency, recorded and resolved:** the prose names the conventional six garrisons (회령, 온성, 종성, 경원, 경흥, 부령) while the marker set marks Hoeryŏng, Onsŏng, Kyŏnghŭng, Puryŏng and Yanji — five. Chongŏng and Kyŏngwŏn were left unmarked because their modern administrative identities have changed. Resolved in favour of the prose naming the full set; flagged so the mismatch is not mistaken for an error later.
 
 ### [KO-107] Jeju: UNESCO 2010, the 5,000 figure, and the 1948–49 uprising
@@ -977,7 +985,7 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
 - **Verified:** en.wikipedia `Koreans in China` infobox — total **2,109,727** (2021, Overseas Koreans Agency). ko.wikipedia `중국조선어` gives 화자 **약 100만여 명** (≈1 million speakers) and locates it in the three north-eastern provinces; it records that the variety's basis is 서북·동북·동남 방언 depending on locality, that its standard follows North Korea's 문화어, and that the norm is the **조선말규범집** of **1977**, revised **1984**.
 - **Verified:** en.wikipedia `Koreans in Japan` infobox — population **1,000,000** (total including those with Japanese citizenship), sourced to Minority Rights Group.
 - **Verified:** ko.wikipedia `재일한국어` — the variety is also called 재일조선어; "실제로 한국어를 사용하는 재일조선인은 10% 정도"; most Zainichi Koreans use Japanese in daily conversation, with standard Korean confined to first-generation and Chongryon-school settings. Its phonology: **five vowels** against the standard's eight (ㅜ/ㅡ merged, ㅗ/ㅓ merged) and obstruents distinguished by **voicing** rather than by aspiration and tenseness.
-- **Verified:** en.wikipedia `Koryo-mar` infobox — nativename **고려말**; `speakers = 217,000`; `date = 1989`; **`ref = {{citation needed|date=August 2013}}`**; `speakers2 = current number of speakers is unknown`; `isoexception = dialect`; family Koreanic > Korean > Northern > **Hamgyŏng**.
+- **Verified:** en.wikipedia `Koryo-mar` infobox — nativename **고려말**; `speakers = 217,000`; `date = 1989`; **`ref = citation needed (dated August 2013)`**; `speakers2 = current number of speakers is unknown`; `isoexception = dialect`; family Koreanic > Korean > Northern > **Hamgyŏng**.
 - **⚠ Three figures in this atlas are weaker than the rest, and are flagged in the prose rather than smoothed over:**
   - **Koryo-mar 217,000** — the source itself carries a citation-needed tag and says the current number is unknown. The node's `sp` field reads "217,000 (1989, by source) — current figure unknown" and the prose says no reliable count exists.
   - **Zainichi ≈10%** — an estimate in the ko.wikipedia article, given without a source. The prose says "the literature puts the share at around ten per cent" rather than asserting it.
@@ -1013,13 +1021,13 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
 - **Claim shipped:** the Pollard script is an abugida devised around 1936 by Sam Pollard for A-Hmao; Pahawh Hmong is a semisyllabary created in 1959 by Shong Lue Yang.
 - **Verified:** en.wikipedia `Pollard script` infobox — `type = Abugida`; `time = ca. 1936 to the present`; `creator = Sam Pollard`; `languages = A-Hmao, Lipo, Sichuan Miao, Nasu`; Unicode U+16F00–U+16F9F; ISO 15924 `Plrd`; `fam1 = Canadian Aboriginal syllabics`. The script's own name is given as **𖽃𖽔𖾐 𖽑𖼄𖽻𖾐** (A-Hmao, Miao) — this is the string shipped as the `ahmao` node's `nat`.
 - **Verified:** en.wikipedia `Pahawh Hmong` infobox — `type = Semisyllabary` (described as "onset–rime; vowel-centered equivalent of an abugida"); `time = 1959–present`; `languages = Hmong Daw, Hmong Njua`; `creator = Shong Lue Yang`; ISO 15924 `Hmng`; Unicode U+16B00–U+16B8F. The script's own name is **𖬖𖬲𖬝𖬵 𖬄𖬲𖬟 𖬌𖬣𖬵** ("Phaj Hauj Hmoob").
-- **Verified:** en.wikipedia `Hmong language` infobox — `nativename` includes both script forms, `{{script|Hmng|𖬇𖬰𖬞 𖬌𖬣𖬵}}` and `{{script|Hmnp|𞄉𞄧𞄵𞄀𞄩𞄰}}`, alongside the Latin forms. The **Pahawh** string `𖬇𖬰𖬞 𖬌𖬣𖬵` is what the `hmongdaw` node ships as its `nat`; the **Nyiakeng Puachue Hmong** string `𞄉𞄧𞄵𞄀𞄩𞄰` was **not shipped** because Google Fonts has no web font for that script under any name tested (see HM-108).
+- **Verified:** en.wikipedia `Hmong language` infobox — `nativename` includes both script forms — Hmng (`𖬇𖬰𖬞 𖬌𖬣𖬵`) and Hmnp (`𞄉𞄧𞄵𞄀𞄩𞄰`) — alongside the Latin forms. The **Pahawh** string `𖬇𖬰𖬞 𖬌𖬣𖬵` is what the `hmongdaw` node ships as its `nat`; the **Nyiakeng Puachue Hmong** string `𞄉𞄧𞄵𞄀𞄩𞄰` was **not shipped** because Google Fonts has no web font for that script under any name tested (see HM-108).
 - **⚠ Framing decision recorded:** the atlas calls the two scripts "rivals, not ancestors" because they are unrelated designs for the same languages, and Pahawh's origin is a claim about revelation rather than about graphic descent. The prose says "it has an origin story rather than a philology" and names Shong Lue Yang as its creator without endorsing the messianic account — the same treatment `[TB-107]` gives the Dongba tradition.
 
 ### [HM-103] The speaker figures: 4.5 million Hmong, 363,565 Hmong Americans, 710,000 She against 910 She speakers
 
 - **Claim shipped:** Hmong has 4.5 million speakers (2015); Hmong Americans number 363,565 (2023); the She people number 710,000 (2000) against 910 She-language speakers (1999).
-- **Verified:** en.wikipedia `Hmong language` infobox — `speakers = 4.5 million`, `date = 2015`, `ref = {{sfn | Jarkey | 2015 | p=11}}`; `iso2 = hmn`, `iso3 = hmn` for the Hmong/Mong macrolanguage. Family chain given as Hmongic > Core Hmongic > West Hmongic > **Chuanqiandian cluster** — the source of the atlas's `chuanqiandian` node name.
+- **Verified:** en.wikipedia `Hmong language` infobox — `speakers = 4.5 million`, `date = 2015`, `ref = sfn citing Jarkey 2015, p. 11`; `iso2 = hmn`, `iso3 = hmn` for the Hmong/Mong macrolanguage. Family chain given as Hmongic > Core Hmongic > West Hmongic > **Chuanqiandian cluster** — the source of the atlas's `chuanqiandian` node name.
 - **Verified:** en.wikipedia `Hmong Americans` infobox — population **363,565** (2023), sourced to the U.S. Census Bureau ACS; the title is given in Pahawh Hmong as **𖬌𖬣𖬵 𖬉𖬲𖬦 𖬗𖬲** / Hmoob Mes Kas; the popplace list leads with California (Fresno, Sacramento, Stockton, Merced) and Oklahoma (Tulsa).
 - **Verified:** en.wikipedia `She language` infobox — `nativename = Ho Le`; `speakers = 910`, `date = 1999`, `ref = e18`; `ethnicity = 710,000 She (2000 census)`; region given as Zengcheng, Boluo County, Huidong County and Haifeng County in Guangdong; family Hmongic > Sheic > Pana–She. The page carries a hatnote distinguishing it from **She Chinese**, the Sinitic language of Zhejiang and Fujian — which is exactly the distinction the node's prose makes.
 - **⚠ The 363,565 figure counts people, not speakers, and the atlas says so.** The node's prose reads "The atlas records the census figure for the population without claiming it is a figure for speakers." This is the `[KO-108]` discipline applied again.
@@ -1076,7 +1084,7 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
 
 - **ISO 639-3 codes shipped, all read from infoboxes:** `hmx` (Hmong–Mien, ISO 639-5), `hmn` (Hmong macrolanguage), `mmr` + `muq` (Xong W/E), `hea` + `hmq` + `hms` + `neo` (Hmu N/E/S + Ná-Meo), `hmd` (A-Hmao), `mww` (Hmong Daw), `hnj` (Hmong Njua), `pha` (Pa-Hng), `shx` (She), `ium` (Iu Mien), `mji` (Kim Mun), `bje` (Biao Min), `bpn` (Dzao Min), `bmt` (Biao Mon).
 - **`bunu` has no code** — the infobox has no `iso3` field, so the table reads `— (its varieties are registered separately)`. The grouping and diaspora nodes read `—`.
-- **⚠ A verification catch worth recording.** The two Hmong variety nodes were first written with `nat` values (`Hmoob Dawb`, `Hmoob Ntsuab`) that were **conventional but unsourced**. Checking `Hmong Daw` and `Hmong Njua` showed both redirect to `Hmong language`, so no infobox gives those forms. The correct evidence turned out to be in the **per-language-code tags of the Hmong infobox itself**: `{{Lang|mww|lus Hmoob}}` (mww = Hmong Daw) and `{{Lang|hnj|lug Moob}}` (hnj = Hmong Njua). The nodes were corrected to those forms. **Lesson for later phases: a Wikipedia infobox's `{{Lang|code|…}}` tags are evidence, and they are easy to overlook.**
+- **⚠ A verification catch worth recording.** The two Hmong variety nodes were first written with `nat` values (`Hmoob Dawb`, `Hmoob Ntsuab`) that were **conventional but unsourced**. Checking `Hmong Daw` and `Hmong Njua` showed both redirect to `Hmong language`, so no infobox gives those forms. The correct evidence turned out to be in the **per-language-code tags of the Hmong infobox itself**: the `Lang` tag for `mww` (`lus Hmoob`, Hmong Daw) and the `Lang` tag for `hnj` (`lug Moob`, Hmong Njua). The nodes were corrected to those forms. **Lesson for later phases: a Wikipedia infobox's `Lang` tags are evidence, and they are easy to overlook.**
 - **Link health — Omniglot coverage for Hmong–Mien (protocol from `[TU-109]`), checked 2026-09-26:**
   - `hmong.htm` → **200** ✓ · `yao.htm` → **200** ✓ · `she.htm` → **200** ✓ · `langfam.htm` → **200** ✓
   - **404, and therefore not used:** `mien.htm`, `iu_mien.htm`, `iu_mienh.htm`, `mienh.htm`, `hmong_mien.htm`, `pahawh.htm`, `pahawh_hmong.htm`, `pollard.htm`, `pollard_script.htm`, `hmong_language.htm`, `yao_language.htm`, `she_language.htm`, `biao_min.htm`, `bu_nu.htm`
@@ -1123,6 +1131,107 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 
 ---
 
+## Deployment notes
+
+### [DP-101] ⚠ The Pages build broke on Liquid parsing this file — fixed brace-free, plus `.nojekyll`
+
+- **Symptom:** the GitHub Actions "pages build and deployment" run failed with
+  `github-pages 232 | Error: Liquid error (line 980): wrong number of arguments (given 1, expected 2)`,
+  immediately after the log line `Rendering: research.md`. The build aborts and nothing deploys.
+- **Cause:** GitHub Pages renders markdown through Jekyll, and Jekyll renders it through Liquid.
+  Liquid reads a **double opening brace** as a variable expression and treats a `|` inside it as a
+  filter separator. The Koryo-mar `ref` field quoted at `[KO-108]` (a `citation needed` template
+  carrying the argument `date=August 2013`) was therefore parsed as a variable piped through a
+  filter, and Liquid's own `date` filter raised `ArgumentError: wrong number of arguments (given 1,
+  expected 2)`. **This is a build-breaking bug, not a warning.**
+- **Scope measured before fixing:** **nine** occurrences, every one of them verbatim MediaWiki
+  template syntax logged while quoting Wikipedia infoboxes — seven in `research.md` (lines 792,
+  936, 962, 980, 1016, 1022, 1079) and two in `languages.md` (lines 350–351). A repo-wide
+  `grep -rn` for a double opening brace, or an opening brace followed by a percent sign, over
+  `*.md`, `*.html`, `*.js` and `*.yml` returned **only those nine**. The atlas `.js` files and the
+  `.html` app were never at risk: Jekyll copies any file without YAML front matter straight
+  through untouched.
+- **Fix applied — two parts:**
+  1. **All nine rewritten brace-free**, under the new rule 8 above, keeping every piece of
+     information: the *circa* template becomes `pub_date = circa October 1446` with the template
+     named in parentheses; the *citation needed* template becomes `citation needed (dated August
+     2013)`; the *sfnp* template becomes `sfnp citing Vovin 2013c, p. 201`; and so on. The one
+     place that claimed a **verbatim** quote (`[TB-106]`, line 792) now states explicitly that the
+     braces are omitted and names the three templates involved, so it is no longer presented as
+     byte-exact.
+  2. **`.nojekyll` added at the repo root.** This repo is a static HTML/JS app, not a Jekyll site,
+     and the marker tells GitHub Pages to skip Jekyll altogether.
+- **⚠ Caveat about `.nojekyll`, established by reading the action's source.** The
+  `actions/jekyll-build-pages` action's `entrypoint.sh` — fetched 2026-09-26 from
+  `raw.githubusercontent.com/actions/jekyll-build-pages/main/entrypoint.sh` — contains **no check
+  for `.nojekyll`**; it unconditionally runs `github-pages build`. So `.nojekyll` is honoured by
+  the **"Deploy from a branch"** publishing source (GitHub's documented behaviour) but is **not
+  guaranteed** to be honoured on the Actions path this repo uses. **That is why the text fix was
+  necessary rather than cosmetic: it is the part that is guaranteed to work.**
+- **If the build ever breaks on Liquid again**, the durable options, best first:
+  1. **Stop using Jekyll.** Settings → Pages → Build and deployment → Source: **GitHub Actions**,
+     then add `.github/workflows/static.yml` that skips `jekyll-build-pages` entirely and uploads
+     the repo root as-is. **Note the branch: this repo's default branch is `master`, not `main`, so
+     the `on.push.branches` list below must say `master` or the workflow will never fire.**
+
+     ```yaml
+     name: Deploy static content to Pages
+     on:
+       push:
+         branches: ["master"]
+       workflow_dispatch:
+     permissions:
+       contents: read
+       pages: write
+       id-token: write
+     concurrency:
+       group: "pages"
+       cancel-in-progress: false
+     jobs:
+       deploy:
+         environment:
+           name: github-pages
+         runs-on: ubuntu-latest
+         steps:
+           - uses: actions/checkout@v4
+           - uses: actions/configure-pages@v5
+           - uses: actions/upload-pages-artifact@v3
+             with:
+               path: "."
+           - id: deployment
+             uses: actions/deploy-pages@v4
+     ```
+
+     *(The `environment.url` field normally carries GitHub's `steps.deployment.outputs.page_url`
+     expression. It is omitted here rather than written out, because the expression itself contains
+     a brace pair and would reintroduce the very bug this entry documents — see rule 8. Add it back
+     as the last line of the `environment:` block if the deployment URL display matters.)*
+     **⚠ Do not add this workflow while the Pages source is still "Deploy from a branch"** — the
+     `deploy-pages` step fails against a legacy-source site, so the workflow would fail on every
+     push. Change the setting first.
+  2. **Add `_config.yml` with `exclude:`** naming `languages.md`, `research.md` and `TODO.md`.
+     Jekyll then never reads them, so nothing in them can break the build. Cost: the two ledgers
+     stop being published as pages.
+  3. **Follow rule 8** — what this session did — keeping the ledgers published and writing
+     templates brace-free.
+- **Verified after the fix — by reproducing the failure, not by inspection:**
+  - `grep -rn` for a double opening brace, or an opening brace followed by a percent sign, across
+    `*.md`, `*.html`, `*.js` and `*.yml` now returns **no matches**. There is no `_config.yml`, no
+    `Gemfile` and no `.github/` directory in the repo, so nothing else can trigger a Liquid pass.
+  - **The bug was reproduced and then shown fixed.** Liquid 5.3.0 was installed locally
+    (`gem install liquid -v 5.3.0 --user-install`) and the two files were run through the same
+    operation Jekyll performs on a markdown page — `Liquid::Template.parse(src, error_mode: :lax)`
+    followed by `render!` with `strict_filters: false`. Result:
+    - a synthetic file containing the original `ref` line → **`Liquid::ArgumentError: Liquid error:
+      wrong number of arguments (given 1, expected 2)`** — *the exact error text from the Actions
+      log*, which confirms the diagnosis rather than merely being consistent with it;
+    - `research.md` (1229 lines) → **OK**;
+    - `languages.md` (1009 lines) → **OK**;
+    - `TODO.md` (16 lines) → **OK**.
+  - **So the build will pass.** The `.nojekyll` marker is belt-and-braces for the branch-deploy
+    path; the text fix is the load-bearing part.
+
+
 ## Append protocol (for the working session)
 
 1. Run a search batch for **one** node group or claim cluster.
@@ -1131,4 +1240,4 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 4. Update the counters table at the top of this file.
 5. If a session is interrupted, the file — not the conversation — is the source of truth.
 
-*Last updated: 2026-09-26 — Phase 6 (Tibeto-Burman) researched and logged: entries `TB-101`–`TB-111`, one logged dispute (`TB-109`, Karen's placement) and the series' most consequential caveat (`TB-101`: the grouping itself is not a demonstrated subgroup). The ISO register findings at `TB-105` are the richest of the series — five name mismatches, four splits and one lump. `TB-111` records a cross-atlas audit that found **all 237 nodes in all seven atlases carrying Han characters in the script slot and none carrying the native script**, and adds an optional `nat` field with fourteen verified Tibeto-Burman forms plus an explicit list of the forms deliberately not invented. Phases 0–6 complete; Phase 0.5 (Sinitic retrofit) skipped by instruction, so its 42 targets remain seeded and unchecked. Phases 7–8 not started: Hmong–Mien, Koreanic, Formosan, Turkic, Austroasiatic and the Siberian capstone.*
+*Last updated: 2026-09-26 — Phases 0–6 complete, plus **Koreanic** (`KO-101`–`KO-109`) and **Hmong–Mien** (`HM-101`–`HM-109`) from Phase 7. Koreanic ships Jeju as its own node with the language-or-dialect question deliberately left open (`KO-101`, `KO-107`), and Chungcheong/Gangwon with their contested status stated in the prose rather than hidden (`KO-105`). Hmong–Mien ships two invented scripts as `nat` values with two new fonts registered (`HM-108`), **cuts** the brief's unverifiable "lantern writing" hook (`HM-107`), and reports a speaker-count conflict that exists *within a single source* (`HM-106`). A cross-atlas `nat` rollout gave 59 non-Sinitic forms (`TB-111`/`TB-112`). **`DP-101` records the GitHub Pages deployment failure** — Jekyll's Liquid engine aborted the build on the MediaWiki template braces in this file's own citations — together with the brace-free logging rule (rule 8) that now prevents it, and the reproduction that verified the fix. Remaining: Formosan, Austroasiatic and Turkic (scope decision pending) in Phase 7, then the Siberian capstone in Phase 8. Phase 0.5 (Sinitic retrofit) is still skipped by instruction, so its 42 targets remain seeded and unchecked.*
