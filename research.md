@@ -44,7 +44,7 @@ it is checked — never reconstructed from memory afterwards.
 | Kra–Dai | 9 | 9 | 0 | 0 | — |
 | Mongolic | 11 | 8 | 1 | 1 | — |
 | Japonic & Ainu | 10 | 8 | 1 | 1 | — |
-| Koreanic | 0 | 0 | 0 | 0 | atlas not written |
+| Koreanic | 9 | 7 | 2 | 0 | — |
 | Tibeto-Burman | 10 | 9 | 1 | 0 | — |
 | Hmong–Mien | 0 | 0 | 0 | 0 | atlas not written |
 | Turkic | 0 | 0 | 0 | 0 | atlas not written |
@@ -60,22 +60,24 @@ it is checked — never reconstructed from memory afterwards.
 > are actually present in this file, and a family with no atlas gets 0 across the row.
 >
 > **Files on disk as of 2026-09-26:** `atlas-sinitic.js`, `atlas-tungusic.js`, `atlas-kradai.js`,
-> `atlas-japonic.js`, `atlas-mongolic.js`, `atlas-silkroad.js` and `atlas-tibetoburman.js` —
-> Phases 0–6. Their rows above are the only ones backed by an atlas; the remaining six families read
-> 0 because nothing has been researched for them yet, not because a search came up empty.
+> `atlas-japonic.js`, `atlas-mongolic.js`, `atlas-silkroad.js`, `atlas-tibetoburman.js` and
+> `atlas-korean.js` — Phases 0–6 plus Koreanic of Phase 7. Their rows above are the only ones backed
+> by an atlas; the remaining five families read 0 because nothing has been researched for them yet,
+> not because a search came up empty.
 
 > **Phase 0.5 status: SKIPPED.** The user confirmed on 2026-09-26 that the Sinitic
 > verification had already been carried out at an earlier time, so the sweep was not re-run
 > in this session. The 42 targets below therefore remain `⬜ unverified` and must not be
 > treated as checked. Recorded so a later session does not mistake the omission for a pass.
 
-> **Honesty note on scope.** Only Phases 0–6 have been carried out. For those, each atlas's
+> **Honesty note on scope.** Only Phases 0–6 and Koreanic (the first atlas of Phase 7) have been
+> carried out. For those, each atlas's
 > load-bearing dates, figures and classifications were checked with targeted searches and
 > logged below with the URL actually fetched; less load-bearing colour in the prose is
 > written from the standard works named in each atlas's `sources` note and is flagged in the
 > entry where it was not independently re-fetched. Where a figure is a range, the prose says
-> "by source". Nothing here is cited that was not read. Phases 5–8 are unwritten: their
-> sections in this file are empty by design, not by omission.
+> "by source". Nothing here is cited that was not read. The rest of Phases 7–8 are unwritten:
+> their sections in this file are empty by design, not by omission.
 >
 > ⚠ **One exception, found and closed on 2026-09-26.** The Mongolic Oirat figure (368,000) was
 > in the atlas from the start and *was* read from the source — but it had no entry in this file
@@ -203,13 +205,14 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
       headless Edge smoke test of `#mongolic` and `#mongolic/kalmyk` passes. `status:'done'` in
       `EastAsiaAtlas.html`.
 
-### Koreanic · Hmong–Mien · Turkic · Formosan · Austroasiatic
+### Hmong–Mien · Turkic · Formosan · Austroasiatic
 - [ ] ⬜ _section to be seeded at the start of each phase, from the brief's dates, names, figures and classifications_
 - [ ] ⬜ **None of these atlases has been written.** Their rows in the Counters table read 0 and their
       status in `languages.md` §0 is 💤 planned. Do not seed entries here until research actually happens.
 
-> **Silk Road (Phase 5) and Tibeto-Burman (Phase 6) have moved out of this queue** — their atlases
-> are written and their logs (`SR-101`–`SR-110`, `TB-101`–`TB-111`) are below.
+> **Silk Road (Phase 5), Tibeto-Burman (Phase 6) and Koreanic (Phase 7, first)** have moved out of
+> this queue — their atlases are written and their logs (`SR-101`–`SR-110`, `TB-101`–`TB-112`,
+> `KO-101`–`KO-109`) are below.
 
 ## Tungusic (Phase 1) — research log
 
@@ -901,6 +904,99 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
 
 
 
+
+
+## Koreanic (Phase 7) — research log
+
+### [KO-101] The family: two living members, not one — and the Jeju question stated, not resolved
+
+- **Claim shipped:** Koreanic consists of Korean and Jeju; Yukjin is argued by Vovin to be a third; no living relative has been demonstrated.
+- **Verified:** en.wikipedia `Koreanic languages` infobox — `child1 = Korean`, `child2 = Jeju`, `child3 = Yukjin` (citing Vovin 2013c p. 201), plus extinct `Baekje ?` and `Goguryeo ?` marked as uncertain; Glottolog `kore1284`. The article's lead states Jeju "is often described as a dialect of Korean but is mutually unintelligible with mainland Korean", and that Vovin suggested Yukjin "should be similarly distinguished".
+- **Verified:** ko.wikipedia `한국어족` — name given as **한국어족** (also 조선어족), sub-branches 한국어 · 제주어 · 부여어족, Glottolog `kore1284`. This is the source of the atlas's `FAMILIES[].nat` and the root node's `nat`.
+- **⚠ The atlas deliberately does not resolve the Jeju language-or-dialect question.** South Korean official usage calls it 제주 방언; the linguistic literature and UNESCO call it a language. The node's prose states both and says why. Recording this so a later pass does not "fix" it by picking one.
+- **Not shipped:** the Buyeo languages (Goguryeo, Baekje) appear in the prose as a proposal and are **not** given nodes — the attestation is too thin and Goguryeo has been argued into both Koreanic and Japonic. Same restraint as `[TB-109]` on Karen.
+
+### [KO-102] Proto-Koreanic: reconstructable *because* Jeju exists, and a homeland that is argued rather than known
+
+- **Claim shipped:** the proto-language is recoverable chiefly from Korean–Jeju correspondences; the homeland is placed either in northern Korea or in the Yalu–Tumen corridor; no proto-text exists.
+- **Reasoning recorded:** a one-language family cannot be reconstructed; a two-language family split long enough to have drifted systematically can. This is why Jeju's status is load-bearing for the whole atlas and not a curiosity.
+- **Hedged in the prose:** the Korean–Jeju split date is given as "the first millennium CE" with the explicit note that no archaeological find pins it down. The two homeland proposals are presented as a choice with consequences (movement into the peninsula versus formation there), not as a fact.
+
+### [KO-103] Old Korean: idu, hyangchal and gugyeol are three *devices*, not a script
+
+- **Claim shipped:** idu (이두, 吏讀), hyangchal (향찰, 鄕札) and gugyeol (구결, 口訣) were used to write Korean with Chinese characters; they are not an indigenous script.
+- **Verified:** en.wikipedia `Idu script` — "이두 / 吏讀", literally "official's reading"; developed during the Three Kingdoms period (57 BC – 668 AD); "used Hanja to represent both native Korean words and grammatical morphemes as well as Chinese loanwords"; "developed by Buddhist monks"; used for official documents and the imperial examinations.
+- **Verified:** en.wikipedia `Old Korean` infobox — `script = Idu, Hyangchal, Gugyeol`; `altname = Silla(n)`; `era = evolved into Middle Korean in the tenth or thirteenth century`; ISO `oko`; Glottolog `sill1240`. The South Korean name is 고대 한국어, the North Korean 고대 조선어.
+- **⚠ The date of the Old Korean/Middle Korean boundary is given as "the tenth or thirteenth century"** because the source itself says so. The atlas's timeline reads "10th–13th c." and the prose says the century depends on the source. Do not collapse this to one number.
+- **Framing decision:** the prose calls gugyeol "a glossing system rather than a writing system", which is a judgement about what counts as writing — flagged here so it is visible as a judgement rather than a sourced fact.
+
+### [KO-104] Middle Korean: 1443 creation, October 1446 promulgation, and the 1447 texts
+
+- **Claim shipped:** Sejong created twenty-eight letters in December 1443; the *Hunmin Chŏngŭm* was promulgated in October 1446; the earliest dated texts are of 1447.
+- **Verified:** en.wikipedia `Hunminjeongeum` infobox — `pub_date = {{circa|October 1446}}`; author "Sejong the Great (base *Hunminjeongeum*)"; hangul 훈민정음 / hanja 訓民正音; the base and *Haerye* editions are in Classical Chinese, the *Eonhae* edition in Korean.
+- **Verified:** en.wikipedia `Middle Korean` infobox — `era = 11th–16th centuries`; `script = Hanja (Idu, Hyangchal, Gugyeol), Hangul`; ISO `okm`; Glottolog `midd1372`; names 중세 한국어 / 중세 조선어. The article's illustration is the *Wŏrin Ch'ŏngang Chigok* (1447).
+- **⚠ Date discipline:** the creation date (December 1443) and the promulgation date (October 1446) are different events and the atlas gives both, as the `[MG-103]` script spine does for Mongolic. The root node's timeline shows "1443 / 1446"; the Middle Korean node separates them.
+- **Shipped as linguistic claims, from the article's description of the stage:** Middle Korean was tonal (pitch marked with dots in the sources), had vowel harmony that modern Korean has largely lost, and had the vowel *arae-a* (ㆍ) that disappeared from Seoul speech in the sixteenth century. The atlas attributes these to the period rather than to a named study, which is the same level of sourcing the other atlases' prose uses for well-established descriptions.
+
+
+### [KO-105] The dialect division: 방언연구회 (2001), five mainland areas plus Jeju — and where Chungcheong and Gangwon actually sit
+
+- **Claim shipped:** the peninsula divides into five mainland dialect areas plus Jeju, following 방언연구회 (2001).
+- **Verified:** ko.wikipedia `한국어의 방언` — the article states that dialect surveys usually distinguish the following five, and that "각 방언의 명칭은 방언연구회(2001)에 의거한다" (the names follow 방언연구회 2001):
+  1. **서북 방언** (= 평안도 방언) — the old P'yŏngan provinces
+  2. **동북 방언** (= 함경도 방언) — the old Hamgyŏng provinces
+  3. **중부 방언** — Gyeonggi including Seoul and Incheon, Hwanghae, Gangwon and Chungcheong; the article adds that 서울 방언 "became the regional basis of the Republic of Korea's standard language"
+  4. **서남 방언** (= 전라도 방언, 호남 방언)
+  5. **동남 방언** (= 경상도 방언, 영남 방언)
+  6. **제주어** (= 제주 방언)
+- **⚠ The atlas's Chungcheong and Gangwon nodes are a deliberate deviation, and it is recorded here.** The standard five-way division puts both **inside** 중부 방언. The atlas keeps them as nodes because the Korean literature does distinguish a 충청 방언 and a 강원/영동 방언, and because `languages.md` §2.6's brief asks for them — but **both nodes' prose says plainly that the standard division groups them in the central area**, and the sketch caption repeats it. This is the honest treatment: the nodes exist, and their contested status is stated rather than hidden.
+- **Verified for Gangwon specifically:** the same article notes that "성조 차이의 이유로 강원도 영동 지방의 방언을 중부 방언으로부터 구분하는 경우가 있다" — the eastern-coast variety is sometimes separated from the central area **on tonal grounds**. That tonal reason is what the node's prose reports.
+- **Verified for Chungcheong specifically:** the article records that the southern part of South Chungcheong, including Daejeon and Sejong, is sometimes classified as a **southern** dialect because it resembles the south-west more than other Chungcheong speech does. The node's "transition zone" framing follows this.
+- **Not shipped:** 황해 방언 (Hwanghae) and 경기 방언 (Gyeonggi) are named in the same article but are not given nodes — Hwanghae is absorbed into the central block in the atlas's prose, and Gyeonggi is what the central node already is. Recorded so a later pass knows the omission was considered.
+
+### [KO-106] Yukjin: the six garrisons, the 2013 proposal, and a name in three scripts
+
+- **Claim shipped:** Yukjin is the variety of the six garrison towns on the Tumen; Vovin argued in 2013 that it is a third Koreanic language.
+- **Verified:** en.wikipedia `Yukjin Korean` infobox — nativename given as **六鎮말 / 육진말** (Yukjin-mal) and **여섯 고을 말** (Yeoseot goeul mal); states North Korea and China; `script = Hangul`; `isoexception = dialect`; ancestors Old Korean → Middle Korean; ethnicity includes "formerly Jaegaseung". The atlas uses **육진말** as the node's `nat`, which is the form the infobox leads with.
+- **Verified:** ko.wikipedia `한국어의 방언` — "함경북도 최북부인 회령시, 온성군, 종성군, 경원군 등지의 방언은 '육진 방언'(六鎭方言)이라 하며 동북 방언과 구별하기도 한다". This gives both the garrison towns and the "distinguished from the north-eastern dialect" point.
+- **⚠ Attribution discipline:** the "third language" claim is attributed to **Vovin 2013** in the prose and in the node's features, not stated as consensus. The infobox carries it with a citation (`{{sfnp|Vovin|2013c|p=201}}`), which is what makes it quotable as one scholar's proposal rather than a settled finding.
+- **⚠ Prose/marker inconsistency, recorded and resolved:** the prose names the conventional six garrisons (회령, 온성, 종성, 경원, 경흥, 부령) while the marker set marks Hoeryŏng, Onsŏng, Kyŏnghŭng, Puryŏng and Yanji — five. Chongŏng and Kyŏngwŏn were left unmarked because their modern administrative identities have changed. Resolved in favour of the prose naming the full set; flagged so the mismatch is not mistaken for an error later.
+
+### [KO-107] Jeju: UNESCO 2010, the 5,000 figure, and the 1948–49 uprising
+
+- **Claim shipped:** UNESCO graded Jeju critically endangered in 2010 — the highest level it uses; the standard reference count is ≈5,000 (2014); ISO 639-3 `jje`.
+- **Verified:** en.wikipedia `Jeju language` infobox — nativename **제줏말 / 제주말** (Jejunmal / Jejumal); `speakers = 5,000`; `date = 2014`; `ref = e18` (Ethnologue 18th ed.); `iso3 = jje`; Glottolog `jeju1234`; `script = Hangul`; ancestors Proto-Koreanic → Old Korean → Middle Korean.
+- **Verified:** the article states Jeju "was classified by UNESCO in 2010 as critically endangered, the highest level of language endangerment possible", and that it is declining in usage. Confirmed by web search returning the same sentence from the article lead.
+- **⚠ The 2014 speaker figure is Ethnologue's, not a census** — recorded because "≈5,000 (2014)" reads like a survey and is not one.
+- **⚠ The atlas's `nat` is 제주말, the second of the two forms in the infobox.** 제줏말 is the more strictly Jeju-internal spelling; 제주말 is the more widely seen one. Both are in the source; the atlas uses the latter and this note records the alternative.
+- **Shipped with care:** the 1948–49 Jeju uprising is in the node's timeline. The prose says "a large part of the island's population dies or flees" rather than giving a casualty figure, because published estimates for the event vary widely and the atlas has not verified them. The event is load-bearing for the speech community's history; the number is not, so the number is omitted.
+
+
+### [KO-108] The diaspora: 1937, Yanbian 1952 and the 1977 norm, and the weakest figures in the atlas
+
+- **Verified:** en.wikipedia `Koreans in China` infobox — total **2,109,727** (2021, Overseas Koreans Agency). ko.wikipedia `중국조선어` gives 화자 **약 100만여 명** (≈1 million speakers) and locates it in the three north-eastern provinces; it records that the variety's basis is 서북·동북·동남 방언 depending on locality, that its standard follows North Korea's 문화어, and that the norm is the **조선말규범집** of **1977**, revised **1984**.
+- **Verified:** en.wikipedia `Koreans in Japan` infobox — population **1,000,000** (total including those with Japanese citizenship), sourced to Minority Rights Group.
+- **Verified:** ko.wikipedia `재일한국어` — the variety is also called 재일조선어; "실제로 한국어를 사용하는 재일조선인은 10% 정도"; most Zainichi Koreans use Japanese in daily conversation, with standard Korean confined to first-generation and Chongryon-school settings. Its phonology: **five vowels** against the standard's eight (ㅜ/ㅡ merged, ㅗ/ㅓ merged) and obstruents distinguished by **voicing** rather than by aspiration and tenseness.
+- **Verified:** en.wikipedia `Koryo-mar` infobox — nativename **고려말**; `speakers = 217,000`; `date = 1989`; **`ref = {{citation needed|date=August 2013}}`**; `speakers2 = current number of speakers is unknown`; `isoexception = dialect`; family Koreanic > Korean > Northern > **Hamgyŏng**.
+- **⚠ Three figures in this atlas are weaker than the rest, and are flagged in the prose rather than smoothed over:**
+  - **Koryo-mar 217,000** — the source itself carries a citation-needed tag and says the current number is unknown. The node's `sp` field reads "217,000 (1989, by source) — current figure unknown" and the prose says no reliable count exists.
+  - **Zainichi ≈10%** — an estimate in the ko.wikipedia article, given without a source. The prose says "the literature puts the share at around ten per cent" rather than asserting it.
+  - **The 1937 deportation figure of ≈170,000** — widely repeated; shipped as "around 170,000" with the hedge in the wording. It is the one figure in the Koryo-mar node not read off an infobox, and it is recorded as such.
+- **`nat` decisions:** 고려말 (Koryo-mar) and 재일한국어 (Zainichi) are both from infoboxes and are shipped. Yanbian's node uses **중국조선어**, the ko.wikipedia article title, with the note that 중국조선말 also appears in the same article's body. The `diaspora` grouping node has no `nat` — it is a grouping, not a language.
+
+### [KO-109] ISO codes, link health, and the phase's verification
+
+- **ISO 639-3 codes shipped:** `kor` (Korean), `jje` (Jeju), `oko` (Old Korean), `okm` (Middle Korean). The family itself has **no ISO code** — the atlas's root entry reads `kor · jje`, and the validator requires a non-empty entry for `rootId`, which is why it is written that way rather than left blank.
+- **No code exists** for Yukjin, Koryo-mar or Zainichi Korean; the Korean dialects are all `kor`. The atlas writes `kor (a dialect)` for the diaspora varieties so the register's silence is visible in the row rather than looking like an omission.
+- **Link health — Omniglot coverage for Koreanic (protocol from `[TU-109]`), checked 2026-09-26:**
+  - `korean.htm` → **200** ✓ · `jeju.htm` → **200** ✓ · `langfam.htm` (family index) → **200** ✓
+  - **404, and therefore not used:** `hangul.htm`, `hangeul.htm`, `korean_hangul.htm`, `koreanalphabet.htm`, `korean_alphabet.htm`, `idu.htm`, `hyangchal.htm`, `gugyeol.htm`, `idu_script.htm`, `hyangchal_script.htm`, `gugyeol_script.htm`, `koryo-mar.htm`, `jeju_language.htm`, `korean_language.htm`
+  - **Consequence recorded:** Omniglot has no separate Hangul script page, so there is no script page to link for the pre-Hangul systems either. The `SOUND` table points `oldkorean`, `middlekorean` and `modernkorean` at `korean.htm`, and `yukjin`, `koryomar` and `zainichi` have **empty** link lists — the engine's YouTube-search fallback covers them. This is a thinner link set than any previous atlas, and the reason is recorded rather than hidden.
+- **Verified:**
+  - `node --check atlas-korean.js` → OK.
+  - `node tools/check-atlas.js atlas-korean.js` → **valid, 18 nodes · 78 markers · iso 18 · features 18**.
+  - Headless Edge smoke test of `#korean/jeju` → **0 error markers**; header title renders as `한국어족` with **no `cn-only` class** (the family has a genuine native name, so the toggle does not hide it — the same behaviour as Japonic); `scriptfonts` link requests `Noto+Serif+KR` and `Noto+Sans+SC`; the strings `제주말` and `jje` are both present in the rendered DOM.
+- **Font note:** `Noto Serif KR` was already in `GFONT` from the Phase 0 work and had never been used by an atlas until this one. Hangul needs no new font registration.
 
 
 ## Disputed / conflicting sources

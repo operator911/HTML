@@ -21,7 +21,7 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 6 | **Silk Road lost languages 丝绸之路死语** | `atlas-silkroad.js` | ✅ built | 34 nodes · 78 markers · 5 branches + a labelled non-genetic script branch; **special mode** (timeline-first, script + decipherment chips, inverted colour semantics); Rouran's classification disputed (SR-106); five ISO register findings incl. two false-friend codes (SR-105) |
 | 7 | **Tibeto-Burman 藏缅语族** | `atlas-tibetoburman.js` | ✅ built | 56 nodes · 164 markers · 9 branches + an honest "and 200+ more" node; **the grouping itself is not a demonstrated subgroup (TB-101)**; Karen's placement disputed (TB-109); 5 register name mismatches, 4 splits and 1 lump (TB-105) |
 | 8 | **Hmong–Mien 苗瑶语族** | `atlas-hmongmien.js` | 💤 planned | file does not exist yet; Hmongic + Mienic; diaspora to Laos, the US, French Guiana |
-| 9 | **Koreanic 朝鲜语族** | `atlas-korean.js` | 💤 planned | file does not exist yet; smallest extent; Jeju + the twentieth-century diasporas |
+| 9 | **Koreanic 朝鲜语族** | `atlas-korean.js` | ✅ built | 18 nodes · 78 markers · 3 historical stages as siblings of the living branch; **Jeju given its own node without resolving the language-or-dialect question (KO-101, KO-107)**; Chungcheong and Gangwon shipped *with* the note that standard dialectology puts them inside the central area (KO-105); three weak diaspora figures flagged in the prose (KO-108) |
 | 10 | **Formosan 台湾南岛语** | `atlas-formosan.js` | 💤 planned | file does not exist yet; Austronesian homeland; Tsat/Utsul bridge to Hainan |
 | 11 | **Turkic 突厥语族** | `atlas-turkic.js` | 💤 planned | file does not exist yet; scope decision needed: China + Central Asia (§2.9 option a) |
 | 12 | **Vietic & MSEA Austroasiatic** | `atlas-austroasiatic.js` | 💤 planned | file does not exist yet; Haudricourt tonogenesis, Khmer/Mon script lineage, Munda outliers |
@@ -29,7 +29,7 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 
 > **Do not mark a family ✅ on the strength of a plan.** As of this revision `atlas-sinitic.js`,
 > `atlas-tungusic.js`, `atlas-kradai.js`, `atlas-japonic.js`, `atlas-mongolic.js`,
-> `atlas-silkroad.js` and `atlas-tibetoburman.js` exist on disk,
+> `atlas-silkroad.js`, `atlas-tibetoburman.js` and `atlas-korean.js` exist on disk,
 > and the `FAMILIES` array in `EastAsiaAtlas.html` must match this table exactly: a `status:'done'`
 > entry whose file is missing
 > loads into the "data pending" path instead of the disabled-button path, which is worse than
@@ -297,11 +297,38 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     the rendered DOM**, and each atlas's generated `scriptfonts` link read back and confirmed to
     request the fonts it needs. Header titles: only Japonic shows its Chinese title (日本語族, native);
     the other four carry `cn-only` and are hidden until the toggle is on.
-- **Next:** Phase 7 — Hmong–Mien (§2.8), Koreanic (§2.6), Formosan (§2.10), Turkic (§2.9, needs a
-  scope decision first) and Austroasiatic (§2.11), in whatever order appetite dictates; then Phase 8,
-  the optional Siberian capstone (§2.13). New atlases should carry `nat` from the start, with forms
-  read off Wikipedia infoboxes and any new font validated against the Google Fonts API before use —
-  the dead `Noto Sans Tangut` entry in `GFONT` shows what happens otherwise.
+- **2026-09-26 · Phase 7 — Koreanic: DONE (first of five).** `atlas-korean.js` written (18 nodes,
+  78 markers, 3 historical stages + 9 dialect nodes + a diaspora branch). Research logged as
+  `KO-101`–`KO-109`. Four things are worth carrying forward:
+  - **The family's own name exists, so the header shows it.** ko.wikipedia gives **한국어족** (also
+    조선어족), so `FAMILIES[].nat` is set and the header title renders natively with no `cn-only`
+    class — the same behaviour as Japonic, and the opposite of Tungusic/Mongolic/Silk Road.
+  - **Jeju is given its own node and the language-or-dialect question is deliberately left open.**
+    South Korean official usage says 제주 방언; the literature and UNESCO say a language. The node
+    states both and says why. `[KO-101]` records this so a later pass does not "fix" it.
+  - **Chungcheong and Gangwon shipped as nodes *with* their contested status in the prose.** The
+    standard five-way division (방언연구회 2001) puts both inside 중부 방언; the atlas keeps them
+    because the Korean literature does distinguish them, and says so at both nodes and in the
+    sketch caption. `[KO-105]` is the deviation record.
+  - **Three weak figures are flagged rather than smoothed.** Koryo-mar's 217,000 is a 1989 number
+    whose own source carries a citation-needed tag; the Zainichi ≈10% is an unsourced estimate; the
+    1937 deportation figure of ≈170,000 is the one number in that node not read off an infobox.
+    `[KO-108]` lists all three.
+  - **Link health is the thinnest of any atlas.** Omniglot has only `korean.htm` and `jeju.htm` for
+    this family — no Hangul script page, no page for idu/hyangchal/gugyeol, no Koryo-mar page. Three
+    nodes therefore ship with empty `SOUND` lists and rely on the engine's YouTube-search fallback.
+    `[KO-109]` records the fourteen 404s tested.
+  - **Verified:** `node --check` OK; `node tools/check-atlas.js atlas-korean.js` → valid, 18 nodes ·
+    78 markers · iso 18 · features 18. Headless Edge smoke test `#korean/jeju` → **0 error markers**,
+    header `한국어족`, `scriptfonts` requesting `Noto+Serif+KR` + `Noto+Sans+SC`, and both `제주말`
+    and `jje` present in the rendered DOM. `Noto Serif KR` was already in `GFONT` and had never been
+    used by an atlas until now; Hangul needed no new font registration.
+- **Next:** the rest of Phase 7 — Hmong–Mien (§2.8), Formosan (§2.10), Austroasiatic (§2.11) and
+  Turkic (§2.9, scope decision needed: the plan recommends option (a), China + Central Asia at
+  `[80, 42]` / zoom 4); then Phase 8, the optional Siberian capstone (§2.13, cross-linking Ainu to
+  `#japonic/ainu` rather than duplicating it). New atlases should carry `nat` from the start, with
+  forms read off Wikipedia infoboxes and any new font validated against the Google Fonts API before
+  use — the dead `Noto Sans Tangut` entry in `GFONT` shows what happens otherwise.
 
 
 ---
@@ -653,7 +680,7 @@ Comparative Grammar of Western Old Japanese* · Shibatani, *The Languages of Jap
 Frellesvig & Whitman (eds.), *Handbook of Old Japanese* · UNESCO Atlas of the World's
 Languages in Danger (Ryukyuan, Ainu).
 
-### 2.6 Koreanic 朝鲜语族 — 💤 planned
+### 2.6 Koreanic 朝鲜语族 — ✅ built (`atlas-korean.js`, 18 nodes · 78 markers)
 
 **Pitch.** The peninsula's single family, split by a border and scattered by history: the
 Seoul-centred standard, the conservative tone-bearing south-east, Jeju as a separate
@@ -911,7 +938,7 @@ the sketch-geometry workflow are well proven.
 | **4** | Mongolic (§2.4) | script-history spine; Shirongolic cluster and Kalmyk outliers | ✅ done — `atlas-mongolic.js`, 26 nodes, 108 markers, 7 sketch polygons; `MG-104` two-part self-correction, `MG-102` four speaker conflicts, `MG-105` ISO findings, `MG-111` re-check (unlogged Oirat figure, self-contradicting source, one unsourced number removed) |
 | **5** | Silk Road lost languages (§2.12) | validates "special mode" (all-extinct, timeline-first, script chips) | ✅ done — `atlas-silkroad.js`, 34 nodes, 78 markers, 5 sketch polygons; three opt-in engine switches added (`timelineFirst`, per-node `chips`, `kinds`) plus an `spSuffix` wording fix; `SR-105` ISO register findings, `SR-106` Rouran dispute |
 | **6** | Tibeto-Burman (§2.7) | the big one; shared ancestor nodes with Sinitic | ✅ done — `atlas-tibetoburman.js`, 56 nodes, 164 markers, 5 sketch polygons; **the family's own premise is disputed and stated on the root node** (`TB-101`); Karen's placement disputed (`TB-109`); register findings at `TB-105` |
-| **7** | Hmong–Mien (§2.8) · Koreanic (§2.6) · Formosan (§2.10) · Turkic (§2.9, scope decision) · Austroasiatic (§2.11) | in whatever order appetite dictates | 💤 not started |
+| **7** | Hmong–Mien (§2.8) · Koreanic (§2.6) · Formosan (§2.10) · Turkic (§2.9, scope decision) · Austroasiatic (§2.11) | in whatever order appetite dictates | 🔜 Koreanic **done** — `atlas-korean.js`, 18 nodes, 78 markers, 4 sketch polygons; Jeju's status left open by design (`KO-101`, `KO-107`); Chungcheong and Gangwon shipped with their contested status stated (`KO-105`); `KO-109` records the thinnest Omniglot link set of any atlas. **Remaining: Hmong–Mien, Formosan, Austroasiatic, Turkic** |
 | **8** | Siberian isolate pocket (§2.13) | optional capstone | 💤 not started |
 
 **Cross-atlas links** use plain hash URLs in the prose (`<a href="#kradai/zhuang">`), so they are
