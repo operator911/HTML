@@ -22,14 +22,15 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 7 | **Tibeto-Burman 藏缅语族** | `atlas-tibetoburman.js` | ✅ built | 56 nodes · 164 markers · 9 branches + an honest "and 200+ more" node; **the grouping itself is not a demonstrated subgroup (TB-101)**; Karen's placement disputed (TB-109); 5 register name mismatches, 4 splits and 1 lump (TB-105) |
 | 8 | **Hmong–Mien 苗瑶语族** | `atlas-hmongmien.js` | ✅ built | 22 nodes · 86 markers · 2 branches (Hmongic + Mienic) + a diaspora branch; **two invented scripts shipped as `nat` values** (Pollard on A-Hmao, Pahawh Hmong on White Hmong); **the brief's "lantern writing" hook was CUT as unverifiable (HM-107)**; Kim Mun's speaker figures conflict *within one source* (HM-106); "Miao"/"Yao" label mismatch stated on the root node |
 | 9 | **Koreanic 朝鲜语族** | `atlas-korean.js` | ✅ built | 18 nodes · 78 markers · 3 historical stages as siblings of the living branch; **Jeju given its own node without resolving the language-or-dialect question (KO-101, KO-107)**; Chungcheong and Gangwon shipped *with* the note that standard dialectology puts them inside the central area (KO-105); three weak diaspora figures flagged in the prose (KO-108) |
-| 10 | **Formosan 台湾南岛语** | `atlas-formosan.js` | 💤 planned | file does not exist yet; Austronesian homeland; Tsat/Utsul bridge to Hainan |
-| 11 | **Turkic 突厥语族** | `atlas-turkic.js` | 💤 planned | file does not exist yet; scope decision needed: China + Central Asia (§2.9 option a) |
+| 10 | **Formosan 台湾南岛语** | `atlas-formosan.js` | ✅ built | **26 nodes · 101 markers** · **the grouping is a PLACE, not a family** — `acceptance = geographic`, `glotto = none`, "up to nine separate primary subfamilies", so there is no Proto-Formosan trunk (`FO-101`) · Tsouic drawn **and marked doubtful** because all three member infoboxes say `fam2 = "Tsouic ?"` (`FO-103`) · Pazeh–Kaxabu shipped as **one node in two opposite states** — extinct 2010, alive at 12 speakers (`FO-105`) · Yami and Tsat drawn **outside** the nine branches, joined by geography only (`FO-106`) · 14 Omniglot pages verified live — the best-covered family in the series (`FO-107`) |
+| 11 | **Turkic 突厥语族** | `atlas-turkic.js` | ✅ built | **38 nodes · 173 markers** · the widest atlas in the series — **full-family scope**, `[60, 42]` / zoom 2.6, Istanbul → Yakutsk (built to option (b) on instruction, against the brief's recommendation, `TK-101`) · **Old Turkic deliberately NOT drawn as the trunk** (`TK-110`) · Khazar shipped with its branch **stated as disputed in its own source** and its whole corpus named (`TK-109`) · Fuyu Kyrgyz given its own node rather than filed as a Khakas dialect (`TK-104`) · two new fonts validated, `Noto Sans Cyrillic` found not to exist (`TK-108`) · link health **measured**: four expected Omniglot pages do not exist (`TK-110`) |
 | 12 | **Vietic & MSEA Austroasiatic** | `atlas-austroasiatic.js` | 💤 planned | file does not exist yet; Haudricourt tonogenesis, Khmer/Mon script lineage, Munda outliers |
 | 13 | **Siberian isolate pocket** (Nivkh, Yukaghir, Chukotko-Kamchatkan, Ket, Ainu) | `atlas-siberian.js` | 💤 planned | file does not exist yet; Phase 8 capstone; the "peoples before the farmers" map |
 
 > **Do not mark a family ✅ on the strength of a plan.** As of this revision `atlas-sinitic.js`,
 > `atlas-tungusic.js`, `atlas-kradai.js`, `atlas-japonic.js`, `atlas-mongolic.js`,
-> `atlas-silkroad.js`, `atlas-tibetoburman.js`, `atlas-korean.js` and `atlas-hmongmien.js` exist on
+> `atlas-silkroad.js`, `atlas-tibetoburman.js`, `atlas-korean.js`, `atlas-hmongmien.js` and
+> `atlas-turkic.js` exist on
 > disk, and the `FAMILIES` array in `EastAsiaAtlas.html` must match this table exactly: a
 > `status:'done'` entry whose file is missing
 > loads into the "data pending" path instead of the disabled-button path, which is worse than
@@ -380,12 +381,126 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     branch" path only; on the Actions path the **text fix is the load-bearing part**.
   - Nothing in `atlas-*.js` or `EastAsiaAtlas.html` was ever at risk: Jekyll copies any file without
     YAML front matter straight through, which is why only the two markdown ledgers broke.
-- **Next:** the rest of Phase 7 — Formosan (§2.10), Austroasiatic (§2.11) and Turkic (§2.9, scope
-  decision needed: the plan recommends option (a), China + Central Asia at `[80, 42]` / zoom 4);
-  then Phase 8, the optional Siberian capstone (§2.13, cross-linking Ainu to `#japonic/ainu` rather
-  than duplicating it). New atlases should carry `nat` from the start, with forms read off Wikipedia
-  infoboxes and any new font validated against the Google Fonts API before use — the dead
-  `Noto Sans Tangut` entry in `GFONT` shows what happens otherwise.
+- **2026-09-27 · Phase 7 — Turkic: DONE (third of five), and the widest atlas in the series.**
+  `atlas-turkic.js` written (38 nodes, 173 markers). Research logged as `TK-101`–`TK-112`.
+  Six things are worth carrying forward:
+  - **Scope: the FULL family, against the brief's own recommendation.** §2.9 offered (a) China +
+    Central Asia at `[80, 42]` / zoom 4 and (b) the full family at `[60, 42]` / zoom 2.6, and
+    recommended (a). The user chose **(b)**, so the atlas runs **Istanbul → Yakutsk** and is a
+    Eurasia map rather than an East Asia one. Every other atlas in the series sits inside roughly
+    `[75–145]` longitude; this one spans `[28, 160]`. The sketch geometry is correspondingly the
+    coarsest here — six broad blocks — and `captions.sketch` says so in as many words rather than
+    pretending to detail it does not have. `[TK-101]`.
+  - **⚠ Old Turkic is NOT drawn as the trunk of the family, and that is a correction to the brief.**
+    The brief's tree sketch makes Old Turkic (Orkhon runiform, 8th c.) the ancestor of everything.
+    The sources file it **inside Siberian Turkic**, and the Oghuz article says outright that the
+    Orkhon/Old Uyghur material is "rather the ancestor of Central Asiatic Turkic languages
+    (including Karluk and Kipchak)", while Oghuz comes from the speech of the "Western Türküt".
+    The atlas places it beside the modern branches and explains why. Its era is also longer than
+    usually quoted: **slightly before 720 AD to the 13th century**. `[TK-110]`.
+  - **The honesty test case is Khazar, and it ships as doubtful.** Its infobox's family field
+    literally reads **"(classification disputed)"**, Glottolog gives it **no code**, and its whole
+    surviving corpus is **two nouns, a conjugated verb and a few proper names**. The atlas names
+    the corpus instead of summarising it, quotes both of al-Istakhri's contradictory notices, and
+    records that the 1986 Guinness Book of Records called this the "smallest literature" of any
+    language. The same entry records that **only Bulgar is definitively Oghuric** — Hunnish, Khazar
+    and Sabir are "speculative inclusions" by the source's own account. `[TK-109]`.
+  - **Two structural catches where the atlas deliberately does not follow a source's filing.**
+    (1) The **Khakas** infobox lists **Fuyu Kyrgyz** as its first dialect; Fuyu Kyrgyz is spoken in
+    **Heilongjiang**, several thousand kilometres away, and its own article says it is *not* closely
+    related to Kyrgyz. ISO does register it as a Khakas dialect, which is why its speaker count is
+    cited to the Khakas entry. The atlas gives it **its own node**. (2) **Altai** carries *two*
+    family chains in one infobox (`Siberian Turkic **and** Kipchak`) and two ISO codes; both are
+    shipped. `[TK-104]`, `[TK-107]`.
+  - **⚠ Link health was MEASURED, and the first pass had been written from expectation.** The
+    Omniglot check was first drafted from what *should* exist and was wrong in four places:
+    there is **no Tuvan page**, **no Karakalpak page**, **no Crimean Tatar page** despite it being
+    the largest Kipchak–Cuman language, and **no Old Turkic page under that name** — the runiform
+    script lives at `orkhon.htm`. Also: the working spelling for Azerbaijani is **`azeri.htm`**, not
+    `azerbaijani.htm`. All twenty working URLs and every 404 are listed at `[TK-110]`.
+  - **⚠ A log-namespace collision was found and fixed.** The Turkic entries were first written as
+    `TU-101` … `TU-111`, but **`TU-` was already Tungusic's** — its queue entry cites `[TU-101]` —
+    so the file briefly held two different `[TU-103]`s. Two Turkic blocks had also landed on the
+    **wrong side of the `## Disputed / conflicting sources` heading**. Fixed by range-limited
+    substitution plus a cut-and-reinsert, verified by listing the headings in order and confirming
+    **zero** `TU-1` strings remain in either the Turkic section or `atlas-turkic.js`. The lesson —
+    **check a new family's prefix against the existing queue before writing entry one** — is
+    recorded for Formosan and Austroasiatic. `[TK-112]`.
+  - **Two new fonts, both validated; one plausible-looking font found not to exist.**
+    `Noto Serif` (for the Cyrillic extended letters ҡ ң ө ү һ ҫ ә that Kazakh, Kyrgyz, Tatar,
+    Bashkir, Altai, Khakas, Tuvan, Tofa, Dolgan and Nogai autonyms need) and `Noto Sans Arabic`
+    (for Khalaj's Perso-Arabic autonym) were both checked against the Google Fonts API and added to
+    `GFONT`. **`Noto Sans Cyrillic` returns HTTP 400 — it does not exist**; `Noto Serif` covers
+    Cyrillic instead. `[TK-108]`.
+  - **Verified:** `node --check atlas-turkic.js` OK; `node tools/check-atlas.js atlas-*.js` →
+    **all 10 files valid**, Turkic reading `nodes 38 · markers 173 · iso 30 · features 38`. Headless
+    Edge smoke tests of `#turkic/chuvash` and `#turkic/khalaj` both pass: header renders `突厥语族`
+    with **`cn-only`** (Turkic has no single endonym, unlike 汉语 or 日本語族), the nav shows
+    **10 enabled / 3 disabled** buttons with `turkic` carrying `aria-current="page"`, the tree
+    renders all **38 nodes**, `scriptfonts` requests `Noto+Serif` + `Noto+Sans+Arabic` +
+    `Noto+Serif+SC`, and the autonyms **Чӑваш чӗлхи** (Cyrillic) and the Khalaj form in Perso-Arabic
+    are both present in the rendered DOM.
+- **2026-09-27 · Phase 7 — Formosan: DONE (fourth of five).** `atlas-formosan.js` written and
+  closed out: **26 nodes · 101 markers · 26 ISO codes · 12 palette classes · four sketch polygons**
+  (Taiwan, Orchid Island, Hainan, Batanes) · **11 hand-drawn core areas**. Research logged
+  `FO-101`–`FO-107`, and — the lesson from `TK-112` applied — **the prefix was checked against
+  `research.md`'s queue before entry one was written**, which is why there was no collision this time.
+  - ⚠ **The tree had to be drawn as a place, not a family.** The grouping's own infobox says
+    `acceptance = geographic` and `glotto = none`, and its lead says the languages "do not form a
+    single subfamily of Austronesian but rather up to nine separate primary subfamilies". So the
+    root node is **the island**, `Proto-Austronesian` appears as an ancestral *stage* rather than a
+    parent, and the nine branches hang off it side by side. **There is no Proto-Formosan trunk,
+    because there is no such language.** `[FO-101]`
+  - ⚠ **Two languages in this atlas are not Formosan at all, and both are drawn anyway.**
+    **Yami/Tao** on Orchid Island is Batanic Malayo-Polynesian — "the only native language of
+    Taiwanese indigenous peoples that is not a member of the Formosan grouping" — and **Tsat** on
+    Hainan is Chamic. They sit in an explicitly labelled outlying group, joined by geography rather
+    than descent, because omitting them would leave two Austronesian languages inside the map
+    unexplained. `[FO-106]`
+  - **Doubtful nodes are drawn and marked, not deleted.** **Tsouic** ships with the question mark its
+    own three infoboxes carry (`fam2 = "Tsouic ?"`), with Chang (2006) and Ross (2009) named as the
+    scholars who dispute it — the same treatment Khazar got in the Turkic atlas. `[FO-103]`
+  - **One node, two opposite states.** **Pazeh–Kaxabu** is shipped as a single node carrying
+    `extinct = 2010` *and* twelve living Kaxabu speakers, because that is how its single source
+    presents it. Rounding it to either extreme would have been a lie about the record. `[FO-105]`
+  - **A coordinate-order trap found and fixed.** `tools/check-atlas.js` validates `areas` rings and
+    `sketchGeo` points as **[lng, lat]**, while node markers are **[lat, lng]** and are converted by
+    `showMarkers()`. The sketch geometry was first written in marker order and produced **68 "bad
+    coordinate" failures**; every pair was swapped. Two conventions live in one file and only one is
+    checked. `[FO-107]`
+  - **Link health measured, and this is the best-covered family in the series** — **fourteen**
+    Omniglot pages, each confirmed by HTTP status *and* by reading the page's own `<title>` so a
+    soft-404 could not pass. `siraya.htm` and `hainan_cham.htm` are 404 and those two nodes ship
+    empty link lists; `seediq.htm` is 200 while the near-miss spellings `seedeq.htm` and
+    `truku.htm` are both 404. **No new font was needed** — Formosan autonyms are Latin-script
+    Romanisations, so `Noto Serif` + `Noto Serif SC` cover them. `[FO-107]`
+  - ⚠ **A Wikipedia rendering artefact caught while verifying ISO codes:** Atayal, Amis and Paiwan
+    pass their speaker counts through `sigfig`, so the *rendered* infobox shows 86,000 / 110,000
+    / 96,000 while the *stored* values are **85,888 / 108,000 / 96,334**. The atlas ships the stored
+    figures and records the difference. `[FO-107]`
+  - **Verified:** `node --check atlas-formosan.js` OK; `node tools/check-atlas.js atlas-*.js` →
+    **all 11 files valid**, Formosan reading `nodes 26 · markers 101 · iso 26 · features 26`.
+    Headless Edge smoke tests of `#formosan/amis` and `#formosan/tsat` both pass: **13 family
+    buttons with 2 disabled** (`austroasiatic`, `siberian`), `formosan` carrying
+    `aria-current="page"`, the autonym **Sowal no ʼAmis** and the Chinese names **阿美语** and
+    **回辉话（占语）** present in the rendered DOM, and `scriptfonts` requesting exactly
+    `Noto+Serif` + `Noto+Serif+SC`. ⚠ **Operational note: kill stale headless Edge processes
+    between smoke runs** — one did not exit and blocked the next invocation for five minutes.
+  - **Doc housekeeping done in this session:** `research.md` counters row → `| Formosan | 7 | 6 | 1 | 0 | — |`,
+    files-on-disk note updated to eleven atlases, the Formosan queue section split off from
+    Austroasiatic's and marked ✅ with the new `[FO-107]` entry appended; this file's §0 row 10 →
+    ✅ built, §2.10 header → ✅ built with the scope note above, and the Phase 7 roadmap row updated.
+- **Next:** the last atlas of Phase 7 — **Austroasiatic (§2.11)**, including its Vietic core and the
+  Munda outliers. **Check the log prefix against `research.md`'s queue section before writing entry
+  one** — `AU-`/`AA-` are reserved for it, and checking is the lesson of `TK-112`.
+  Formosan (§2.10) was **built** in this session after Turkic; see the §2.10 scope note for the one
+  structural departure it required — the tree is drawn as a **place**, with no Proto-Formosan trunk,
+  because the grouping has no ancestor of its own. Then Phase 8, the optional Siberian capstone
+  (§2.13, cross-linking Ainu to `#japonic/ainu` rather than duplicating it). New atlases should
+  carry `nat` from the start, with forms read off Wikipedia
+  infoboxes — including their per-language-code tags — and any new font validated against the Google
+  Fonts API before use, as `TK-108` did and the dead `Noto Sans Tangut` entry shows the cost of not
+  doing.
 
 
 ---
@@ -834,7 +949,7 @@ migration currents.
 correspondences · Lemoine's nineteenth-century notes (as historiography, flagged as such) ·
 Ethnologue/Glottolog.
 
-### 2.9 Turkic 突厥语族 — 💤 planned (decide scope first)
+### 2.9 Turkic 突厥语族 — ✅ built (`atlas-turkic.js`, 38 nodes · 173 markers)
 
 **Pitch.** The classic, well-documented steppe family: Orkhon runiform steles, the
 Uyghur script, the Karakhanid world of Kashgar, Chagatai, and the modern spread from
@@ -856,11 +971,33 @@ series extent and keeps Uyghur/Kazakh/Salar/Yugur central; or (b) **full family*
 `[60, 42]`, zoom 2.6, Istanbul → Yakutsk, which makes the map a Eurasia atlas rather than
 an East Asia one. Recommendation: start with (a), add a "wider family" caption.
 
+> **Decided 2026-09-27: option (b), the full family** — on instruction, against the recommendation
+> above. The atlas therefore runs Istanbul → Yakutsk and is the widest in the series; its sketch
+> geometry is deliberately the coarsest. Two further corrections to this brief are recorded in
+> `research.md`: **Old Turkic is not drawn as the trunk of Common Turkic** (the sources file it
+> inside Siberian Turkic, and its era runs from shortly before 720 AD to the 13th century, not
+> "8th c.") — `[TK-110]`; and the brief's line "+ Western Yugur (Gansu) — the old 'Yellow Uyghur'
+> relic" needs the caveat that Western Yugur is a **Yenisei** Turkic language and is *not* mutually
+> intelligible with modern Uyghur — `[TK-105]`.
+
 **Sources.** Johanson & Csató (eds.), *The Turkic Languages* · Tekin, *A Grammar of Orkhon
 Turkic* · Clauson, *An Etymological Dictionary of Pre-Thirteenth-Century Turkish* ·
 Golden on Turkic ethnogenesis · Ethnologue/Glottolog.
 
-### 2.10 Formosan 台湾南岛语 — 💤 planned
+### 2.10 Formosan 台湾南岛语 — ✅ built
+
+> **Built as `atlas-formosan.js`** — 26 nodes · 101 markers · 9 primary branches (four of them
+> single languages) · a labelled outlying group · 12 palette classes · four sketch polygons
+> (Taiwan, Orchid Island, Hainan, Batanes) · 11 hand-drawn core areas. Research log `FO-101`–`FO-107`.
+> **Scope decision taken while building, and it changes the shape of the tree:** because the
+> grouping's own acceptance is **geographic** and it has **no Proto-Formosan ancestor**, the root
+> node is drawn as *a place* and the nine branches hang off it as siblings of Austronesian rather
+> than as daughters of a Formosan proto-language. `Proto-Austronesian` appears as the ancestral
+> stage, not as a parent of the island. **Yami/Tao and Tsat are drawn outside the nine branches**,
+> in an explicitly labelled outlying group, because neither is Formosan — Yami is Batanic
+> Malayo-Polynesian and Tsat is Chamic. Both facts are stated on the nodes themselves.
+> The brief's other expectations all held: the Austronesian homeland framing, the Siraya and
+> Sakizaya revitalisation stories, and the Hainan Tsat bridge — each of which now has a node.
 
 **Pitch.** The Austronesian homeland: the island's own languages are the deepest branches
 of a family that eventually reached Madagascar and Rapa Nui. Also the series' only
@@ -995,7 +1132,7 @@ the sketch-geometry workflow are well proven.
 | **4** | Mongolic (§2.4) | script-history spine; Shirongolic cluster and Kalmyk outliers | ✅ done — `atlas-mongolic.js`, 26 nodes, 108 markers, 7 sketch polygons; `MG-104` two-part self-correction, `MG-102` four speaker conflicts, `MG-105` ISO findings, `MG-111` re-check (unlogged Oirat figure, self-contradicting source, one unsourced number removed) |
 | **5** | Silk Road lost languages (§2.12) | validates "special mode" (all-extinct, timeline-first, script chips) | ✅ done — `atlas-silkroad.js`, 34 nodes, 78 markers, 5 sketch polygons; three opt-in engine switches added (`timelineFirst`, per-node `chips`, `kinds`) plus an `spSuffix` wording fix; `SR-105` ISO register findings, `SR-106` Rouran dispute |
 | **6** | Tibeto-Burman (§2.7) | the big one; shared ancestor nodes with Sinitic | ✅ done — `atlas-tibetoburman.js`, 56 nodes, 164 markers, 5 sketch polygons; **the family's own premise is disputed and stated on the root node** (`TB-101`); Karen's placement disputed (`TB-109`); register findings at `TB-105` |
-| **7** | Hmong–Mien (§2.8) · Koreanic (§2.6) · Formosan (§2.10) · Turkic (§2.9, scope decision) · Austroasiatic (§2.11) | in whatever order appetite dictates | 🔜 **Koreanic and Hmong–Mien done.** `atlas-korean.js` — 18 nodes, 78 markers, Jeju's status left open by design (`KO-101`, `KO-107`), Chungcheong and Gangwon shipped with their contested status stated (`KO-105`), thinnest Omniglot link set of any atlas (`KO-109`). `atlas-hmongmien.js` — 22 nodes, 86 markers, two invented scripts shipped as `nat` values with two new fonts registered, the brief's "lantern writing" hook **cut** as unverifiable (`HM-107`), a within-source figure conflict shipped rather than resolved (`HM-106`). **Remaining: Formosan, Austroasiatic, Turkic** |
+| **7** | Hmong–Mien (§2.8) · Koreanic (§2.6) · Formosan (§2.10) · Turkic (§2.9, scope decision) · Austroasiatic (§2.11) | in whatever order appetite dictates | 🔜 **Koreanic, Hmong–Mien, Turkic and Formosan done.** `atlas-korean.js` — 18 nodes, 78 markers, Jeju's status left open by design (`KO-101`, `KO-107`), Chungcheong and Gangwon shipped with their contested status stated (`KO-105`), thinnest Omniglot link set of any atlas (`KO-109`). `atlas-hmongmien.js` — 22 nodes, 86 markers, two invented scripts shipped as `nat` values with two new fonts registered, the brief's "lantern writing" hook **cut** as unverifiable (`HM-107`), a within-source figure conflict shipped rather than resolved (`HM-106`). `atlas-turkic.js` — **38 nodes, 173 markers, the widest atlas in the series** (full-family scope, Istanbul → Yakutsk, `TK-101`), Old Turkic **not** drawn as the trunk (`TK-110`), Khazar shipped with its branch stated as disputed in its own source and its whole corpus named (`TK-109`), two new fonts validated with `Noto Sans Cyrillic` found not to exist (`TK-108`), link health measured rather than assumed (`TK-110`), and a **log-namespace collision found and fixed** (`TK-112`). `atlas-formosan.js` — **26 nodes, 101 markers**, drawn as a **place rather than a family** because the grouping has no ancestor (`FO-101`), Tsouic shipped with its own source's question mark (`FO-103`), Pazeh–Kaxabu in two opposite states at once (`FO-105`), Yami and Tsat placed outside the nine branches because they are not Formosan (`FO-106`), fourteen Omniglot pages verified live — the best-covered family in the series (`FO-107`). **Remaining: Austroasiatic** |
 | **8** | Siberian isolate pocket (§2.13) | optional capstone | 💤 not started |
 
 **Cross-atlas links** use plain hash URLs in the prose (`<a href="#kradai/zhuang">`), so they are
@@ -1030,9 +1167,14 @@ never reconstructed from memory at the end.
 
 ---
 
-*Last updated: 2026-09-26 — Phases 0–6 complete, plus Koreanic and Hmong–Mien from Phase 7; nine
-atlases on disk and wired into `FAMILIES`. A GitHub Pages build failure (Jekyll's Liquid engine
-aborting on MediaWiki template braces in `research.md`) was diagnosed and fixed — see the progress
-log above and `research.md` `[DP-101]`. Remaining: Formosan, Austroasiatic and Turkic in Phase 7
-(Turkic needs the §2.9 scope decision), then the optional Siberian capstone in Phase 8.*
+*Last updated: 2026-09-27 — Phases 0–6 complete, plus Koreanic, Hmong–Mien, Turkic and **Formosan**
+from Phase 7; **eleven** atlases on disk and wired into `FAMILIES`. Turkic was built to the
+**full-family scope** (option (b), Istanbul → Yakutsk) on instruction, against §2.9's own
+recommendation, and is the widest atlas in the series. **Formosan was built as a place rather than a
+family**, because its own source gives it no Glottolog code and says the languages form "up to nine
+separate primary subfamilies" — so there is no Proto-Formosan trunk, and Yami and Tsat are drawn
+outside the nine branches because neither is Formosan. A GitHub Pages build failure (Jekyll's Liquid
+engine aborting on MediaWiki template braces in `research.md`) was diagnosed and fixed — see the
+progress log above and `research.md` `[DP-101]`. Remaining: Austroasiatic in Phase 7, then the
+optional Siberian capstone in Phase 8.*
 
