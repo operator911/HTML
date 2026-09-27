@@ -46,7 +46,7 @@ it is checked — never reconstructed from memory afterwards.
 | Japonic & Ainu | 10 | 8 | 1 | 1 | — |
 | Koreanic | 9 | 7 | 2 | 0 | — |
 | Tibeto-Burman | 10 | 9 | 1 | 0 | — |
-| Hmong–Mien | 0 | 0 | 0 | 0 | atlas not written |
+| Hmong–Mien | 9 | 7 | 2 | 0 | — |
 | Turkic | 0 | 0 | 0 | 0 | atlas not written |
 | Formosan | 0 | 0 | 0 | 0 | atlas not written |
 | Austroasiatic | 0 | 0 | 0 | 0 | atlas not written |
@@ -60,18 +60,18 @@ it is checked — never reconstructed from memory afterwards.
 > are actually present in this file, and a family with no atlas gets 0 across the row.
 >
 > **Files on disk as of 2026-09-26:** `atlas-sinitic.js`, `atlas-tungusic.js`, `atlas-kradai.js`,
-> `atlas-japonic.js`, `atlas-mongolic.js`, `atlas-silkroad.js`, `atlas-tibetoburman.js` and
-> `atlas-korean.js` — Phases 0–6 plus Koreanic of Phase 7. Their rows above are the only ones backed
-> by an atlas; the remaining five families read 0 because nothing has been researched for them yet,
-> not because a search came up empty.
+> `atlas-japonic.js`, `atlas-mongolic.js`, `atlas-silkroad.js`, `atlas-tibetoburman.js`,
+> `atlas-korean.js` and `atlas-hmongmien.js` — Phases 0–6 plus Koreanic and Hmong–Mien of Phase 7.
+> Their rows above are the only ones backed by an atlas; the remaining four families read 0 because
+> nothing has been researched for them yet, not because a search came up empty.
 
 > **Phase 0.5 status: SKIPPED.** The user confirmed on 2026-09-26 that the Sinitic
 > verification had already been carried out at an earlier time, so the sweep was not re-run
 > in this session. The 42 targets below therefore remain `⬜ unverified` and must not be
 > treated as checked. Recorded so a later session does not mistake the omission for a pass.
 
-> **Honesty note on scope.** Only Phases 0–6 and Koreanic (the first atlas of Phase 7) have been
-> carried out. For those, each atlas's
+> **Honesty note on scope.** Only Phases 0–6 plus Koreanic and Hmong–Mien (the first two atlases of
+> Phase 7) have been carried out. For those, each atlas's
 > load-bearing dates, figures and classifications were checked with targeted searches and
 > logged below with the URL actually fetched; less load-bearing colour in the prose is
 > written from the standard works named in each atlas's `sources` note and is flagged in the
@@ -205,14 +205,14 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
       headless Edge smoke test of `#mongolic` and `#mongolic/kalmyk` passes. `status:'done'` in
       `EastAsiaAtlas.html`.
 
-### Hmong–Mien · Turkic · Formosan · Austroasiatic
+### Turkic · Formosan · Austroasiatic
 - [ ] ⬜ _section to be seeded at the start of each phase, from the brief's dates, names, figures and classifications_
 - [ ] ⬜ **None of these atlases has been written.** Their rows in the Counters table read 0 and their
       status in `languages.md` §0 is 💤 planned. Do not seed entries here until research actually happens.
 
-> **Silk Road (Phase 5), Tibeto-Burman (Phase 6) and Koreanic (Phase 7, first)** have moved out of
-> this queue — their atlases are written and their logs (`SR-101`–`SR-110`, `TB-101`–`TB-112`,
-> `KO-101`–`KO-109`) are below.
+> **Silk Road (Phase 5), Tibeto-Burman (Phase 6) and Koreanic + Hmong–Mien (Phase 7, first two)** have
+> moved out of this queue — their atlases are written and their logs (`SR-101`–`SR-110`,
+> `TB-101`–`TB-112`, `KO-101`–`KO-109`, `HM-101`–`HM-109`) are below.
 
 ## Tungusic (Phase 1) — research log
 
@@ -997,6 +997,94 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
   - `node tools/check-atlas.js atlas-korean.js` → **valid, 18 nodes · 78 markers · iso 18 · features 18**.
   - Headless Edge smoke test of `#korean/jeju` → **0 error markers**; header title renders as `한국어족` with **no `cn-only` class** (the family has a genuine native name, so the toggle does not hide it — the same behaviour as Japonic); `scriptfonts` link requests `Noto+Serif+KR` and `Noto+Sans+SC`; the strings `제주말` and `jje` are both present in the rendered DOM.
 - **Font note:** `Noto Serif KR` was already in `GFONT` from the Phase 0 work and had never been used by an atlas until this one. Hangul needs no new font registration.
+
+
+## Hmong–Mien (Phase 7) — research log
+
+### [HM-101] The family: two branches, and a set of administrative labels that do not match the languages
+
+- **Claim shipped:** Hmong–Mien has two branches, Hmongic (Miao) and Mienic (Yao); the family is highly tonal, spoken in southern China and northern South-East Asia.
+- **Verified:** en.wikipedia `Hmong–Mien languages` infobox — `child1 = Hmongic (Miao)`, `child2 = Mienic (Yao)`; `protoname = Proto-Hmong–Mien`; `iso5 = hmx`; Glottolog `hmon1336`; altname "Miao–Yao", rarely "Yangtzean" (citing van Driem 2018). The lead states the family is "a highly tonal language family of southern China and northern Southeast Asia", spoken in Guizhou, Hunan, Yunnan, Sichuan, Guangxi, Guangdong and Hubei.
+- **⚠ The label problem is stated on the root node rather than buried.** "Miao" and "Yao" are Chinese administrative categories covering far more people than speak Hmongic or Mienic languages, and the mismatch runs **both ways**: many Yao speak Hmongic languages (Bunu, Bahengic — HM-105), and most ethnic She speak Sinitic (HM-104). The atlas uses the linguistic names for the branches and records the administrative labels where the sources use them.
+- **No `nat` for the family.** Hmong–Mien is a Western grouping with a Chinese name (苗瑶语族) and no autonym. `FAMILIES[].nat` is therefore **not set** for `hmongmien`, and the header title carries `cn-only` — the opposite of Japonic and Koreanic, and the same as Tungusic/Mongolic/Silk Road. Confirmed in the rendered DOM.
+
+### [HM-102] The two scripts: Pollard (abugida, ca. 1936) and Pahawh Hmong (semisyllabary, 1959) — rivals, not ancestors
+
+- **Claim shipped:** the Pollard script is an abugida devised around 1936 by Sam Pollard for A-Hmao; Pahawh Hmong is a semisyllabary created in 1959 by Shong Lue Yang.
+- **Verified:** en.wikipedia `Pollard script` infobox — `type = Abugida`; `time = ca. 1936 to the present`; `creator = Sam Pollard`; `languages = A-Hmao, Lipo, Sichuan Miao, Nasu`; Unicode U+16F00–U+16F9F; ISO 15924 `Plrd`; `fam1 = Canadian Aboriginal syllabics`. The script's own name is given as **𖽃𖽔𖾐 𖽑𖼄𖽻𖾐** (A-Hmao, Miao) — this is the string shipped as the `ahmao` node's `nat`.
+- **Verified:** en.wikipedia `Pahawh Hmong` infobox — `type = Semisyllabary` (described as "onset–rime; vowel-centered equivalent of an abugida"); `time = 1959–present`; `languages = Hmong Daw, Hmong Njua`; `creator = Shong Lue Yang`; ISO 15924 `Hmng`; Unicode U+16B00–U+16B8F. The script's own name is **𖬖𖬲𖬝𖬵 𖬄𖬲𖬟 𖬌𖬣𖬵** ("Phaj Hauj Hmoob").
+- **Verified:** en.wikipedia `Hmong language` infobox — `nativename` includes both script forms, `{{script|Hmng|𖬇𖬰𖬞 𖬌𖬣𖬵}}` and `{{script|Hmnp|𞄉𞄧𞄵𞄀𞄩𞄰}}`, alongside the Latin forms. The **Pahawh** string `𖬇𖬰𖬞 𖬌𖬣𖬵` is what the `hmongdaw` node ships as its `nat`; the **Nyiakeng Puachue Hmong** string `𞄉𞄧𞄵𞄀𞄩𞄰` was **not shipped** because Google Fonts has no web font for that script under any name tested (see HM-108).
+- **⚠ Framing decision recorded:** the atlas calls the two scripts "rivals, not ancestors" because they are unrelated designs for the same languages, and Pahawh's origin is a claim about revelation rather than about graphic descent. The prose says "it has an origin story rather than a philology" and names Shong Lue Yang as its creator without endorsing the messianic account — the same treatment `[TB-107]` gives the Dongba tradition.
+
+### [HM-103] The speaker figures: 4.5 million Hmong, 363,565 Hmong Americans, 710,000 She against 910 She speakers
+
+- **Claim shipped:** Hmong has 4.5 million speakers (2015); Hmong Americans number 363,565 (2023); the She people number 710,000 (2000) against 910 She-language speakers (1999).
+- **Verified:** en.wikipedia `Hmong language` infobox — `speakers = 4.5 million`, `date = 2015`, `ref = {{sfn | Jarkey | 2015 | p=11}}`; `iso2 = hmn`, `iso3 = hmn` for the Hmong/Mong macrolanguage. Family chain given as Hmongic > Core Hmongic > West Hmongic > **Chuanqiandian cluster** — the source of the atlas's `chuanqiandian` node name.
+- **Verified:** en.wikipedia `Hmong Americans` infobox — population **363,565** (2023), sourced to the U.S. Census Bureau ACS; the title is given in Pahawh Hmong as **𖬌𖬣𖬵 𖬉𖬲𖬦 𖬗𖬲** / Hmoob Mes Kas; the popplace list leads with California (Fresno, Sacramento, Stockton, Merced) and Oklahoma (Tulsa).
+- **Verified:** en.wikipedia `She language` infobox — `nativename = Ho Le`; `speakers = 910`, `date = 1999`, `ref = e18`; `ethnicity = 710,000 She (2000 census)`; region given as Zengcheng, Boluo County, Huidong County and Haifeng County in Guangdong; family Hmongic > Sheic > Pana–She. The page carries a hatnote distinguishing it from **She Chinese**, the Sinitic language of Zhejiang and Fujian — which is exactly the distinction the node's prose makes.
+- **⚠ The 363,565 figure counts people, not speakers, and the atlas says so.** The node's prose reads "The atlas records the census figure for the population without claiming it is a figure for speakers." This is the `[KO-108]` discipline applied again.
+
+
+### [HM-104] She: the label-versus-language mismatch in its starkest form
+
+- **Claim shipped:** She has 910 speakers against 710,000 ethnic She; it survives in four Guangdong districts because those communities stayed out of the main Hakka migration currents.
+- **Verified:** from the `She language` infobox as at HM-103 (910 speakers, 1999; 710,000 ethnic She, 2000 census; the four Guangdong localities named).
+- **⚠ Two things are the atlas's own inference and are written as such, not as sourced facts:**
+  - The **reason** the language survives only in those four districts — that they stayed out of the main Hakka migration currents — is the atlas's explanation of the geography. It is plausible and conventional, but it was not read off a source in this session, and the prose attributes it to geography rather than to a citation.
+  - The statement that most ethnic She now speak Sinitic (Hakka, or She Chinese) is supported by the existence of the She Chinese article and the hatnote, but the proportions are not sourced here. The prose says "almost everyone else who is She by ethnicity speaks a Sinitic variety" without a percentage.
+- **Recorded so a later pass knows which sentences to source or soften.** This is the same honesty rule the scope note in §Counters states: less load-bearing colour is written from the standard works and flagged where it was not independently re-fetched.
+
+### [HM-105] Bunu and Bahengic: speakers classified as Yao, speaking Hmongic languages
+
+- **Claim shipped:** Bunu has 359,474 speakers (2001) and no ISO code of its own; Bahengic's best-documented member is Pa-Hng, with 33,610 speakers and ISO `pha`, and is UNESCO **Vulnerable**.
+- **Verified:** en.wikipedia `Bunu language` infobox — `nativename = Buod Nuox`; `altname = Pu Nu`; `speakers = 359,474`, `date = 2001`, `ref = Meng2001`; region Guangxi and bordering regions; `ethnicity = Yao`; family Hmongic > West Hmongic > **Bu–Nao**; `dia1 = Dongnu`, `dia2 = Nunu`, `dia3 = Bunuo`; `script = Latin`; Glottolog `buna1273`. **No `iso3` field is present in the infobox** — which is what the atlas's "no ISO code of its own" claim rests on, and why the `ISO` table entry for `bunu` reads `— (its varieties are registered separately)` rather than a code.
+- **Verified:** en.wikipedia `Pa-Hng language` infobox — `altname = Pateng`; `speakers = 33,610`, `date = 1995–2009`, `ref = e18`; states China **and Vietnam**; family Hmongic > **Bahengic**; `iso3 = pha`; Glottolog `pahn1237`; `map2 = Lang Status 80-VU.svg` with the caption "classified as Vulnerable by the UNESCO Atlas of the World's Languages in Danger".
+- **⚠ The node is named for the branch, not the language.** The reference account lists **Bahengic** as a Hmongic division; Pa-Hng is one language inside it and the only one with a code and a count. The node is `bahengic` with the `sp` field reading "Pa-Hng: 33,610 (1995–2009), by source", and the prose explains the choice. Shipping the branch and the language as the same node would have been a conflation.
+- **⚠ "The only Vulnerable language in this atlas"** is the atlas's own comparison across its own nodes, not a claim from a source. It is true of the 22 nodes shipped here; it is written that way.
+
+### [HM-106] ⚠ Kim Mun's speaker figures contradict each other *within the same source*
+
+- **Claim shipped:** the node's population chip reads "ca. 400,000 (1995–1999), by source — see the note"; the prose reports both figures and says they disagree.
+- **Verified:** en.wikipedia `Kim Mun language` infobox — `speakers = ca. 400,000<!--to the nearest 100,000-->`, `date = 1995–1999`, `ref = e25`; `iso3 = mji`; Glottolog `kimm1245`; `nation = China (Jinxiu Yao Autonomous County)`; Chinese 金門方言; also called **Lanten** or **Landian** 蓝靛.
+- **⚠ And the same article's prose says something different:** "a Mienic language spoken by **200,000** of the Yao people in the Chinese provinces of Guangxi, Hunan and Yunnan, with about **61,000** of the speakers in Hainan Province." 200,000 + 61,000 ≈ 261,000, against the infobox's ca. 400,000 — a discrepancy of roughly 140,000 inside one page.
+- **Decision recorded:** the atlas ships **both** and does not choose. The chip carries the infobox figure because that is the field a reader would compare against other references; the prose carries the arithmetic and the fact of the disagreement. This is the `[MG-111]` / `[KD-108]` treatment, applied to a conflict *within* a single source rather than between two.
+- **Not shipped:** the "Lanten/Landian" autonym as the node's `nat`. The infobox gives **no `nativename` field** for Kim Mun, so the script slot is left empty and the prose names Lanten as an alternative. The atlas does not invent an autonym to fill a slot.
+
+
+### [HM-107] ⚠ CUT — the brief's "lantern writing" tradition could not be verified
+
+- **What the brief asked for:** `languages.md` §2.8 lists among the family's hooks "their embroidered story-cloths, the **'lantern writing' tradition**, and the Hmong diaspora from Laos to Minnesota and French Guiana."
+- **What was searched:** a web search for `Hmong "lantern writing" OR "lub teeb" script tradition story cloth paj ntaub`. The results were dictionary entries for <em>lub teeb</em> ("lamp") in White Hmong–English dictionaries and a Hmong-for-health-workers handbook. **Nothing** described a writing tradition called "lantern writing" in Hmong, Mien or any related language.
+- **Decision: the claim is CUT, not shipped.** Under `languages.md` §3's definition of done — "Unverifiable claims cut or framed explicitly as tradition/legend" — an unverifiable hook is not written into the atlas. No node mentions lantern writing.
+- **⚠ The brief's other two hooks WERE verified and shipped:** the Hmong diaspora (HM-103) and the Pahawh script's origin story (HM-102). The brief's phrase may have been a garbled reference to either, or to the *paj ntaub* story-cloths — but the atlas does not guess. **If a later session finds a source, the claim can be added; until then it stays out.**
+- **Also not shipped from the brief:** "Biao Jiao" as a Mienic member. The brief lists Mienic as "Iu Mien, Kim Mun, Biao Min, Dzao Min, Biao Jiao", but the reference account's Mienic infobox lists **Iu Mien, Biao Mon, Kim Mun, Biao Min, and Zaominic (Dzao Min + Yangchun Pai Yao)**. The atlas follows the sourced list, uses **Biao Mon** in place of "Biao Jiao", and adds the Zaominic pair. Recorded because the brief and the source disagree about the branch's membership.
+
+### [HM-108] Fonts: two new registrations, one script left unshipped for want of a font
+
+- **Two new `GFONT` entries, both validated against the Google Fonts CSS API (2026-09-26):**
+  - `'Noto Sans Pahawh Hmong'` → `Noto+Sans+Pahawh+Hmong` — **200**, weight **400 only**
+  - `'Noto Sans Miao'` → `Noto+Sans+Miao` — **200**, weight **400 only** (this is the Pollard-script font; the Unicode block is named "Miao")
+  - Both are registered without a `:wght@` axis, following the existing convention for single-weight families such as `Noto Sans Ol Chiki` and `Noto Sans Mongolian`.
+- **⚠ One font could NOT be found, and the script was therefore not shipped.** Nyiakeng Puachue Hmong (`𞄉𞄧𞄵𞄀𞄩𞄰`, Unicode U+1E100–U+1E14F) appears in the Hmong language infobox as a native name, but:
+  - `Noto+Sans+Nyiakeng+Puachue+Hmong` → **400** (the family does not exist under that name)
+  - A query of `fonts.google.com/metadata/fonts` for families matching `nyiakeng`, `hmong` or `miao` returned exactly three: **`Noto Sans Miao`**, **`Noto Sans Pahawh Hmong`** and **`Noto Serif NP Hmong`**.
+  - **`Noto Serif NP Hmong` is the correct family name for Nyiakeng Puachue Hmong** (NP = Nyiakeng Puachue). It was **not added to `GFONT`** because no node in the shipped atlas uses it — adding an unused font entry is what the dead `Noto Sans Tangut` reference taught the project to avoid. **Recorded here so a later pass that wants to show NP Hmong knows the name.**
+- **The `nat`-slot decision, and why it matters for fonts.** The atlas puts the **script forms** in `nat` (Pahawh on `hmongdaw`, Pollard on `ahmao`) rather than in `chips`, because `--native` is the font stack that `applyFonts()` builds from `CONFIG.fonts`, whereas `.chip.scr` uses `--serif` and would not reliably reach the webfont. The stack order is Pahawh → Miao → Serif SC → fallbacks, so each script finds its font by falling through: Pahawh codepoints hit the first family, Pollard codepoints fall past it to `Noto Sans Miao`. **Verified in the rendered DOM** — see HM-109.
+
+
+### [HM-109] ISO codes, link health, and the phase's verification
+
+- **ISO 639-3 codes shipped, all read from infoboxes:** `hmx` (Hmong–Mien, ISO 639-5), `hmn` (Hmong macrolanguage), `mmr` + `muq` (Xong W/E), `hea` + `hmq` + `hms` + `neo` (Hmu N/E/S + Ná-Meo), `hmd` (A-Hmao), `mww` (Hmong Daw), `hnj` (Hmong Njua), `pha` (Pa-Hng), `shx` (She), `ium` (Iu Mien), `mji` (Kim Mun), `bje` (Biao Min), `bpn` (Dzao Min), `bmt` (Biao Mon).
+- **`bunu` has no code** — the infobox has no `iso3` field, so the table reads `— (its varieties are registered separately)`. The grouping and diaspora nodes read `—`.
+- **⚠ A verification catch worth recording.** The two Hmong variety nodes were first written with `nat` values (`Hmoob Dawb`, `Hmoob Ntsuab`) that were **conventional but unsourced**. Checking `Hmong Daw` and `Hmong Njua` showed both redirect to `Hmong language`, so no infobox gives those forms. The correct evidence turned out to be in the **per-language-code tags of the Hmong infobox itself**: `{{Lang|mww|lus Hmoob}}` (mww = Hmong Daw) and `{{Lang|hnj|lug Moob}}` (hnj = Hmong Njua). The nodes were corrected to those forms. **Lesson for later phases: a Wikipedia infobox's `{{Lang|code|…}}` tags are evidence, and they are easy to overlook.**
+- **Link health — Omniglot coverage for Hmong–Mien (protocol from `[TU-109]`), checked 2026-09-26:**
+  - `hmong.htm` → **200** ✓ · `yao.htm` → **200** ✓ · `she.htm` → **200** ✓ · `langfam.htm` → **200** ✓
+  - **404, and therefore not used:** `mien.htm`, `iu_mien.htm`, `iu_mienh.htm`, `mienh.htm`, `hmong_mien.htm`, `pahawh.htm`, `pahawh_hmong.htm`, `pollard.htm`, `pollard_script.htm`, `hmong_language.htm`, `yao_language.htm`, `she_language.htm`, `biao_min.htm`, `bu_nu.htm`
+  - **Consequence recorded:** Omniglot has **no page for either script** this family's story turns on, and none for any Mienic language other than the umbrella `yao.htm`. The `SOUND` table routes the Mienic nodes to `yao.htm` and the Hmongic ones to `hmong.htm`; `bunu`, `bahengic`, `biaomin`, `dzaomin`, `biaomon` and `guiana` ship with **empty** link lists and rely on the engine's YouTube-search fallback. This is the second-thinnest link set of any atlas, after Koreanic.
+- **Verified:**
+  - `node --check atlas-hmongmien.js` → OK.
+  - `node tools/check-atlas.js atlas-hmongmien.js` → **valid, 22 nodes · 86 markers · iso 22 · features 22**.
+  - Headless Edge smoke test of `#hmongmien/hmongdaw` → **0 error markers**; header renders `苗瑶语族` with **`cn-only`** (no native family name — the opposite of Koreanic) plus "Hmong–Mien"; the `scriptfonts` link requests **`Noto+Sans+Pahawh+Hmong` + `Noto+Sans+Miao` + `Noto+Serif+SC`**; and the Pahawh codepoint **U+16B07** is present in the rendered DOM.
 
 
 ## Disputed / conflicting sources

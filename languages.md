@@ -20,7 +20,7 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 5 | **Mongolic 蒙古语族** | `atlas-mongolic.js` | ✅ built | 26 nodes · 108 markers · 4 branches; six scripts as a labelled non-genetic branch; five logged figure problems (MG-102, MG-111); Oirat has no ISO code of its own (MG-105); **the *Secret History* is not a 1240 text (MG-104)** |
 | 6 | **Silk Road lost languages 丝绸之路死语** | `atlas-silkroad.js` | ✅ built | 34 nodes · 78 markers · 5 branches + a labelled non-genetic script branch; **special mode** (timeline-first, script + decipherment chips, inverted colour semantics); Rouran's classification disputed (SR-106); five ISO register findings incl. two false-friend codes (SR-105) |
 | 7 | **Tibeto-Burman 藏缅语族** | `atlas-tibetoburman.js` | ✅ built | 56 nodes · 164 markers · 9 branches + an honest "and 200+ more" node; **the grouping itself is not a demonstrated subgroup (TB-101)**; Karen's placement disputed (TB-109); 5 register name mismatches, 4 splits and 1 lump (TB-105) |
-| 8 | **Hmong–Mien 苗瑶语族** | `atlas-hmongmien.js` | 💤 planned | file does not exist yet; Hmongic + Mienic; diaspora to Laos, the US, French Guiana |
+| 8 | **Hmong–Mien 苗瑶语族** | `atlas-hmongmien.js` | ✅ built | 22 nodes · 86 markers · 2 branches (Hmongic + Mienic) + a diaspora branch; **two invented scripts shipped as `nat` values** (Pollard on A-Hmao, Pahawh Hmong on White Hmong); **the brief's "lantern writing" hook was CUT as unverifiable (HM-107)**; Kim Mun's speaker figures conflict *within one source* (HM-106); "Miao"/"Yao" label mismatch stated on the root node |
 | 9 | **Koreanic 朝鲜语族** | `atlas-korean.js` | ✅ built | 18 nodes · 78 markers · 3 historical stages as siblings of the living branch; **Jeju given its own node without resolving the language-or-dialect question (KO-101, KO-107)**; Chungcheong and Gangwon shipped *with* the note that standard dialectology puts them inside the central area (KO-105); three weak diaspora figures flagged in the prose (KO-108) |
 | 10 | **Formosan 台湾南岛语** | `atlas-formosan.js` | 💤 planned | file does not exist yet; Austronesian homeland; Tsat/Utsul bridge to Hainan |
 | 11 | **Turkic 突厥语族** | `atlas-turkic.js` | 💤 planned | file does not exist yet; scope decision needed: China + Central Asia (§2.9 option a) |
@@ -29,9 +29,9 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 
 > **Do not mark a family ✅ on the strength of a plan.** As of this revision `atlas-sinitic.js`,
 > `atlas-tungusic.js`, `atlas-kradai.js`, `atlas-japonic.js`, `atlas-mongolic.js`,
-> `atlas-silkroad.js`, `atlas-tibetoburman.js` and `atlas-korean.js` exist on disk,
-> and the `FAMILIES` array in `EastAsiaAtlas.html` must match this table exactly: a `status:'done'`
-> entry whose file is missing
+> `atlas-silkroad.js`, `atlas-tibetoburman.js`, `atlas-korean.js` and `atlas-hmongmien.js` exist on
+> disk, and the `FAMILIES` array in `EastAsiaAtlas.html` must match this table exactly: a
+> `status:'done'` entry whose file is missing
 > loads into the "data pending" path instead of the disabled-button path, which is worse than
 > saying so up front.
 
@@ -323,12 +323,43 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     header `한국어족`, `scriptfonts` requesting `Noto+Serif+KR` + `Noto+Sans+SC`, and both `제주말`
     and `jje` present in the rendered DOM. `Noto Serif KR` was already in `GFONT` and had never been
     used by an atlas until now; Hangul needed no new font registration.
-- **Next:** the rest of Phase 7 — Hmong–Mien (§2.8), Formosan (§2.10), Austroasiatic (§2.11) and
-  Turkic (§2.9, scope decision needed: the plan recommends option (a), China + Central Asia at
-  `[80, 42]` / zoom 4); then Phase 8, the optional Siberian capstone (§2.13, cross-linking Ainu to
-  `#japonic/ainu` rather than duplicating it). New atlases should carry `nat` from the start, with
-  forms read off Wikipedia infoboxes and any new font validated against the Google Fonts API before
-  use — the dead `Noto Sans Tangut` entry in `GFONT` shows what happens otherwise.
+- **2026-09-26 · Phase 7 — Hmong–Mien: DONE (second of five).** `atlas-hmongmien.js` written
+  (22 nodes, 86 markers, 2 branches + a diaspora branch). Research logged as `HM-101`–`HM-109`.
+  Four things are worth carrying forward:
+  - **Two invented scripts shipped as `nat` values, not as prose.** The Pollard script (abugida,
+    ca. 1936, Sam Pollard) is the `ahmao` node's script slot; Pahawh Hmong (semisyllabary, 1959,
+    Shong Lue Yang) is the `hmongdaw` node's. Both strings come straight from infoboxes. This is
+    the first atlas where the script slot shows something other than a romanisation or a national
+    script.
+  - **⚠ A brief hook was CUT as unverifiable.** `languages.md` §2.8 asked for "the 'lantern writing'
+    tradition". A search found nothing — only dictionary entries for <em>lub teeb</em> ("lamp"). No
+    node mentions it, and `[HM-107]` records the cut with the search string used. The brief's other
+    hooks (the diaspora, the script origin story) were verified and shipped. The brief also named
+    "Biao Jiao" as a Mienic member; the sourced list says **Biao Mon**, so the atlas follows the
+    source.
+  - **A figure conflict *inside one source* was shipped rather than resolved.** Kim Mun's infobox
+    says ca. 400,000 speakers; the same article's prose says 200,000 + 61,000 in Hainan ≈ 261,000.
+    The chip carries the infobox figure, the prose carries the arithmetic. `[HM-106]`.
+  - **Two fonts registered, one script left unshipped for want of a font.** `Noto Sans Pahawh Hmong`
+    and `Noto Sans Miao` (the Pollard font) were validated and added to `GFONT`, both weight-400.
+    Nyiakeng Puachue Hmong — also a native name in the Hmong infobox — has **no** Google font under
+    the obvious name; the metadata index says the family is **`Noto Serif NP Hmong`**, and it was
+    deliberately *not* added because no node uses it. `[HM-108]` records the name for a later pass.
+  - **⚠ Verification lesson worth keeping:** the two Hmong variety nodes were first given `nat`
+    values that were conventional but unsourced (`Hmoob Dawb`, `Hmoob Ntsuab`). They were corrected
+    to `lus Hmoob` / `lug Moob`, which the Hmong infobox supports through its `{{Lang|mww|…}}` and
+    `{{Lang|hnj|…}}` code tags. **Infobox language-code tags are evidence.**
+  - **Verified:** `node --check` OK; `node tools/check-atlas.js atlas-hmongmien.js` → valid, 22 nodes ·
+    86 markers · iso 22 · features 22. Headless Edge smoke test `#hmongmien/hmongdaw` → **0 error
+    markers**, header `苗瑶语族` carrying **`cn-only`** (no native family name — the opposite of
+    Koreanic), `scriptfonts` requesting `Noto+Sans+Pahawh+Hmong` + `Noto+Sans+Miao` + `Noto+Serif+SC`,
+    and Pahawh codepoint **U+16B07** present in the rendered DOM.
+- **Next:** the rest of Phase 7 — Formosan (§2.10), Austroasiatic (§2.11) and Turkic (§2.9, scope
+  decision needed: the plan recommends option (a), China + Central Asia at `[80, 42]` / zoom 4);
+  then Phase 8, the optional Siberian capstone (§2.13, cross-linking Ainu to `#japonic/ainu` rather
+  than duplicating it). New atlases should carry `nat` from the start, with forms read off Wikipedia
+  infoboxes and any new font validated against the Google Fonts API before use — the dead
+  `Noto Sans Tangut` entry in `GFONT` shows what happens otherwise.
 
 
 ---
@@ -749,7 +780,7 @@ Driem, *Languages of the Himalayas* · Ethnologue/Glottolog.
 languages"), and say so in the caption — the honest-fog-bank approach the Sinitic atlas
 already uses for its "Unclassified" node.
 
-### 2.8 Hmong–Mien 苗瑶语族 — 💤 planned
+### 2.8 Hmong–Mien 苗瑶语族 — ✅ built (`atlas-hmongmien.js`, 22 nodes · 86 markers)
 
 **Pitch.** A family with a story that is half linguistics, half twentieth-century history:
 the Hmongic and Mienic branches of the south-western hills, their embroidered story-cloths,
@@ -938,7 +969,7 @@ the sketch-geometry workflow are well proven.
 | **4** | Mongolic (§2.4) | script-history spine; Shirongolic cluster and Kalmyk outliers | ✅ done — `atlas-mongolic.js`, 26 nodes, 108 markers, 7 sketch polygons; `MG-104` two-part self-correction, `MG-102` four speaker conflicts, `MG-105` ISO findings, `MG-111` re-check (unlogged Oirat figure, self-contradicting source, one unsourced number removed) |
 | **5** | Silk Road lost languages (§2.12) | validates "special mode" (all-extinct, timeline-first, script chips) | ✅ done — `atlas-silkroad.js`, 34 nodes, 78 markers, 5 sketch polygons; three opt-in engine switches added (`timelineFirst`, per-node `chips`, `kinds`) plus an `spSuffix` wording fix; `SR-105` ISO register findings, `SR-106` Rouran dispute |
 | **6** | Tibeto-Burman (§2.7) | the big one; shared ancestor nodes with Sinitic | ✅ done — `atlas-tibetoburman.js`, 56 nodes, 164 markers, 5 sketch polygons; **the family's own premise is disputed and stated on the root node** (`TB-101`); Karen's placement disputed (`TB-109`); register findings at `TB-105` |
-| **7** | Hmong–Mien (§2.8) · Koreanic (§2.6) · Formosan (§2.10) · Turkic (§2.9, scope decision) · Austroasiatic (§2.11) | in whatever order appetite dictates | 🔜 Koreanic **done** — `atlas-korean.js`, 18 nodes, 78 markers, 4 sketch polygons; Jeju's status left open by design (`KO-101`, `KO-107`); Chungcheong and Gangwon shipped with their contested status stated (`KO-105`); `KO-109` records the thinnest Omniglot link set of any atlas. **Remaining: Hmong–Mien, Formosan, Austroasiatic, Turkic** |
+| **7** | Hmong–Mien (§2.8) · Koreanic (§2.6) · Formosan (§2.10) · Turkic (§2.9, scope decision) · Austroasiatic (§2.11) | in whatever order appetite dictates | 🔜 **Koreanic and Hmong–Mien done.** `atlas-korean.js` — 18 nodes, 78 markers, Jeju's status left open by design (`KO-101`, `KO-107`), Chungcheong and Gangwon shipped with their contested status stated (`KO-105`), thinnest Omniglot link set of any atlas (`KO-109`). `atlas-hmongmien.js` — 22 nodes, 86 markers, two invented scripts shipped as `nat` values with two new fonts registered, the brief's "lantern writing" hook **cut** as unverifiable (`HM-107`), a within-source figure conflict shipped rather than resolved (`HM-106`). **Remaining: Formosan, Austroasiatic, Turkic** |
 | **8** | Siberian isolate pocket (§2.13) | optional capstone | 💤 not started |
 
 **Cross-atlas links** use plain hash URLs in the prose (`<a href="#kradai/zhuang">`), so they are
