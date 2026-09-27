@@ -258,6 +258,25 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
   - **Reused Phase 5's engine work with no new engine changes** — `spSuffix:''` gives clean chips
     ("≈2 million, by source" rather than "…by source speakers"), and the script/decipherment chips
     carry the Dongba, Geba, Yi-syllabary, Limbu-script and Tibetan-script facts.
+  - **`nat` added — the script slot now holds an autonym where one genuinely exists.** A Unicode script
+    audit across all seven atlases found **237 of 237 nodes carrying Han characters in `zh:` and none
+    carrying the native script of the family it describes**, while four atlases declared fonts
+    (Tibetan, Myanmar, Yi, Thai, Lao, Mongolian) that therefore rendered *nothing*. The cause is that
+    `zh:` was holding the **Chinese name** in a slot styled as the autonym — which is correct for
+    Sinitic (粤, 闽南, 客家 **are** those languages' own characters) and an exonym everywhere else
+    (满语 is what *Chinese* calls Manchu; Manchu writes itself ᠮᠠᠨᠵᡠ ᡤᡳᠰᡠᠨ). New optional per-node
+    `nat` carries the language's own written form. **A Chinese exonym now rides on the right of each
+    row behind a `中文` toggle that defaults off**, so the atlas reads English-only until asked: the
+    left script slot shows `nat` when present, and `zh` only in a `zhIsNative` atlas — Sinitic, where
+    the characters *are* the native writing. The info panel follows the same rule, `nat` in gold above
+    the Chinese; the toggle is hidden entirely for Sinitic, where it would reveal nothing. Fourteen
+    Tibeto-Burman forms verified against Wikipedia infoboxes (བོད་སྐད་།, ཁམས་སྐད, རྫོང་ཁ་, ꆈꌠꉙ,
+    नेपाल भाषा, မြန်မာဘာသာစကား, …); `Noto Sans Devanagari` added to `fonts` for Newar and Bodo, which
+    would otherwise have rendered as tofu. Forms **deliberately not invented** — unwritten languages
+    (Rgyalrong, Japhug, Qiang, Pumi), Latin-orthography languages (Lisu, Lahu, Jingpho, Garo, Mizo),
+    scripts with no declared font (Limbu, Kayah, Tamang) and proto/family labels — are listed with
+    reasons at `research.md` `[TB-111]`, so a later pass does not "finish the job" by fabricating.
+
   - **Verified:** `node tools/check-atlas.js` on all seven files → all valid (43 · 19 · 36 · 23 · 26 ·
     34 · 56). Headless Edge smoke test of `#tibetoburman`: 12 palette rules, stats row `56 nodes,
     from a 350-language grouping · ≈330 million speakers, by source · 7 writing systems in the atlas`,
@@ -332,7 +351,7 @@ ATLASES.kradai = {
   sketchGeo: { /* GeoJSON FeatureCollection — per-atlas coastlines/borders */ },
   captions:  { note: '…marker caveat…', areas: '…polygon caveat…', sketch: '…' },
   fonts:     ['Noto Sans Thai', 'Noto Sans Lao', 'Noto Sans Myanmar'],
-  tree:      { /* DATA: id,en,zh,py,sp,region,cls,mk,h,t,kids */ },
+  tree:      { /* DATA: id,en,zh,nat,py,sp,region,cls,mk,h,t,kids,chips */ },
   iso:       { /* nodeId → ISO 639-3 code(s) */ },
   features:  { /* nodeId → [distinctive traits] */ },
   sound:     { /* nodeId → [[label, url], …] */ },

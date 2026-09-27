@@ -649,6 +649,9 @@ window.ATLASES.sinitic = {
   rootId: 'sinitic',
   stages: ['ancient', 'old', 'middle', 'oldmand'],
   zhSuppress: ['古', '未分'],
+  /* Sinitic's `zh` values are the languages' own characters (粤, 闽南, 客家), not
+     Chinese exonyms — so they stay in the script slot and are never toggled. */
+  zhIsNative: true,
   sources: "Sources: <b>Language Atlas of China</b> 中国语言地图集 (1987; 2nd ed. 2012) · J. Norman, <i>Chinese</i> (1988) · 曹志耘 (ed.), 汉语方言地图集 / <i>Linguistic Atlas of Chinese Dialects</i> (2008) · 李荣 (1985) on the Mandarin sub-groups · Ethnologue (2021-era counts). Speaker figures are approximations and vary widely between sources, because dialects form continua rather than bounded areas. Romanisation: Hanyu Pinyin unless marked — Jyutping for Cantonese, pe̍h-ōe-jī for Hokkien, ISO 639-3 codes from SIL; where a non-Mandarin character is glossed with its Mandarin pinyin reading, that is a guide for English readers, not a phonetic transcription of the local pronunciation.",
   tree: DATA, iso: ISO, features: FEATURES, sound: SOUND, areas: AREAS
 };

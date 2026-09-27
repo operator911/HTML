@@ -74,7 +74,7 @@ const DATA = {
              ["1950s–","Chinese administration in Tibet reshapes the language's public role"]],
           kids:[
 
-           { id:"lhasa", en:"Lhasa Tibetan (Ü-Tsang)", zh:"拉萨藏语", py:"Lāsà Zàngyǔ",
+           { id:"lhasa", en:"Lhasa Tibetan (Ü-Tsang)", zh:"拉萨藏语", nat:"བོད་སྐད་།", py:"Lāsà Zàngyǔ",
              sp:"the standard variety, by source", region:"Lhasa, Shigatse and the Ü-Tsang provinces of central Tibet",
              cls:"c-tib", mk:[[29.65,91.14,"Lhasa"],[29.27,88.88,"Shigatse"],[29.30,90.30,"Yamdrok"],[29.70,91.10,"Sera / Drepung monasteries"]],
              h:[`The central Tibetan varieties of Ü and Tsang, and the basis of the modern standard. Lhasa speech is what a learner outside Tibet is most likely to be taught, and it is the variety with the largest literary and broadcast presence.`,
@@ -85,7 +85,7 @@ const DATA = {
                 ["20th–21st c.","Standard Tibetan in broadcasting and teaching"]],
              chips:[["Tibetan script","scr"],["tonal","scr"]] },
 
-           { id:"kham", en:"Kham Tibetan (Khams)", zh:"康巴藏语", py:"Kāngbā Zàngyǔ",
+           { id:"kham", en:"Kham Tibetan (Khams)", zh:"康巴藏语", nat:"ཁམས་སྐད", py:"Kāngbā Zàngyǔ",
              sp:"≈1.5 million, by source", region:"Eastern Tibet and western Sichuan — Chamdo, Dêgê, Garzê and the Yunnan Tibetan areas",
              cls:"c-tib", mk:[[31.14,97.17,"Chamdo (Qamdo)"],[31.81,99.25,"Dêgê (the printing house)"],[31.62,100.00,"Garzê"],[27.83,99.71,"Dechen, Yunnan"]],
              h:[`The eastern Tibetan varieties, spread across a region that is now split between the Tibet Autonomous Region, Sichuan, Qinghai and Yunnan. Kham is politically fragmented and linguistically diverse: "Kham Tibetan" names a group of varieties, not one language, and mutual intelligibility across the group is limited.`,
@@ -96,7 +96,7 @@ const DATA = {
                 ["20th c.","Kham divided between several Chinese provinces"]],
              chips:[["Tibetan script","scr"],["dialect cluster","scr"]] },
 
-           { id:"amdo", en:"Amdo Tibetan", zh:"安多藏语", py:"Ānduō Zàngyǔ",
+           { id:"amdo", en:"Amdo Tibetan", zh:"安多藏语", nat:"ཨ་མདོའི་སྐད།", py:"Ānduō Zàngyǔ",
              sp:"≈1.8 million, by source", region:"Qinghai, southern Gansu and northern Sichuan — Xining and the Kokonor region",
              cls:"c-tib", mk:[[36.62,101.78,"Xining"],[36.20,100.60,"Kokonor (Qinghai Lake)"],[35.00,102.90,"Labrang"],[34.30,103.20,"Tewo / Gannan"]],
              h:[`The northeastern Tibetan varieties, in Qinghai, Gansu and northern Sichuan. Amdo is the most conservative of the three great divisions in some respects — notably it retains initial consonant clusters that Lhasa has simplified — and it is the variety in which the classic grammatical descriptions of Tibetan were built.`,
@@ -106,7 +106,7 @@ const DATA = {
                 ["20th c.","Amdo's varieties documented in detail by Western and Chinese linguists"]],
              chips:[["Tibetan script","scr"],["conservative — keeps old clusters","scr"]] },
 
-           { id:"dzongkha", en:"Dzongkha", zh:"宗喀语", py:"Zōngkā yǔ",
+           { id:"dzongkha", en:"Dzongkha", zh:"宗喀语", nat:"རྫོང་ཁ་", py:"Zōngkā yǔ",
              sp:"≈640,000 total speakers, by source", region:"Bhutan — Thimphu and the western valleys, with a national role",
              cls:"c-bod", mk:[[27.47,89.64,"Thimphu"],[27.43,89.42,"Paro"],[27.58,89.86,"Punakha"],[27.10,89.30,"Phuentsholing"]],
              h:[`Dzongkha is the national language of Bhutan — the one Tibetic variety that is the language of a state rather than of a province or a diaspora. It is a Tibetic language "primarily spoken by the Bhutanese people", and it is closest to the Tibetan varieties of the western valleys.`,
@@ -118,7 +118,7 @@ const DATA = {
                 ["21st c.","≈640,000 speakers, by source"]],
              chips:[["Tibetan script","scr"],["national language of Bhutan","scr"]] },
 
-           { id:"ladakhi", en:"Ladakhi (Bhoti)", zh:"拉达克语", py:"Lādákè yǔ",
+           { id:"ladakhi", en:"Ladakhi (Bhoti)", zh:"拉达克语", nat:"ལ་དྭགས་སྐད", py:"Lādákè yǔ",
              sp:"≈110,000, by source", region:"Ladakh, in the Indian union territory — Leh and the Indus valley",
              cls:"c-bod", mk:[[34.16,77.58,"Leh"],[34.55,76.13,"Kargil (Purik)"],[33.50,78.20,"Hanle"],[34.00,77.00,"Indus valley"]],
              h:[`Ladakhi is the westernmost Tibetic language of any size, spoken in the Indus valley of Ladakh — now a union territory of India, on the frontier between the Tibetan, Indian and Central Asian worlds. It is written in the Tibetan script, and the whole of its literary and religious inheritance is Tibetan Buddhist.`,
@@ -129,7 +129,7 @@ const DATA = {
                 ["2019","Ladakh becomes a union territory of India"]],
              chips:[["Tibetan script","scr"],["split by an international border","scr"]] },
 
-           { id:"balti", en:"Balti", zh:"巴尔蒂语", py:"Bā'ěrdì yǔ",
+           { id:"balti", en:"Balti", zh:"巴尔蒂语", nat:"སྦལ་ཏི།", py:"Bā'ěrdì yǔ",
              sp:"≈400,000, by source", region:"Baltistan, in Pakistan-administered Gilgit-Baltistan — Skardu and the Indus and Shyok valleys",
              cls:"c-bod", mk:[[35.30,75.63,"Skardu"],[35.85,74.55,"Gilgit area"],[35.10,76.20,"Shigar"],[35.25,76.15,"Khaplu"]],
              h:[`Balti is a Tibetic language of the Karakoram, spoken in Baltistan — the same dialect continuum as Ladakhi, on the other side of a border. It is the westernmost Tibetic variety of all, and it is unusual within the group in that most of its speakers are <b>Muslim</b> rather than Buddhist, so its literary language is Urdu and its religious vocabulary Persian and Arabic rather than Tibetan.`,
@@ -140,7 +140,7 @@ const DATA = {
                 ["21st c.","≈400,000 speakers, by source"]],
              chips:[["Tibetan script historically","scr"],["Urdu / Perso-Arabic literacy","scr"]] },
 
-           { id:"sherpa", en:"Sherpa", zh:"夏尔巴语", py:"Xià'ěrbā yǔ",
+           { id:"sherpa", en:"Sherpa", zh:"夏尔巴语", nat:"ཤར་པའི་སྐད་ཡིག", py:"Xià'ěrbā yǔ",
              sp:"≈150,000, by source", region:"Solukhumbu and the Everest region of Nepal, with communities in Darjeeling and abroad",
              cls:"c-bod", mk:[[27.80,86.71,"Namche Bazaar, Solukhumbu"],[27.82,86.71,"Everest region"],[27.04,88.26,"Darjeeling"],[27.72,85.30,"Kathmandu valley"]],
              h:[`Sherpa is a Tibetic language of the Everest region of Nepal — the language of the people who made high-altitude mountaineering a profession. It is closely related to the Tibetan of the border valleys and is written, when written, in the Tibetan script.`,
@@ -225,7 +225,7 @@ const DATA = {
           ["1768–1769","Gorkha conquest; Nepali becomes the state language"],
           ["20th–21st c.","Revitalisation movement; official recognition"]],
        kids:[
-        { id:"newar", en:"Newar (Nepal Bhasa)", zh:"尼瓦尔语", py:"Níwǎ'ěr yǔ",
+        { id:"newar", en:"Newar (Nepal Bhasa)", zh:"尼瓦尔语", nat:"नेपाल भाषा", py:"Níwǎ'ěr yǔ",
           sp:"≈850,000, by source", region:"The Kathmandu valley — Kathmandu, Patan and Bhaktapur — and the surrounding towns",
           cls:"c-new", mk:[[27.72,85.32,"Kathmandu"],[27.67,85.32,"Patan (Lalitpur)"],[27.67,85.43,"Bhaktapur"],[27.60,85.10,"Kirtipur"]],
           h:[`Newar is "spoken natively by the Newar people, the indigenous inhabitants of Nepal Mandala, which consists of the Kathmandu Valley and surrounding regions in Nepal". It is the language of the valley's old urban civilisation — its architecture, its Buddhist and Hindu scholarship, its chronicles and its poetry.`,
@@ -373,7 +373,7 @@ const DATA = {
           ["1974","The modern Yi syllabary is standardised in Sichuan"],
           ["20th–21st c.","Chinese language policy and Burmese politics both reshape the branch"]],
        kids:[
-        { id:"burmese", en:"Burmese (Myanmar)", zh:"缅甸语", py:"Miǎndiàn yǔ",
+        { id:"burmese", en:"Burmese (Myanmar)", zh:"缅甸语", nat:"မြန်မာဘာသာစကား", py:"Miǎndiàn yǔ",
           sp:"≈33 million first-language, by source", region:"Myanmar — the Irrawaddy valley, Yangon, Mandalay and Bagan",
           cls:"c-bur", mk:[[16.87,96.20,"Yangon"],[21.98,96.08,"Mandalay"],[21.17,94.86,"Bagan"],[19.75,96.10,"Naypyidaw"],[18.80,95.30,"Sri Ksetra (Pyu)"],[16.82,96.13,"Thaton"]],
           h:[`Burmese is "a Tibeto-Burman language spoken in Myanmar, where it is the official language, lingua franca, and the native language of the Bamar, the country's largest ethnic group". It is by a wide margin the largest language in this atlas, and one of the few Tibeto-Burman languages with a continuous written literature reaching back nearly a thousand years.`,
@@ -386,7 +386,7 @@ const DATA = {
              ["21st c.","≈33 million first-language speakers, by source"]],
           chips:[["Burmese script (from Pyu/Brāhmī)","scr"],["tonal","scr"],["1,000 years of literature","scr"]] },
 
-        { id:"rakhine", en:"Rakhine (Arakanese)", zh:"若开语", py:"Ruòkāi yǔ",
+        { id:"rakhine", en:"Rakhine (Arakanese)", zh:"若开语", nat:"ရက္ခိုင်ဘာသာ", py:"Ruòkāi yǔ",
           sp:"≈2 million, by source", region:"Rakhine State, Myanmar — Sittwe, Mrauk U and the coastal strip",
           cls:"c-bur", mk:[[20.15,92.90,"Sittwe"],[20.59,93.19,"Mrauk U (the old capital)"],[18.90,93.50,"Sandoway / Thandwe"]],
           h:[`Rakhine — also called Arakanese — is the Tibeto-Burman language of the Rakhine coastal strip of western Myanmar, closely related to Burmese and sometimes treated as a dialect of it. It was the language of the <b>Mrauk U</b> kingdom, which ruled the coast from the fifteenth to the eighteenth century and was for a period one of the wealthiest ports in the Bay of Bengal.`,
@@ -461,7 +461,7 @@ const DATA = {
              ["21st c.","≈300,000 speakers, by source; Dongba studied and taught"]],
           chips:[["Dongba pictographs","scr"],["Geba syllabary","scr"],["Fraser alphabet","scr"],["ritual script, not everyday writing","scr"]] },
 
-        { id:"nuosu", en:"Nuosu Yi", zh:"凉山彝语", py:"Liángshān Yíyǔ",
+        { id:"nuosu", en:"Nuosu Yi", zh:"凉山彝语", nat:"ꆈꌠꉙ", py:"Liángshān Yíyǔ",
           sp:"≈2 million, by source", region:"Liangshan Yi Autonomous Prefecture, southern Sichuan — Xichang and the Anning river valley",
           cls:"c-bur", mk:[[27.88,102.26,"Xichang, Liangshan"],[27.50,102.50,"Zhaojue"],[27.20,102.30,"Xide"],[28.30,102.00,"Mianning"],[26.60,102.80,"Ningnan"]],
           h:[`Nuosu is the largest of the Yi languages, spoken in the Liangshan Yi Autonomous Prefecture of southern Sichuan, and it is one of the very few Tibeto-Burman languages with a modern standardised writing system in daily use.`,
@@ -496,7 +496,7 @@ const DATA = {
              ["21st c.","≈1 million speakers, by source"]],
           chips:[["Latin orthography","scr"],["also called Kachin","scr"]] },
 
-        { id:"bodo", en:"Bodo (Boro)", zh:"博多语", py:"Bódūo yǔ",
+        { id:"bodo", en:"Bodo (Boro)", zh:"博多语", nat:"बरʼ", py:"Bódūo yǔ",
           sp:"≈1.5 million, by source", region:"Assam, India — the Bodoland Territorial Region, Kokrajhar and the Brahmaputra valley",
           cls:"c-sal", mk:[[26.40,90.27,"Kokrajhar"],[26.14,91.74,"Guwahati"],[26.70,91.50,"Nalbari area"],[26.60,92.80,"Sonitpur"]],
           h:[`Bodo is the largest Tibeto-Burman language of Assam and one of the few in this atlas with constitutional standing: it was added to India's <b>Eighth Schedule</b> in 2003, which gives it recognition and a claim on resources for its development.`,
@@ -582,7 +582,7 @@ const DATA = {
           ["1948–","Karen conflict in Myanmar; refugee movements to Thailand"],
           ["20th–21st c.","Border camps and diaspora reshape the speaker map"]],
        kids:[
-        { id:"sgaw", en:"S'gaw Karen", zh:"斯高克伦语", py:"Sīgāo Kèlún yǔ",
+        { id:"sgaw", en:"S'gaw Karen", zh:"斯高克伦语", nat:"ကညီကျိာ်", py:"Sīgāo Kèlún yǔ",
           sp:"≈1.5 million, by source", region:"Kayin State, Myanmar — Hpa-an and the Salween delta — and the Thai border",
           cls:"c-kar", mk:[[16.89,97.63,"Hpa-an, Kayin State"],[16.87,96.20,"Yangon area"],[15.20,98.40,"Thai border"],[17.30,97.90,"Mawlamyine hinterland"]],
           h:[`S'gaw Karen is the largest Karenic language, spoken in Kayin State in southeastern Myanmar and along the Thai border. It has a romanised orthography created by nineteenth-century Baptist missionaries, and — unusually for this branch — a substantial printed literature and a history of being taught in schools on both sides of the border.`,
@@ -593,7 +593,7 @@ const DATA = {
              ["21st c.","≈1.5 million speakers, by source, inside and outside Myanmar"]],
           chips:[["Latin orthography","scr"],["conflict diaspora","scr"]] },
 
-        { id:"pwo", en:"Pwo Karen", zh:"波克伦语", py:"Bō Kèlún yǔ",
+        { id:"pwo", en:"Pwo Karen", zh:"波克伦语", nat:"ဖျိၩ့", py:"Bō Kèlún yǔ",
           sp:"≈1 million, by source", region:"Lower Myanmar and central Thailand — from the Irrawaddy delta to the Chao Phraya basin",
           cls:"c-kar", mk:[[16.80,96.30,"Irrawaddy delta"],[17.00,97.50,"Thaton area"],[18.16,97.93,"Mae Sariang, Thailand"],[14.00,99.50,"Kanchanaburi, Thailand"]],
           h:[`Pwo Karen is the second major Karenic language, and its distribution is the most striking in the branch: it is spoken from the Irrawaddy delta in Myanmar all the way into central Thailand, where Karen communities have been settled for centuries.`,
@@ -1047,7 +1047,7 @@ window.ATLASES.tibetoburman = {
     areas:  '<b style="color:var(--gold)">Approximate core areas</b> — coarse hand-drawn blocks showing roughly where each branch is concentrated. They follow no surveyed boundary, omit enclaves, and flatten a scatter into a shape. The Burmic and Karenic blocks in Myanmar in particular are <em>regions of concentration</em>, not territories, and the Tibetan plateau block is drawn over a landscape where the population is a thin ribbon of valley settlements. The marker layer remains the factual one.',
     sketch: '<b style="color:var(--gold)">Schematic map</b> — a hand-drawn Tibetan plateau, Himalayan arc, Yunnan–Myanmar hill country, Northeast India and the Irrawaddy valley, simplified from memory of the geography; the markers sit at true coordinates. Works fully offline.'
   },
-  fonts: ['Noto Serif Tibetan', 'Noto Sans Myanmar', 'Noto Sans Yi', 'Noto Serif SC'],
+  fonts: ['Noto Serif Tibetan', 'Noto Sans Myanmar', 'Noto Sans Yi', 'Noto Sans Devanagari', 'Noto Serif SC'],
   filterPlaceholder: 'e.g. Tibetan, Burmese, Yi, Mizo, Karen…',
   listen: {
     om: 'https://www.omniglot.com/writing/',

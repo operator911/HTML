@@ -209,7 +209,7 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
       status in `languages.md` §0 is 💤 planned. Do not seed entries here until research actually happens.
 
 > **Silk Road (Phase 5) and Tibeto-Burman (Phase 6) have moved out of this queue** — their atlases
-> are written and their logs (`SR-101`–`SR-110`, `TB-101`–`TB-110`) are below.
+> are written and their logs (`SR-101`–`SR-110`, `TB-101`–`TB-111`) are below.
 
 ## Tungusic (Phase 1) — research log
 
@@ -827,6 +827,48 @@ register is the same `iso-639-3.tab` used for Phases 4 and 5.
   - **One bonus:** `akha.htm` exists, which gives the Hani/Akha node a page its Chinese-side name (Hani) would not have found on its own — a small illustration of why the atlas carries both names.
 - **Verified:** `node tools/check-atlas.js` on all seven atlas files → all valid (sinitic 43 · tungusic 19 · kradai 36 · japonic 23 · mongolic 26 · silkroad 34 · tibetoburman 56). Headless Edge smoke test of `#tibetoburman`: title "Tibeto-Burman — East Asian Language Atlas", 12 palette rules generated, stats row `56 nodes, from a 350-language grouping · ≈330 million speakers, by source · 7 writing systems in the atlas`, nav button `aria-current="page"`, **0 error markers**. Deep link `#tibetoburman/nuosu` renders three script chips (`Modern Yi syllabary (1974)`, `756 + 63 glyphs`, `in daily use`), the ISO chip `iii (type L — register name "Sichuan Yi"; ii)`, and the `sp` chip reading `≈2 million, by source` with no stray " speakers" — confirming the `spSuffix` option added in Phase 5.
 
+### [TB-111] The `nat` field — which languages get their own writing, and which deliberately do not
+
+- **Claim as written:** the fourteen nodes carrying `nat:` show each language's **own** written form, not a Chinese exonym in a slot that implies an autonym.
+- **Appears in:** `atlas-tibetoburman.js` → `nat:` on `lhasa`, `kham`, `amdo`, `dzongkha`, `ladakhi`, `balti`, `sherpa`, `newar`, `burmese`, `rakhine`, `nuosu`, `bodo`, `sgaw`, `pwo`
+- **Verdict:** verified — each form read from that language's **English Wikipedia infobox `nativename` parameter**, retrieved 2026-09-26
+- **Why this entry exists:** a Unicode script audit of all seven atlases found **237 of 237 nodes carrying Han characters in `zh:` and zero carrying the native script of the family they describe** — while four atlases declared fonts (Tibetan, Myanmar, Yi, Thai, Lao, Mongolian) that therefore rendered nothing. `zh:` was holding the *Chinese name* in a slot styled as the autonym. This entry records the forms judged genuinely attested, and — the more important half — the ones deliberately left alone.
+- **The forms, as retrieved:**
+
+| Node | Script | `nat` | Infobox source |
+|---|---|---|---|
+| `lhasa` | Tibetan | བོད་སྐད་། | Lhasa Tibetan |
+| `kham` | Tibetan | ཁམས་སྐད | Khams Tibetan |
+| `amdo` | Tibetan | ཨ་མདོའི་སྐད། | Amdo Tibetan |
+| `dzongkha` | Tibetan | རྫོང་ཁ་ | Dzongkha |
+| `ladakhi` | Tibetan | ལ་དྭགས་སྐད | Ladakhi language |
+| `balti` | Tibetan | སྦལ་ཏི། | Balti language |
+| `sherpa` | Tibetan | ཤར་པའི་སྐད་ཡིག | Sherpa language |
+| `newar` | Devanagari | नेपाल भाषा | Newar language |
+| `bodo` | Devanagari | बरʼ | Boro language (India) |
+| `burmese` | Myanmar | မြန်မာဘာသာစကား | Burmese language |
+| `rakhine` | Myanmar | ရက္ခိုင်ဘာသာ | Rakhine language |
+| `sgaw` | Myanmar | ကညီကျိာ် | S'gaw Karen language |
+| `pwo` | Myanmar | ဖျိၩ့ | Western Pwo language |
+| `nuosu` | Yi | ꆈꌠꉙ | Nuosu language |
+
+- **What deliberately got no `nat`, and why** — recorded so a later pass does not "finish the job" by inventing forms:
+  - **Rgyalrong, Japhug, Situ, Tshobdun, Qiang, Pumi** — unwritten. Linguistic description is romanisation only; any "native form" would be fabricated.
+  - **Lisu, Lahu, Hani, Jingpho, Garo, Mizo, Thadou, Tedim, Dimasa, Zaiwa, Achang** — written, but in **Latin** orthographies. The "native" form would be the same kind of string as the English name already shown, so the field would add noise, not information.
+  - **Limbu, Kayah, Tamang** — have their own scripts (Limbu, Kayah Li, Tamyig) but **no font is declared for them**. Left for a later pass rather than shipped as tofu.
+  - **Proto / family / stage nodes** (`原始藏缅语`, `藏语支`, `古藏语`, …) — keep the Chinese label. A reconstruction has no writing, and 藏语支 is a Chinese scholarly term, not a pretended autonym.
+  - **Zhangzhung, Naxi** — Zhangzhung's script is not in `GFONT`; Naxi's Dongba pictographs are not a text encoding the field can hold. Left as labels.
+- **Engine note:** `nat` is a new optional node field, and `zhIsNative` a new optional atlas flag. The tree's script slot renders `nat` when present, and `zh` **only** in a `zhIsNative` atlas (Sinitic, where the characters *are* the native writing); a Chinese exonym instead rides on the **right** of the row behind a `中文` toggle that **defaults off**, so every non-Sinitic family reads English-only until asked. The info panel follows the same rule, `nat` in gold above the Chinese. The toggle is hidden entirely for Sinitic, where it would reveal nothing. This supersedes the first cut of this change, which had shown the Chinese inline in the script slot — the wrong place for an exonym. `atlas-tibetoburman.js` also gained `Noto Sans Devanagari` in `fonts` — Newar and Bodo are Devanagari-script, and the family had declared only Tibetan/Myanmar/Yi, so both would have rendered as tofu.
+- **Verified:** `node tools/check-atlas.js atlas-tibetoburman.js` → valid, 56 nodes · 164 markers. Smoke test `#tibetoburman/lhasa`: **0 error markers**, font link now requests `Noto+Serif+Tibetan · Noto+Sans+Myanmar · Noto+Sans+Yi · Noto+Sans+Devanagari`, `.t-zh.nat` applied to exactly the fourteen, and the panel renders `བོད་སྐད་།` above `拉萨藏语`. Regression `#sinitic/yue` unchanged — Sinitic carries no `nat`, so its slot falls back to `zh` and its rows are byte-identical.
+
+- **Rendered rows after the change** (toggle off — the default):
+  - `lhasa` → `[བོད་སྐད་།] Lhasa Tibetan (Ü-Tsang) …… [拉萨藏语] [speakers]` — Chinese in the DOM, hidden by CSS
+  - `qiang` → `[  ] Qiang …… [羌语] [speakers]` — empty script slot, English-only
+  - Sinitic `yue` → `[粤] Yue (Cantonese) …… [speakers]` — no right slot at all; 粤 *is* the native script
+  - Counts per atlas: Sinitic 43/43 script slots filled, toggle hidden · Tibeto-Burman 14 filled / 42 empty, 56 behind the toggle · the other five atlases 0 filled, all names behind the toggle.
+
+
+
 
 ## Disputed / conflicting sources
 
@@ -872,4 +914,4 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 4. Update the counters table at the top of this file.
 5. If a session is interrupted, the file — not the conversation — is the source of truth.
 
-*Last updated: 2026-09-26 — Phase 6 (Tibeto-Burman) researched and logged: entries `TB-101`–`TB-110`, one logged dispute (`TB-109`, Karen's placement) and the series' most consequential caveat (`TB-101`: the grouping itself is not a demonstrated subgroup). The ISO register findings at `TB-105` are the richest of the series — five name mismatches, four splits and one lump. Phases 0–6 complete; Phase 0.5 (Sinitic retrofit) skipped by instruction, so its 42 targets remain seeded and unchecked. Phases 7–8 not started: Hmong–Mien, Koreanic, Formosan, Turkic, Austroasiatic and the Siberian capstone.*
+*Last updated: 2026-09-26 — Phase 6 (Tibeto-Burman) researched and logged: entries `TB-101`–`TB-111`, one logged dispute (`TB-109`, Karen's placement) and the series' most consequential caveat (`TB-101`: the grouping itself is not a demonstrated subgroup). The ISO register findings at `TB-105` are the richest of the series — five name mismatches, four splits and one lump. `TB-111` records a cross-atlas audit that found **all 237 nodes in all seven atlases carrying Han characters in the script slot and none carrying the native script**, and adds an optional `nat` field with fourteen verified Tibeto-Burman forms plus an explicit list of the forms deliberately not invented. Phases 0–6 complete; Phase 0.5 (Sinitic retrofit) skipped by instruction, so its 42 targets remain seeded and unchecked. Phases 7–8 not started: Hmong–Mien, Koreanic, Formosan, Turkic, Austroasiatic and the Siberian capstone.*

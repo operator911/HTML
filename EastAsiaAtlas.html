@@ -31,6 +31,13 @@ header h1 .zh{font-family:var(--native);color:var(--gold);font-weight:700;margin
 .tree-head label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:.35rem}
 #filter{width:100%;padding:.45rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:.9rem}
 #filter::placeholder{color:var(--ink-faint)}
+.tree-head-row{display:flex;gap:.45rem;align-items:center}
+.tree-head-row #filter{width:auto;flex:1 1 auto;min-width:0}
+/* Chinese names are exonyms for every family but Sinitic, so they sit on the
+   right as a secondary annotation and stay hidden until asked for (default off). */
+.cn-toggle{flex:0 0 auto;font:inherit;font-size:.72rem;line-height:1.2;padding:.36rem .5rem;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-faint);cursor:pointer;font-family:var(--native)}
+.cn-toggle:hover,.cn-toggle:focus-visible{border-color:var(--gold);color:var(--gold)}
+.cn-toggle[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
 #tree{flex:1 1 auto;overflow:auto;padding:.6rem .7rem 1.2rem;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 #tree ul{list-style:none;margin:0;padding:0}
 #tree ul ul{margin-left:.95rem;border-left:1px solid var(--line);padding-left:.55rem}
@@ -45,8 +52,16 @@ header h1 .zh{font-family:var(--native);color:var(--gold);font-weight:700;margin
 .caret{flex:0 0 1rem;display:inline-flex;justify-content:center;color:var(--ink-faint);font-size:.7rem;transition:transform .18s ease}
 li.open>.tnode .caret{transform:rotate(90deg)}
 .t-zh{font-family:var(--native);font-weight:700;color:var(--c);width:1.3em;text-align:center;flex:0 0 auto}
+/* `nat` = the language's own written form (autonym). Wider than the single-glyph
+   Sinitic slot and clipped, because a native string is never one character. */
+.t-zh.nat{width:auto;min-width:1.3em;max-width:6.5rem;text-align:left;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .t-en{font-size:.97rem}
-.t-sp{margin-left:auto;font-size:.7rem;color:var(--ink-faint);flex:0 0 auto;padding-left:.4rem;font-family:var(--sans)}
+.t-sp{font-size:.7rem;color:var(--ink-faint);flex:0 0 auto;font-family:var(--sans)}
+.t-right{margin-left:auto;display:flex;align-items:center;gap:.5rem;flex:0 0 auto}
+.t-cn{font-family:var(--native);font-size:.85rem;color:var(--ink-faint);flex:0 0 auto;display:none}
+body.show-cn .t-cn{display:inline}
+.cn-only{display:none}
+body.show-cn .cn-only{display:block}
 li.hidden{display:none}
 mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1px}
 .legend{flex:0 0 auto;padding:.6rem .9rem .7rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.3rem .85rem}
@@ -83,6 +98,7 @@ mark{background:var(--gold-soft);color:var(--gold);border-radius:3px;padding:0 1
 .empty{color:var(--ink-faint);font-family:var(--serif);font-size:1.05rem;font-style:italic;padding-top:2rem;text-align:center}
 #info h2{margin:0;font-family:var(--serif);font-weight:600;font-size:1.55rem;line-height:1.2;color:var(--c)}
 #info .zh-big{font-family:var(--native);font-size:1.15rem;color:var(--ink-dim);font-weight:500;margin-top:.1rem}
+#info .zh-big.nat{font-size:1.5rem;color:var(--gold);font-weight:600;line-height:1.35}
 #info .py{color:var(--ink-faint);font-size:.85rem;font-style:italic}
 .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.85rem 0 1rem}
 .chip{font-size:.72rem;padding:.2rem .6rem;border-radius:99px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim)}
@@ -140,7 +156,11 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
   <aside class="pane tree-pane" aria-label="Classification of the selected family">
     <div class="tree-head">
       <label for="filter">Filter varieties</label>
-      <input id="filter" type="search" placeholder="Filter…" autocomplete="off">
+      <div class="tree-head-row">
+        <input id="filter" type="search" placeholder="Filter…" autocomplete="off">
+        <button id="cnToggle" class="cn-toggle" type="button" aria-pressed="false"
+                title="Show the Chinese name of each variety" aria-label="Show Chinese names">中文</button>
+      </div>
     </div>
     <nav id="tree" aria-label="Language family tree"></nav>
     <div class="legend" id="legend" aria-hidden="true"></div>
@@ -176,8 +196,14 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
      key · title{zh,en} · tagline · stats[[value,label]] · palette{key:hex}
      legend[[key,label]] · view{center,zoom} · outline{color,fill} · sketchGeo
      captions{note,areas,sketch} · fonts[Noto…] · filterPlaceholder
-     listen{om,fv,search} · rootId · stages[ids] · zhSuppress[str]
+     listen{om,fv,search} · rootId · stages[ids] · zhSuppress[str] · zhIsNative
      sources · tree · iso · features · sound · areas
+     Per node: id · en · zh (the name in Chinese) · nat (the language's own
+     written form, only where one is genuinely attested) · py · sp · region
+     · cls · mk · h · t · kids · chips.
+     Script slot: `nat` when present; else `zh` only in a `zhIsNative` atlas
+     (Sinitic, where the characters *are* the native writing). A Chinese exonym
+     rides on the right of the row behind the 中文 toggle, which defaults off.
    =========================================================================== */
 'use strict';
 
@@ -227,6 +253,22 @@ const GFONT = {
 const SCRIPT_FALLBACK = ['Noto Serif SC', 'Songti SC', 'SimSun', 'serif'];
 
 const $  = (s) => document.querySelector(s);
+/* The language's own written form, if the atlas supplies one. Sinitic's `zh`
+   doubles as this, because for Sinitic the Chinese characters *are* the native
+   script — 粤 and 闽南 are the languages' own writing, not a Chinese exonym. */
+function nativeOf(n) { return n.nat || (ATLAS.zhIsNative ? n.zh : '') || ''; }
+/* True when the atlas has at least one Chinese name that is an exonym, i.e.
+   something for the 中文 toggle to reveal. False for Sinitic. */
+function hasExonyms(a) {
+  if (a.zhIsNative) return false;
+  let found = false;
+  (function walk(n) {
+    if (found || !n) return;
+    if (n.zh && n.zh !== n.nat) found = true;
+    (n.kids || []).forEach(walk);
+  })(a.tree);
+  return found;
+}
 const el = (id) => document.getElementById(id);
 const yt = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
 
@@ -291,6 +333,9 @@ function applyHeader(a) {
   filterEl.placeholder = a.filterPlaceholder || 'Filter varieties…';
   document.title = a.title.en + ' — East Asian Language Atlas';
   el('areasToggle').textContent = areasOn ? '◧ areas: on' : '◧ areas (approx.)';
+  /* Offer the Chinese toggle only where it does something: in a zhIsNative atlas
+     (Sinitic) the characters in the script slot are native writing, not exonyms. */
+  el('cnToggle').style.display = hasExonyms(a) ? '' : 'none';
 }
 function applyLegend(a) {
   el('legend').innerHTML = (a.legend || []).map(([k, n]) => {
@@ -601,12 +646,22 @@ function renderInfo(n) {
      Silk Road atlas for script names and decipherment status (languages.md §2.12). */
   const extra = (n.chips || []).map((c) =>
     '<span class="chip' + (c[1] ? ' ' + c[1] : '') + '">' + c[0] + '</span>').join('');
+  /* The script line. In a zhIsNative atlas (Sinitic) the Chinese characters *are*
+     the native writing, so they stay in view. Everywhere else the Chinese is an
+     exonym and rides behind the 中文 toggle — see research.md [TB-111]. */
+  const natLine = (function () {
+    const nat = nativeOf(n);
+    const py  = n.py ? ' <span class="py">' + n.py + '</span>' : '';
+    if (nat && nat === n.zh) return '<div class="zh-big">' + n.zh + py + '</div>';
+    const zhOK = n.zh && (ATLAS.zhSuppress || []).indexOf(n.zh) < 0;
+    return (nat ? '<div class="zh-big nat">' + nat + '</div>' : '') +
+           (zhOK ? '<div class="zh-big cn-only">' + n.zh + py + '</div>'
+                 : (n.py ? '<div class="py cn-only">' + n.py + '</div>' : ''));
+  })();
   info.innerHTML =
     '<p class="kicker">' + kind + '</p>' +
     '<h2>' + n.en + '</h2>' +
-    (n.zh && (ATLAS.zhSuppress || []).indexOf(n.zh) < 0
-      ? '<div class="zh-big">' + n.zh + (n.py ? ' <span class="py">' + n.py + '</span>' : '') + '</div>'
-      : (n.py ? '<div class="py">' + n.py + '</div>' : '')) +
+    natLine +
     '<div class="chips">' +
       (n.sp ? '<span class="chip sp">' + n.sp + (ATLAS.spSuffix === undefined ? ' speakers' : ATLAS.spSuffix) + '</span>' : '') +
       '<span class="chip">' + (n.region || '') + '</span>' +
@@ -635,9 +690,12 @@ function buildNode(n, depth) {
   btn.className = 'tnode ' + (n.cls || 'c-anc') + (depth ? ' lvl' + Math.min(depth, 3) : '');
   btn.innerHTML =
     '<span class="caret" aria-hidden="true">' + ((n.kids && n.kids.length) ? '▶' : '·') + '</span>' +
-    '<span class="t-zh">' + (n.zh || '') + '</span>' +
+    '<span class="t-zh' + (n.nat ? ' nat' : '') + '">' + nativeOf(n) + '</span>' +
     '<span class="t-en">' + n.en + '</span>' +
-    '<span class="t-sp">' + (n.sp || '') + '</span>';
+    '<span class="t-right">' +
+      (n.zh && n.zh !== nativeOf(n) ? '<span class="t-cn">' + n.zh + '</span>' : '') +
+      '<span class="t-sp">' + (n.sp || '') + '</span>' +
+    '</span>';
   const preview = () => {
     if (!wide.matches) return;
     renderInfo(n);
@@ -696,7 +754,7 @@ function select(n, fit, push) {
 
 /* ---------------------------------------------------------------------- filter */
 function matches(n, q) {
-  return (n.en + ' ' + (n.zh || '') + ' ' + (n.py || '') + ' ' + (n.region || '')).toLowerCase().indexOf(q) >= 0;
+  return (n.en + ' ' + (n.zh || '') + ' ' + (n.nat || '') + ' ' + (n.py || '') + ' ' + (n.region || '')).toLowerCase().indexOf(q) >= 0;
 }
 function applyFilter(q) {
   function walk(li) {
@@ -743,6 +801,15 @@ el('areasToggle').addEventListener('click', () => {
   el('areasToggle').setAttribute('aria-pressed', String(on));
   el('areasToggle').textContent = on ? '◧ areas: on' : '◧ areas (approx.)';
   if (on) paintAreas();
+});
+
+/* ------------------------------------------- Chinese names — hidden by default */
+let cnOn = false;
+el('cnToggle').addEventListener('click', () => {
+  cnOn = !cnOn;
+  document.body.classList.toggle('show-cn', cnOn);
+  el('cnToggle').setAttribute('aria-pressed', String(cnOn));
+  el('cnToggle').textContent = cnOn ? '中文: on' : '中文';
 });
 
 /* ------------------------------------------------------- resizable column grips */
