@@ -22,11 +22,11 @@ const FAIL = [
   ['the node / a node',  /\b(?:the|a|each|its) nodes?\b/gi],
   ['script slot',        /\bscript slots?\b/gi],
   ['ships / shipped',    /\bshipped\b|\bships\s+(?:as|both|the|them|it|with)\b/gi],
-  ['acceptance field',   /\bacceptance\b/gi],
+  ['acceptance field',   /\bacceptance\s*=/gi],
   ['infobox field syntax', /\bfam[0-9] *=[^,)]*|\bglotto *=|\biso3 *=/g],
   ['reference account',  /\breference (?:account|infobox)\b/gi],
   ['research log path',  /research\.md/gi],
-  ['research log id',    /\b(?:FO|HM|JP|KO|KD|MG|SR|TB|TK|TU|DP)-\d{2,3}\b/g],
+  ['research log id',    /\b(?:FO|HM|JP|KO|KD|MG|SR|TB|TK|TU|DP|AU)-\d{2,3}\b/g],
 ];
 
 /* --- warn: usually editorial self-reference, but some uses are legitimate
