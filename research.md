@@ -68,7 +68,7 @@ it is checked — never reconstructed from memory afterwards.
 | Austroasiatic | 10 | 7 | 3 | 0 | — |
 | Silk Road | 10 | 9 | 1 | 0 | — |
 | Cross-family (prose) | 2 | 1 | 0 | 0 | `PR-101` eleven-atlas sweep · `PR-102` the guard's prefix list had drifted twice |
-| Siberian isolates | 0 | 0 | 0 | 0 | atlas not written |
+| Siberian isolates | 13 | 10 | 3 | 0 | — |
 
 > **Corrected 2026-09-26.** This table previously carried invented counts for ten atlases that
 > have never been researched — Mongolic 6, Japonic 6, Koreanic 6, Tibeto-Burman 7, Hmong–Mien 5,
@@ -78,10 +78,9 @@ it is checked — never reconstructed from memory afterwards.
 >
 > **Files on disk as of 2026-09-27:** `atlas-sinitic.js`, `atlas-tungusic.js`, `atlas-kradai.js`,
 > `atlas-japonic.js`, `atlas-mongolic.js`, `atlas-silkroad.js`, `atlas-tibetoburman.js`,
-> `atlas-korean.js`, `atlas-hmongmien.js`, `atlas-turkic.js`, `atlas-formosan.js` and
-> **`atlas-austroasiatic.js`** — Phases 0–6 plus all five atlases of Phase 7. Their rows above are
-> the only ones backed by an atlas; the remaining one family reads 0 because nothing has been
-> researched for it yet, not because a search came up empty. **Phase 7 is complete.**
+> `atlas-korean.js`, `atlas-hmongmien.js`, `atlas-turkic.js`, `atlas-formosan.js`,
+> `atlas-austroasiatic.js` and **`atlas-siberian.js`** — Phases 0–6, all five atlases of Phase 7,
+> and the Phase 8 capstone. Every row above is now backed by an atlas; **the series is complete**.
 
 > **Phase 0.5 status: SKIPPED.** The user confirmed on 2026-09-26 that the Sinitic
 > verification had already been carried out at an earlier time, so the sweep was not re-run
@@ -294,9 +293,43 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
       (38 nodes · 173 markers · 30 iso · 38 features) and the headless Edge smoke test of
       `#turkic/chuvash` passes. `status:'done'` in `EastAsiaAtlas.html`.
 
-> **Silk Road (Phase 5), Tibeto-Burman (Phase 6) and Koreanic + Hmong–Mien + Turkic (Phase 7)** have
-> moved out of this queue — their atlases are written and their logs (`SR-101`–`SR-110`,
-> `TB-101`–`TB-112`, `KO-101`–`KO-109`, `HM-101`–`HM-109`, `TK-101`–`TK-112`) are below.
+### Siberian isolate pocket (Phase 8) — ✅ done
+- [x] **Prefix check first** (`[TK-112]`'s rule): `SI-` was reserved for this atlas and no other
+      family's log uses it — verified against the 13 namespaces already in this file
+- [x] Framing: the grouping is **four unrelated groups**, not a family; drawn as a **place**, with no
+      proto-language at the root — `[SI-101]`
+- [x] ⚠ **Ainu and Eskaleut are in the article's navbox but not in its list of four** — so Ainu is
+      cross-linked to `#japonic/ainu` and Eskaleut named as deliberately not drawn — `[SI-102]`
+- [x] Nivkh: isolate or family, Gilyak or Amuric, four varieties plus a fifth with a question mark — `[SI-103]`
+- [x] Yukaghir: two mutually unintelligible survivors, two dead relatives, and the Uralic hypothesis
+      with both sides of it — `[SI-104]`
+- [x] Chukotko-Kamchatkan: the one real family here, its two halves, and Fortescue's proposed
+      larger grouping with Nivkh — `[SI-105]`
+- [x] ⚠ **Speaker figures, and one that contradicts itself by a factor of 160** — Itelmen ships as
+      contested with both numbers printed — `[SI-106]`
+- [x] Ket and Yeniseian: one survivor, the hydronymic evidence for a northern migration, and an
+      infobox that dates its own figure to two different censuses — `[SI-107]`
+- [x] Dené–Yeniseian: Vajda 2006–2010, the February 2008 symposium, "favorably received" quoted
+      rather than upgraded — `[SI-108]`
+- [x] Tenevil: a Chukchi reindeer herder's own script, never used beyond his camp — `[SI-109]`
+- [x] **Link health measured** — six live pages, the thinnest coverage in the series; `alutor` 404s
+      while `alyutor` works, and **no Yukaghir page exists under any spelling tried** — `[SI-110]`
+- [x] ISO codes re-read from raw wikitext, including Kott's non-guessable `zko` — `[SI-111]`
+- [x] ⚠ **Coordinates measured, and one recalled value caught ~250 km wrong** (Kovran); the map
+      crosses the antimeridian, so every marker is kept west of 180° — `[SI-112]`
+- [x] ⚠ **The brief's view frame would have hidden the Ket marker** — corrected to `[133, 61]` zoom 3.0;
+      **zero new fonts needed**, since `Noto Serif` already carries cyrillic-ext — `[SI-113]`
+- [x] **Atlas built:** `atlas-siberian.js` — 21 nodes · 47 markers · 4 unrelated groups at the root ·
+      7 palette classes · 3 sketch polygons (mainland Siberia, Kamchatka, Sakhalin).
+      `tools/check-atlas.js` passes (21 nodes · 47 markers · 21 iso · 21 features),
+      `tools/check-prose.js` is **clean on the first run**, and the session verifier runs
+      **101 assertions with 0 failures**. `status:'done'` in `EastAsiaAtlas.html`.
+
+> **Phase 8 was the last one.** With this atlas written and logged, every family brief in
+> `languages.md` §2 now has a file behind it. The one outstanding item in this project is
+> **Phase 0.5, the Sinitic retrofit, which remains skipped by instruction** — its 42 seeded
+> targets are still unchecked and must not be treated as verified.
+
 
 ## Tungusic (Phase 1) — research log
 
@@ -1586,6 +1619,143 @@ All URLs below were fetched and read on **2026-09-27**. The prefix is **`AU-`**,
   - **Rendered in headless Edge:** `#austroasiatic/nicobarese` shows 南亚语系, `aria-current="page"`, the branch in the tree, and the new `#38c9c0` class applied; **zero** occurrences of `infobox`, `this node`, `>The atlas<` or any `AU-` log id. `#austroasiatic/car` shows "absolutive", "ergative" and the quoted "highly eccentric". The 33 bare `node(s)` matches in the dumped DOM are all **engine identifiers** in `EastAsiaAtlas.html` (`function setHash(key, node)`, `// nodeId → node`) — the same category as the CSS comment `[PR-101]` already recorded.
 - **⚠ The `!` trap was hit again while writing this entry.** A one-liner passed to `node -e` inside double quotes died on `zsh: event not found` because of `!k.includes(i)` — the identical failure this entry documents above, and by the same author in the same session. The lesson is not "know about zsh history expansion"; it is **do not put non-trivial JavaScript in a quoted shell argument** — write the file, run the file. It has now been learned twice.
 
+## Siberian isolate pocket (Phase 8) — research log
+
+Prefix `SI-`. **Checked against the existing queue sections before use** (`[TK-112]`'s
+lesson): `SI-` was reserved for this atlas in `languages.md` §0.1 and no other
+family's log uses it. Retrieved 2026-09-27.
+
+### [SI-101] The pocket is not a family, and the atlas must say so
+- **Claim as written:** "Four groups of language isolates and small language families, with no demonstrated relationship to one another; what they share is that they were there first."
+- **Appears in:** atlas-siberian.js → node `siberian`, paragraph 1
+- **Verdict:** verified
+- **Source:** *Paleo-Siberian languages*, Wikipedia article body + infobox · https://en.wikipedia.org/wiki/Paleo-Siberian_languages · retrieved 2026-09-27
+- **What the source says:** "The Paleo-Siberian languages are **four groups of language isolates and small language families** spoken in parts of Siberia. They are **not known to have any genetic relationship to each other**; their only widely accepted link is that they are held to have **antedated the more dominant languages, particularly Tungusic and latterly Turkic**, that have largely displaced them. More recently, Turkic (at least in Siberia) and Tungusic have been displaced in their turn by **Russian**." The infobox carries `family = Not a single family` with exactly four children: Chukotko-Kamchatkan, Nivkh, Yeniseian, Yukaghir.
+- **Confidence:** high
+- **Action:** prose written — the root is drawn as a **place**, not an ancestor, following the Formosan precedent (`FO-101`). There is no Proto-Paleo-Siberian and the atlas does not imply one.
+
+### [SI-102] ⚠ Ainu and Eskaleut are in the navigation template but NOT in the four
+- **Claim as written:** "Ainu belongs to this group only as a neighbour; the atlas cross-links it rather than redrawing it."
+- **Appears in:** atlas-siberian.js → node `siberian`, paragraph 4
+- **Verdict:** disputed — two of the same page's own structures disagree
+- **Source:** as `[SI-101]`, two navigation templates at the foot of that article · retrieved 2026-09-27
+- **What the source says:** The article's **infobox and prose list four** groups (Chukotko-Kamchatkan, Nivkh, Yeniseian, Yukaghir). But its **navbox** additionally carries Ainu (Hokkaido, Kuril, Sakhalin, Emishi?) and Eskaleut (Yuit, Naukan, Sirenik), and the separate *Language families of Eurasia* navbox lists "North Asia — Paleo-Siberian (**areal**): Chukotko-Kamchatkan, Nivkh, Yeniseian, Yukaghir, **Ainu**". So Ainu is inside the areal grouping and outside the canonical four.
+- **Confidence:** high (that the sources disagree) · medium (on which is standard)
+- **Action:** prose edited — four branches are drawn; **Ainu is named in the root and cross-linked to `#japonic/ainu`**, per the §2.13 brief and `[JP-107]`, rather than duplicated. **Eskaleut is named as deliberately not drawn**, because it is a trans-Beringian story of its own and no Eskaleut atlas exists in this series.
+
+### [SI-103] Nivkh: an isolate, a small family, or "Amuric"
+- **Claim as written:** "Nivkh is usually called an isolate, and more recently a two-or-three-language family called Amuric."
+- **Appears in:** atlas-siberian.js → node `nivkh`, paragraphs 1–2
+- **Verdict:** verified (the naming); disputed (isolate vs family)
+- **Source:** *Nivkh languages* infobox + body · https://en.wikipedia.org/wiki/Nivkh_languages · retrieved 2026-09-27
+- **What the source says:** `family = One of the world's primary language families`, citing **Gruzdeva, Ekaterina (2026), "Direct and reported speech constructions in the Amuric languages"**, Brill, p. 2 — i.e. the recent literature calls them the **Amuric** languages. Also known as **Gilyak**. `dia1`–`dia5`: **Nivkh proper (Amur), East Sakhalin, North Sakhalin, South Sakhalin**, and **Mishihase?** (marked `extinct`, with a question mark). The body calls it "a small language family, often portrayed [as an isolate]". Speakers: `sigfig(1,277,2)` → **≈1,300 (2020 census)**; ethnicity **4,652 Nivkh**. Region: Sakhalin, the lower Amur and around the Amur Liman; **formerly also the Shantar Islands and parts of Amur Oblast**.
+- **Confidence:** high
+- **Action:** prose written — the atlas draws it as a branch with two entries and says plainly that the label depends on who is counting.
+
+### [SI-104] Yukaghir: two survivors, two dead relatives, and the Uralic question
+- **Claim as written:** "Two mutually unintelligible languages survive; Omok and Chuvan do not."
+- **Appears in:** atlas-siberian.js → node `yukaghir`, paragraphs 1–3
+- **Verdict:** verified; the Uralic link is `disputed`
+- **Sources:** *Yukaghir languages* infobox · https://en.wikipedia.org/wiki/Yukaghir_languages · *Uralic–Yukaghir hypothesis* · https://en.wikipedia.org/wiki/Uralic%E2%80%93Yukaghir_hypothesis · both retrieved 2026-09-27
+- **What the sources say:** Yukaghir `child1`–`child4`: **Northern, Omok †, Chuvan †, Southern**; ethnicity "Yukaghirs, **Chuvans, Anauls**"; `speakers = 516 (mostly Tundra, 2020 census)`. The Paleo-Siberian article: "Yukaghir is spoken in **two mutually unintelligible varieties** in the lower Kolyma and Indigirka valleys. Other languages, including **Chuvan**, spoken further inland and further east, are now extinct." On Uralic: similarities were first noted by **Paasonen (1907)** and **Lewy (1928)**, "although they did not consider these to be sufficient evidence"; a genetic relationship was **first argued in detail in 1940, independently by Karl Bouda and Björn Collinder**; **Rédei (1990)** accounts for the correspondences as **language contact**, not inheritance; **Aikio (2014)** criticises the hypothesis, while **Blažek & Piispanen (2024)** advocate it.
+- **Confidence:** high
+- **Action:** prose written — the hypothesis ships unresolved with both sides named, in house style.
+
+### [SI-105] Chukotko-Kamchatkan: one family, two halves, and a proposed bigger one
+- **Claim as written:** "A real family of five languages in two halves — Chukotkan and Kamchatkan — with Itelmen the odd one out."
+- **Appears in:** atlas-siberian.js → node `chukotkokamchatkan`, paragraphs 1–2
+- **Verdict:** verified
+- **Source:** *Chukotko-Kamchatkan languages* infobox · https://en.wikipedia.org/wiki/Chukotko-Kamchatkan_languages · retrieved 2026-09-27
+- **What the source says:** `family = One of the world's primary language families`; `protoname = Proto-Chukotko-Kamchatkan`; `child1 = Chukotkan`, `child2 = Kamchatkan`. The Paleo-Siberian article adds: "sometimes known as **Luoravetlan**", and that Fortescue, on morphological, typological and lexical evidence, "suggests that Chukotko-Kamchatkan and Nivkh (Amuric) are related, forming a larger **Chukotko-Kamchatkan–Amuric** language family. Fortescue does **not** consider Yeniseian and Yukaghir to be genetically related."
+- **Confidence:** high
+- **Action:** prose written — the two-way split is drawn as sub-branches; Fortescue's proposal is named in prose and **not** drawn, because it is one scholar's proposal.
+
+### [SI-106] ⚠ The speaker figures, and the one that contradicts itself by two orders of magnitude
+- **Claim as written:** each language's figure, quoted with its census year, and Itelmen's reported as contested.
+- **Appears in:** atlas-siberian.js → nodes `chukchi`, `koryak`, `alutor`, `kerek`, `itelmen`
+- **Verdict:** verified for all five; **`disputed` for Itelmen**
+- **Sources:** infoboxes of each language article, all retrieved 2026-09-27 · https://en.wikipedia.org/wiki/Chukchi_language · /Koryak_language · /Alyutor_language · /Kerek_language · /Itelmen_language
+- **What the sources say:**
+  - **Chukchi** — `speakers = 2,607, **16.1% of ethnic population**` (2020 census). UNESCO: **Definitely Endangered** (`Lang Status 60-DE`).
+  - **Koryak** — `speakers = 1,665, **21% of ethnic population**` (2010 census); ethnicity 7,485 Koryaks. UNESCO: **Definitely Endangered**.
+  - **Alutor** — `speakers = 172` (2021 census). UNESCO: **Severely Endangered** (`40-SE`).
+  - **Kerek** — `extinct = **2005, with the death of Ekaterina Khatkana**`. UNESCO: **Extinct** (`01-EX`), dated 2010 in the Atlas.
+  - **Itelmen** — `speakers = **808**` (2020 census), ethnicity 2,596 Itelmens (2021), `revived = early 21st century`. UNESCO: **Severely Endangered**. **But the Paleo-Siberian article says Itelmen "is now spoken by fewer than 5 people, mostly elderly".** These differ by a factor of about 160.
+- **Confidence:** high for the census figures; the Itelmen conflict is unresolvable from these two sources
+- **Action:** prose written — **the Itelmen figure ships as contested with both numbers and both sources named**, rather than the atlas picking one. This is the same treatment Sedang's vowel record got (`AU-104`).
+
+### [SI-107] Ket, the Yeniseian family, and where it came from
+- **Claim as written:** "Yeniseian once spread across central Siberia; one language is left, and the family's own infobox marks its deepest relationship with a question mark."
+- **Appears in:** atlas-siberian.js → nodes `yeniseian`, `ket`, `yugh`
+- **Verdict:** verified
+- **Source:** *Yeniseian languages* infobox + map caption · https://en.wikipedia.org/wiki/Yeniseian_languages · retrieved 2026-09-27
+- **What the source says:** `family = One of the world's primary language families **(or Dene–Yeniseian?)**` — **the question mark is the source's own**. `child1 = Ketic`, `child2 = Pumpokolic †`, `child3 = Arinic †`, `child4 = Kottic †`; `protoname = Proto-Yeniseian`. Region: "today along the Yenisei River; **historically large parts of Siberia and of Mongolia**". The map caption: "**Hydronymic data suggests that this distribution represents a northward migration of original Yeniseian populations from the Sayan Mountains and northern Mongolia.**" `speakers = 156` (2020), footnote: "**Sum of Ket and Yugh speakers in the 2021 Russian census**" — so **the infobox's own date field and its footnote disagree about which census the number comes from**. *Ket language*: `speakers = <30` (2024), ethnicity 1,088 Ket (2021), `fam2 = Ketic`, Turukhansky District. The Paleo-Siberian article says Ket is spoken "by **no more than 200 people**".
+- **Confidence:** high
+- **Action:** prose written — the three extinct branches are drawn as one node rather than four stubs, and **the infobox's internal date/census discrepancy is noted in the prose** rather than silently resolved. Ket's figure ships as a range across sources (under 30 / no more than 200).
+
+### [SI-108] Dené-Yeniseian: proposed 2006–2010, publicly examined 2008, not settled
+- **Claim as written:** "Ket's most famous proposal is a link across the Bering Strait to Na-Dene — argued in detail, examined publicly, and still not settled."
+- **Appears in:** atlas-siberian.js → node `ket`, paragraph 3
+- **Verdict:** verified as a proposal; **not** accepted as demonstrated
+- **Source:** Alaska Native Language Center, University of Alaska Fairbanks, *Dene-Yeniseian Languages* · https://www.uaf.edu/anlc/research-and-resources/resources/archives/dene_yeniseian_languages.php · retrieved 2026-09-27
+- **What the source says:** "The Dene-Yeniseian Hypothesis proposes a genetic relationship between the Na-Dene (or Athabascan-Eyak-Tlingit) languages of North America and the Yeniseian languages of Central Siberia. **Edward J. Vajda** of Western Washington University developed this hypothesis **between 2006 and 2010**. … Vajda's hypothesis is based on the identification of **systematic parallels between Proto-Na-Dene and Yeniseian languages**. … The D-Y hypothesis was **publicly examined at a February 2008 symposium** in Fairbanks and Anchorage and was **favorably received by a number of prominent experts**." Published as *The Dene-Yeniseian Connection*, Anthropological Papers of the University of Alaska, new series vol. 5, **369 pages, the 18 papers from the 26–29 February 2008 symposium**, edited by **James Kari and Ben Potter**, with Vajda's lead article running **67 pages**. The ANLC abstract of Vajda's 2012 lecture adds that the evidence "includes **systematic correspondences in consonants, vowels, and tones**, as well as **parallel verb structure**". Also cited there: **Jared Diamond, "Deep relationships between languages", *Nature* 476 (2011), 291–292**.
+- **Confidence:** high
+- **Action:** prose written — named, dated and attributed, with "favorably received" quoted rather than upgraded to "accepted". **The atlas does not draw a Dené–Yeniseian node**, because that would place half the family in Alaska, outside every atlas in this series.
+
+### [SI-109] Tenevil: a reindeer herder who invented his own script
+- **Claim as written:** "Chukchi was written in Cyrillic, in Latin for a while, and before either of those in a script one man made up."
+- **Appears in:** atlas-siberian.js → node `chukchi`, paragraph 4
+- **Verdict:** verified
+- **Source:** *Chukchi language* infobox (`script` field) · https://en.wikipedia.org/wiki/Chukchi_language · and *Tenevil* · https://en.wikipedia.org/wiki/Tenevil · retrieved 2026-09-27
+- **What the source says:** The Chukchi `script` field reads: "**Cyrillic script · Latin script (obsolete) · Tenevil's script (historically)**". The Chukchi article adds: "**72 of the graphemes created by Chukchi reindeer herder Tenevil in the 1920s**"; "**Tenevil's writing system was entirely his own invention. It was never used beyond his camp.**" The Tenevil article gives his dates as **1892 – 1937/1944** and calls him a "Chukchi orthographic pioneer and reindeer herder".
+- **Confidence:** high (medium on the exact decade — one page says 1920s, and his dates are themselves given as a range)
+- **Action:** prose written — the script is described as one man's invention that stayed in his camp, with the 1920s date given and the uncertainty over his death year not asserted.
+
+### [SI-110] Link health, measured — and this family's coverage has a third shape
+- **Claim as written:** which nodes carry a live listen link, and which ship empty.
+- **Appears in:** atlas-siberian.js → the `sound` map
+- **Verdict:** verified by measurement (protocol from `TU-109`)
+- **Source:** HTTP status measured directly against omniglot.com, script `/tmp/linkcheck-sib.sh`, 2026-09-27
+- **What the measurement found:** **200** — `nivkh`, `chukchi`, `koryak`, `alyutor`, `itelmen`, `ket`, plus `langfam` and `ainu`. **404** — everything else tried, including `nivkh_language`, `gilyak`, `amuric`, `chukchee`, `alutor`, `kamchadal`, `yeniseian`, `kott`, `yugh`, **and every Yukaghir spelling** (`yukaghir`, `tundra_yukaghir`, `southern_yukaghir`, `kolyma_yukaghir`).
+- **Two traps, both of which would have produced a false entry:**
+  - **`alutor` is 404 but `alyutor` is 200.** The page exists under the *other* spelling of the name — and the atlas's own node is called Alutor. A check that tried only the natural spelling would have recorded "no page".
+  - **`nivkh_language` is 404 but `nivkh` is 200** — the inverse of the Nicobarese trap (`AU-110`), where the branch name failed and the language names worked.
+- **Confidence:** high
+- **Action:** prose written — **six live links, the fewest of any atlas in this series bar Koreanic**, and **the whole Yukaghir branch ships with an empty list**, like Aslian (`AU-108`). The prose says so rather than leaving a silent gap.
+
+### [SI-111] ISO 639-3 codes
+- **Claim as written:** the codes shown on each node.
+- **Appears in:** atlas-siberian.js → the `iso` map
+- **Verdict:** verified from raw wikitext (`prop=revisions`, not the rendered page)
+- **Source:** infoboxes fetched as wikitext, 2026-09-27
+- **What the source says:** `niv` Nivkh · `ckt` Chukchi · `kpy` Koryak · **`alr` Alyutor** (the code follows the *Alyutor* spelling, matching the Omniglot slug) · `krk` Kerek · `itl` Itelmen · `ket` Ket · **`ykg` Tundra Yukaghir** (whose Glottolog name is "Northern Yukaghir") · **`yux` Southern/Forest Yukaghir**. **No `iso3` line exists** on the Chukotko-Kamchatkan, Yeniseian, Yukaghir or Paleo-Siberian pages — none of these groupings has a code of its own, and the atlas shows "—" rather than borrowing one.
+- **Confidence:** high
+- **Action:** prose written; branch and root nodes carry a dash.
+
+### [SI-112] ⚠ The map crosses the antimeridian — and a recalled coordinate was ~250 km wrong
+- **Claim as written:** the marker coordinates.
+- **Appears in:** atlas-siberian.js → every `mk` array
+- **Verdict:** verified by measurement; **one recalled value corrected before it shipped**
+- **Sources:** Wikipedia `prop=coordinates` API for the larger settlements; Russian Wikipedia for Palana and Cape Navarin; Wikidata `P625` cross-checked against the Kovran river's own coordinates · 2026-09-27
+- **What the measurement found:**
+  - **Chukotka crosses 180°.** Lorino is at **−171.70**, Provideniya at **−173.25**, Uelen at **−169.81**. The engine is MapLibre and renders plain Mercator **without wrapping**, so a marker at a negative longitude would be drawn near Alaska, thousands of kilometres from the rest of its own branch. **All markers are therefore kept within 0–180°E**, the easternmost being **Cape Navarin at 179.10**. A caption states this limit rather than leaving a reader to wonder where the rest of Chukotka went.
+  - **⚠ Kovran was almost shipped in the wrong place.** Recalled as roughly 54.9°N, it is actually at **57.21°N, 156.87°E** — confirmed twice: Wikidata's village item gives 57.2008 / 156.8899, and Russian Wikipedia gives the **Kovran river** mouth at 57.2289 / 156.8486 with "the village of the same name is located near the mouth". The recalled figure was **about 250 km too far south** — the same failure mode `AU-110` warned about, caught this time before it reached an atlas.
+  - Other resolved points: Nikolayevsk-on-Amur 53.13/140.73 · Okha 53.59/142.95 · Nogliki 51.81/143.17 · Anadyr 64.73/177.52 · Pevek 69.70/170.28 · Bilibino 68.05/166.45 · Palana 59.08/159.95 · Ossora 59.25/163.06 · Tilichiki 60.43/166.05 · Petropavlovsk-Kamchatsky 53.02/158.65 · Kellog 62.49/86.28 · Turukhansk 65.80/87.97 · Andryushkino 69.18/154.47 · Chersky 68.77/161.33 · Nelemnoye 65.50/151.10 · Zyryanka 65.75/150.90.
+- **Confidence:** high
+- **Action:** coordinates as listed; the 180° limitation stated in a caption.
+
+### [SI-113] ⚠ The brief's view frame would have hidden the Ket marker, and no new font is needed
+- **Claim as written:** the initial map view, and the font list.
+- **Appears in:** atlas-siberian.js → `view` and `fonts`
+- **Verdict:** **corrected** (the view) · verified (the fonts)
+- **Sources:** arithmetic on the measured marker extents; Google Fonts CSS2 API subset probe, script `/tmp/check-fonts-sib.js`, 2026-09-27
+- **What was found:**
+  - The §2.13 brief specifies `[150, 62]`, zoom 3.2. At that zoom the visible longitude span is roughly 92°, i.e. **about 104°E to 196°E** — and **Kellog, the surviving Ket village, is at 86.28°E**, outside it. The brief's frame would have opened with the Yeniseian branch invisible.
+  - The markers actually span **86.28°E to 179.10°E** and **51.81°N to 69.70°N**. The view is set to **`[133, 61]`, zoom 3.0** (span ≈105°), which holds every marker with margin. A deliberate, recorded deviation from the brief.
+  - **Fonts: zero new ones needed.** The native forms need Cyrillic Extended letters — **ԓ U+0513, ӈ U+04C8, ӄ U+04C4, ғ U+0493** — which plain `cyrillic` does not carry. Probing the Google Fonts CSS2 API, **`Noto Serif` offers a `cyrillic-ext` subset with range U+0460-052F, U+1C80-1C8A, …**, covering every one of them; so does `Noto Sans`. Since **`Noto Serif` is already registered in the engine and already used by the Turkic atlas for this purpose**, this atlas adds nothing. **`Noto Sans Cyrillic` still does not exist** (`TK-108`) and was not attempted again.
+- **Confidence:** high
+- **Action:** view corrected; font list limited to `Noto Serif` plus the CJK fallbacks.
+
 ## Cross-family notes — reader-facing prose
 
 These entries are not about any one family's facts. They record rules and corrections that
@@ -1873,4 +2043,4 @@ Tracked separately per family so the atlas prose can hedge the right sentences.
 4. Update the counters table at the top of this file.
 5. If a session is interrupted, the file — not the conversation — is the source of truth.
 
-*Last updated: 2026-09-27 — Phases 0–6 complete, plus **Koreanic** (`KO-101`–`KO-109`), **Hmong–Mien** (`HM-101`–`HM-109`), **Turkic** (`TK-101`–`TK-112`) and **Formosan** (`FO-101`–`FO-108`) from Phase 7. Koreanic ships Jeju as its own node with the language-or-dialect question deliberately left open (`KO-101`, `KO-107`), and Chungcheong/Gangwon with their contested status stated in the prose rather than hidden (`KO-105`). Hmong–Mien ships two invented scripts as `nat` values with two new fonts registered (`HM-108`), **cuts** the brief's unverifiable "lantern writing" hook (`HM-107`), and reports a speaker-count conflict that exists *within a single source* (`HM-106`). Turkic was built to the **full-family scope** on instruction, against the brief's recommendation (`TK-101`), and is the widest atlas in the series — Istanbul to Yakutsk. It **does not draw Old Turkic as the trunk** (`TK-110`), states Khazar's branch as **disputed in its own source** and gives the whole surviving corpus rather than a summary (`TK-109`), and its link check was **measured rather than assumed** — four expected Omniglot pages turned out not to exist (`TK-110`). ⚠ **This session also found and fixed a log-namespace collision:** the Turkic entries were first written under `TU-`, which was already Tungusic's, and two of them had landed on the wrong side of the `## Disputed` heading (`TK-112`). **Formosan is the atlas that had to be drawn as a place rather than a family** — `acceptance = geographic`, `glotto = none`, "up to nine separate primary subfamilies" — so there is no Proto-Formosan trunk and the nine branches hang off the island as siblings (`FO-101`); **Tsouic ships with its own source's question mark** (`FO-103`), **Pazeh–Kaxabu ships extinct and alive in one node** (`FO-105`), **Yami and Tsat are drawn outside the nine branches because neither is Formosan** (`FO-106`), and link health was measured against **fourteen** Omniglot pages — the best-covered family in the series (`FO-107`). ⚠ **Formosan also produced this project's first prose defect: its reader-facing text was written in development jargon** — `infobox` 25×, "this node" 6×, ⚠ 30× — and was rewritten so it describes languages rather than the machinery that displays them, with nothing factual dropped (`FO-108`). **The rule is now in the per-atlas definition of done: read one whole node aloud before calling an atlas finished.** ⚠ **That finding then produced a series-wide sweep** — all eleven atlases were measured and rewritten: `infobox` 49 → 0, "this node" 17 → 0, bare `node(s)` 119 → 0, `script slot` 20 → 0, `reference account` 12 → 0, and **16 internal research-log ids removed from shipped text**; roughly 330 reader-facing strings rewritten with nothing factual dropped, plus the `stats` label decided as "languages and groups" for every atlas, and a new guard `tools/check-prose.js` that fails on internal vocabulary while ignoring developer comments (`PR-101`, rule 9). A cross-atlas `nat` rollout gave 59 non-Sinitic forms (`TB-111`/`TB-112`). **`DP-101` records the GitHub Pages deployment failure** — Jekyll's Liquid engine aborted the build on the MediaWiki template braces in this file's own citations — together with the brace-free logging rule (rule 8) that now prevents it, and the reproduction that verified the fix. Remaining: Austroasiatic in Phase 7, then the Siberian capstone in Phase 8. Phase 0.5 (Sinitic retrofit) is still skipped by instruction, so its 42 targets remain seeded and unchecked.*
+*Last updated: 2026-09-27 — Phases 0–6 complete, plus **Koreanic** (`KO-101`–`KO-109`), **Hmong–Mien** (`HM-101`–`HM-109`), **Turkic** (`TK-101`–`TK-112`) and **Formosan** (`FO-101`–`FO-108`) from Phase 7. Koreanic ships Jeju as its own node with the language-or-dialect question deliberately left open (`KO-101`, `KO-107`), and Chungcheong/Gangwon with their contested status stated in the prose rather than hidden (`KO-105`). Hmong–Mien ships two invented scripts as `nat` values with two new fonts registered (`HM-108`), **cuts** the brief's unverifiable "lantern writing" hook (`HM-107`), and reports a speaker-count conflict that exists *within a single source* (`HM-106`). Turkic was built to the **full-family scope** on instruction, against the brief's recommendation (`TK-101`), and is the widest atlas in the series — Istanbul to Yakutsk. It **does not draw Old Turkic as the trunk** (`TK-110`), states Khazar's branch as **disputed in its own source** and gives the whole surviving corpus rather than a summary (`TK-109`), and its link check was **measured rather than assumed** — four expected Omniglot pages turned out not to exist (`TK-110`). ⚠ **This session also found and fixed a log-namespace collision:** the Turkic entries were first written under `TU-`, which was already Tungusic's, and two of them had landed on the wrong side of the `## Disputed` heading (`TK-112`). **Formosan is the atlas that had to be drawn as a place rather than a family** — `acceptance = geographic`, `glotto = none`, "up to nine separate primary subfamilies" — so there is no Proto-Formosan trunk and the nine branches hang off the island as siblings (`FO-101`); **Tsouic ships with its own source's question mark** (`FO-103`), **Pazeh–Kaxabu ships extinct and alive in one node** (`FO-105`), **Yami and Tsat are drawn outside the nine branches because neither is Formosan** (`FO-106`), and link health was measured against **fourteen** Omniglot pages — the best-covered family in the series (`FO-107`). ⚠ **Formosan also produced this project's first prose defect: its reader-facing text was written in development jargon** — `infobox` 25×, "this node" 6×, ⚠ 30× — and was rewritten so it describes languages rather than the machinery that displays them, with nothing factual dropped (`FO-108`). **The rule is now in the per-atlas definition of done: read one whole node aloud before calling an atlas finished.** ⚠ **That finding then produced a series-wide sweep** — all eleven atlases were measured and rewritten: `infobox` 49 → 0, "this node" 17 → 0, bare `node(s)` 119 → 0, `script slot` 20 → 0, `reference account` 12 → 0, and **16 internal research-log ids removed from shipped text**; roughly 330 reader-facing strings rewritten with nothing factual dropped, plus the `stats` label decided as "languages and groups" for every atlas, and a new guard `tools/check-prose.js` that fails on internal vocabulary while ignoring developer comments (`PR-101`, rule 9). A cross-atlas `nat` rollout gave 59 non-Sinitic forms (`TB-111`/`TB-112`). **`DP-101` records the GitHub Pages deployment failure** — Jekyll's Liquid engine aborted the build on the MediaWiki template braces in this file's own citations — together with the brace-free logging rule (rule 8) that now prevents it, and the reproduction that verified the fix. Remaining: nothing — **the series is complete.** **`atlas-siberian.js` closes Phase 8** as the capstone: four unrelated groups drawn as a **place rather than a family** (`SI-101`), Ainu **cross-linked to `#japonic/ainu`** instead of duplicated (`SI-102`), **Tenevil's self-invented Chukchi script** (`SI-109`), **Ket tonal in a continent that has almost no tone** and the pivot of Dené–Yeniseian — named, attributed to Vajda and **not drawn** (`SI-107`, `SI-108`), **Itelmen's speaker count shipped contested** at 808 by census against "fewer than five" by a standard reference (`SI-106`), link health measured with **the thinnest coverage in the series and no Yukaghir page existing under any spelling** (`SI-110`), a recalled coordinate **caught ~250 km wrong before it shipped** (`SI-112`), and a view frame corrected because the brief's would have hidden the Ket marker (`SI-113`). Phase 0.5 (Sinitic retrofit) is still skipped by instruction, so its 42 targets remain seeded and unchecked.*
