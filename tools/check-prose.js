@@ -15,6 +15,23 @@ if (!files.length) { console.error('usage: node tools/check-prose.js <atlas-file
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
 
+/* --- research-log namespaces, DERIVED from research.md rather than listed here.
+   This list is hand-maintained no longer, because it drifted twice: `AU-` was
+   missing when Austroasiatic was written, and `PR-` (the prose-sweep namespace)
+   was still missing after that fix. A leaked id in either would have shipped
+   unnoticed. Deriving the alternation from the ledger means adding a family
+   cannot leave this guard blind to it. The fallback keeps the tool usable if
+   research.md is not alongside it. --- */
+const FALLBACK_IDS = 'AU|DP|FO|HM|JP|KD|KO|MG|PR|SR|TB|TK|TU';
+const LOG_IDS = (() => {
+  try {
+    const md = fs.readFileSync(path.join(__dirname, '..', 'research.md'), 'utf8');
+    const found = [...new Set([...md.matchAll(/^###\s+\[([A-Z]{2,3})-\d/gm)].map((m) => m[1]))].sort();
+    if (found.length) return found.join('|');
+  } catch { /* keep the fallback */ }
+  return FALLBACK_IDS;
+})();
+
 /* --- fail: unambiguously internal vocabulary, no legitimate reader-facing use --- */
 const FAIL = [
   ['infobox',            /\binfobox/gi],
@@ -26,7 +43,7 @@ const FAIL = [
   ['infobox field syntax', /\bfam[0-9] *=[^,)]*|\bglotto *=|\biso3 *=/g],
   ['reference account',  /\breference (?:account|infobox)\b/gi],
   ['research log path',  /research\.md/gi],
-  ['research log id',    /\b(?:FO|HM|JP|KO|KD|MG|SR|TB|TK|TU|DP|AU)-\d{2,3}\b/g],
+  ['research log id',    new RegExp(`\\b(?:${LOG_IDS})-\\d{2,3}\\b`, 'g')],
 ];
 
 /* --- warn: usually editorial self-reference, but some uses are legitimate

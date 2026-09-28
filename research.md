@@ -65,9 +65,9 @@ it is checked — never reconstructed from memory afterwards.
 | Hmong–Mien | 9 | 7 | 2 | 0 | — |
 | Turkic | 11 | 9 | 2 | 0 | — |
 | Formosan | 8 | 7 | 1 | 0 | — |
-| Austroasiatic | 9 | 6 | 3 | 0 | — |
+| Austroasiatic | 10 | 7 | 3 | 0 | — |
 | Silk Road | 10 | 9 | 1 | 0 | — |
-| Cross-family (prose) | 1 | 1 | 0 | 0 | `PR-101` — the eleven-atlas prose sweep |
+| Cross-family (prose) | 2 | 1 | 0 | 0 | `PR-101` eleven-atlas sweep · `PR-102` the guard's prefix list had drifted twice |
 | Siberian isolates | 0 | 0 | 0 | 0 | atlas not written |
 
 > **Corrected 2026-09-26.** This table previously carried invented counts for ten atlases that
@@ -251,7 +251,7 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
       family. Checked before entry one was written: the only `A`-prefixed namespace in this file is
       absent entirely, and the live prefixes are `SR-`, `TU-`, `KD-`, `JP-`, `MG-`, `TB-`, `KO-`,
       `HM-`, `TK-`, `FO-`. **No collision — `AU-` was free**, and `[TK-112]`'s lesson held a second time.
-- [x] Scope decision: the mainland family plus the Munda outliers, and **which branches are not drawn** — `[AU-101]`
+- [x] Scope decision: the mainland family plus the Munda outliers, and **which branches are not drawn** — `[AU-101]`; **revised later the same session**: Nicobarese added on instruction — `[AU-110]`
 - [x] Family level: ≈117 million speakers, ISO 639-5 `aav`, and the classification that replaced
       Mon–Khmer-vs-Munda — `[AU-101]`, `[AU-102]`
 - [x] Proto-Austroasiatic: dating, homeland, Shorto vs. Sidwell, and the abandoned bifurcation — `[AU-102]`
@@ -262,10 +262,13 @@ Opened when each phase begins, seeded from that family's §2 brief in `languages
       its scripts — `[AU-106]`
 - [x] Aslian and Munda, including **five scripts invented by their own speakers** — `[AU-107]`
 - [x] Link health **measured, not assumed**: five expected Omniglot pages do not exist — `[AU-108]`
-- [x] **Atlas built:** `atlas-austroasiatic.js` — 40 nodes · 128 markers · 11 branches drawn ·
-      13 palette classes · 1 sketch polygon set (mainland Southeast Asia, the Malay peninsula,
-      India's eastern plateau). `node tools/check-atlas.js atlas-*.js` passes and
-      `node tools/check-prose.js atlas-austroasiatic.js` exits 0. See `[AU-109]`.
+- [x] **Atlas built:** `atlas-austroasiatic.js` — 46 nodes · 169 markers · 12 branches drawn ·
+      14 palette classes · 4 sketch polygons (mainland Southeast Asia, the Malay peninsula,
+      India's eastern plateau, the Nicobar chain). `node tools/check-atlas.js atlas-*.js` passes
+      and `node tools/check-prose.js atlas-austroasiatic.js` exits 0. See `[AU-109]`.
+- [x] **Nicobarese added** — the island branch, drawn as a sixth-and-a-half-thousand-speaker group
+      across the Nicobar Islands, with Car Nicobarese's marked-absolutive ergativity as its hook and
+      Shompen shipped with its membership questioned — `[AU-110]`
 
 ### Turkic (Phase 7) — ✅ done
 - [x] **Scope decision:** the brief's option (b), the **full family** — `[60, 42]`, zoom 2.6,
@@ -1514,7 +1517,8 @@ All URLs below were fetched and read on **2026-09-27**. The prefix is **`AU-`**,
 
 ### [AU-109] ⚠ The atlas was built — and the prose guard caught this draft reproducing `FO-107`
 
-- **Built:** `atlas-austroasiatic.js` — **40 nodes · 151 markers · 11 branches drawn of 13 · 12 palette classes plus the root and stage · 3 sketch polygons** (mainland Southeast Asia with the Malay peninsula, India's eastern plateau, the Mekong delta) · 11 hand-drawn core areas, one per class. `status:'done'` in `EastAsiaAtlas.html`, and the FAMILIES entry now reads 12 enabled / 1 disabled (`siberian`).
+- **Built:** `atlas-austroasiatic.js` — **40 nodes · 151 markers · 11 branches drawn of 13 · 13 palette classes** (the 11 branch classes plus the root and one historical stage) · **3 sketch polygons** (mainland Southeast Asia with the Malay peninsula, India's eastern plateau, the Mekong delta) · 13 hand-drawn core areas, one per class. `status:'done'` in `EastAsiaAtlas.html`, and the FAMILIES entry now reads 12 enabled / 1 disabled (`siberian`).
+  - ⚠ **Two figures in this entry were wrong on first writing and are corrected here rather than quietly overwritten:** the marker count was written as 128 (it is **151**) and the class count as "12 plus the root and stage" (it is **13 including them**). Both were caught by re-deriving the numbers from the loaded module instead of trusting the prose — the same check `AU-108` applies to link health. A stale count in a ledger is exactly the kind of error this file exists to prevent, so the correction is stated.
 - **⚠ THE FINDING OF THIS SESSION, and the reason this entry is long.** This atlas was written **after** `check-prose.js` existed and after `PR-101` had been written, and it still reproduced the whole defect class: **62 warning glyphs**, **`infobox` in four reader-facing strings**, **19 × "this node"**, ~90 editorial self-references ("the atlas does X") and 65 bare `node(s)`. The first guard run reported:
   ```
   FAIL atlas-austroasiatic.js     4 problem(s)
@@ -1539,6 +1543,48 @@ All URLs below were fetched and read on **2026-09-27**. The prefix is **`AU-`**,
 - **Verified — fonts.** Three new faces registered in `GFONT` and all three validated against the Google Fonts API **before** registration, as `TK-108` requires: **`Noto Sans Warang Citi`**, **`Noto Sans Sora Sompeng`** and **`Noto Sans Nag Mundari`** — all HTTP 200. `Noto Sans Ol Chiki`, `Khmer`, `Myanmar`, `Thai`, `Lao` and `Devanagari` were already registered. The rendered page's `scriptfonts` link was confirmed to request all eleven faces this atlas declares.
 - **Verified — rendered.** A headless Edge dump of `#austroasiatic/vietnamese` shows the header in `南亚语系`, **41 tree entries**, `aria-current="page"` on the Austroasiatic button, the **tonogenesis table present in the DOM** (the "tumbling" cell), and **zero occurrences of `infobox`, `this node` or `>The atlas<`**. The single remaining `script slot` string in the page is the CSS comment in `EastAsiaAtlas.html` that `PR-101` already documented as not reader-facing.
 - **Lesson for Phase 8, written down because it will otherwise repeat:** the research log and the atlas are written in **two different registers**, and writing them back to back is what caused this. The guard is now the only thing standing between the two, so it must be run **before** the atlas is called done — not after a review finds something.
+
+### [AU-110] Nicobarese added — the island branch, and what it does that no mainland language does
+
+- **Why this entry exists.** `[AU-101]` left Nicobarese out on a **geography** call, not a data one — the brief's scope was mainland Southeast Asia plus Munda, and the Nicobars are an island group in the Bay of Bengal. Revisited on instruction: Nicobarese **is now drawn**, and the atlas omits **two** branches (Pakanic, Mang) instead of three. `[AU-101]`'s reasoning for the other two stands unchanged.
+- **Verified — branch level:** en.wikipedia `Nicobarese languages` infobox — geographic distribution "**Nicobar Islands**, India"; ethnicity "**Nicobarese people**"; classification **Austroasiatic > Nicobarese**; `protoname = Proto-Nicobarese`; subdivisions **Car · Chaura–Teressa · Central–Southern**.
+- **⚠ THE FINDING: Nicobarese does not look like Austroasiatic.** Three separate statements, all from the branch article:
+  - "the Nicobarese languages display **verb-initial word orders**, and have **elaborate paradigmatic agreement systems**"
+  - "They also have **suffixing**, which is **uncommon in the Mainland Southeast Asia linguistic area**" — the family's defining areal trait, absent here
+  - "The morphological similarities between Nicobarese and **Austronesian** languages have been used as evidence for the **Austric hypothesis** (Reid 1994)." And: "**Weber (2025)** also noted typological similarities between Nicobarese and Austronesian that are **absent in other Austroasiatic branches**, and suggested that Nicobarese may have an **Austronesian substrate**."
+  - **Action:** the branch entry states all three. A reader told "Austroasiatic" and shown Vietnamese cannot predict this branch, and the atlas says why rather than leaving it as an oddity.
+- **⚠ The best hook on the branch — Car Nicobarese's ergativity runs backwards.** Nancowry, Chaura and Teressa show **nominative–accusative** alignment in marking and agreement; **Car Nicobarese** instead shows "a **highly eccentric ergative alignment** and **split ergativity** (based on word order)". And: "In contrast with nearly entirely of the ergative languages of the world where marking agreement with the **ergative (A)** arguments is the norm, in Car Nicobarese the **subjects (S) of intransitive predicates and the patients (P) of transitive predicates** often receive overt markings and agreement instead. This **marked absolutive pattern**…"
+  - So Car marks the *absolutive* rather than the ergative — the reverse of the world's usual ergative arrangement. Shipped on the Car entry as its distinguishing feature.
+- **⚠ Two competing classifications, both Sidwell's, and the atlas says so.**
+  - **Sidwell (2017):** Nicobaric → Car · Chaura–Teressa (Teressa, Chaura) · Central–Southern (Central: Nancowry, Camorta, Katchall; Southern: Southern Nicobarese, Shompen)
+  - **Sidwell (2022):** "based on a computational phylogenetic lexical analysis, proposes a **new classification** which treats Car and Shompen as single language branches of North and South Nicobarese while placing other lects into Central Nicobarese."
+  - **Consequence for the tree:** the atlas draws the **2017** shape (Car · Chaura–Teressa · Central · Southern), because it is the one the literature most often cites, and the branch entry **names the 2022 revision** rather than silently preferring one. A classification conflict shipped as content, as with Formosan's Tsouic.
+- **⚠ Shompen's own infobox carries question marks at two levels.** `fam1 = **Language isolate?**` with the note "traditionally considered Austroasiatic"; `fam2 = **Nicobarese?**`; `fam3 = Southern`. It is drawn inside the branch with its placement stated as questioned by the sources — the same treatment Sedang's vowel record gets in `[AU-104]`.
+
+- **ISO codes re-read from RAW WIKITEXT** (`action=query&prop=revisions&rvslots=main&redirects=1`), per `[TK-111]`: **Car `caq`** (37,000; 2005; script Latin; nativename *Pū*) · **Chaura `crv`** (5,910; 2001 census; *Sanënyö*) · **Teressa `tef`** (2,080; 2001 census; *Lurö*) · **Central Nicobarese `ncb`** (10,100; 2001) · **Southern Nicobarese `nik`** (7,500; 2001; *Sambelong*) · **Shompen `sii`** (400; 2004).
+  - ⚠ **Three lects inside Central Nicobarese have no ISO code of their own:** Camorta reads `iso3 = none`, and **Nancowry** (930; *Mūöt*) and **Katchal** (5,740; *Tehnu*) carry an **empty `iso3 =` field**. They are covered by the collective `ncb`. The atlas draws Central as **one group** because the codes force that, not for convenience.
+  - ⚠ Nancowry's and Katchal's counts are reported *under* `ncb`, so they must not be added to the branch total as well.
+- **Branch total ≈ 62,600, and ⚠ the components are not all the same year** — Car is **2005**, everything else the **2001 census**. Shipped as components with the mixed dating stated rather than summed into one confident number, the treatment Palaung gets in `[AU-106]`.
+- **Link health MEASURED with `curl -s -o /dev/null -w '%{http_code}' -L`, not assumed** — following `[AU-108]`:
+  - **✅ 200, and linked (4 pages):** `car`, `shompen`, `nancowry`, `chaura`
+  - **❌ 404 (8 further slugs tried):** `nicobarese`, `teressa`, `camorta`, `katchal`, `nicobar`, `car_nicobarese`, `southern_nicobarese`, `central_nicobarese`
+  - ⚠ **The trap here is the inverse of `[AU-108]`'s.** The **branch** name has no page — `nicobarese.htm` is 404 — while four of its **languages** do. A pass that checked only the branch name would have recorded "Nicobarese has no links", which is false. The branch therefore carries **four** live Omniglot links, more than the entire Aslian branch manages.
+- **Island coordinates fetched from the Wikipedia API** (`prop=coordinates`) rather than recalled, so the markers sit at real positions: Car Nicobar **9.17 / 92.78** · Chowra **8.455 / 93.045** · Teressa **8.27 / 93.13** · Kamorta **8.12 / 93.50** · Trinket **8.08 / 93.58** · Nancowry **7.98 / 93.55** · Katchal **7.95 / 93.38** · Little Nicobar **7.33 / 93.68** · Kondul **7.215 / 93.715** · Great Nicobar **7.03 / 93.80** · Indira Point **6.7806 / 93.8259**. (Bompoka Island has no coordinate record and is not used.)
+- **Two structural consequences, both checked rather than assumed:**
+  - **No view change is needed.** The existing frame `{center:[99,15.5], zoom:4.2}` already has to hold Ranchi at 85.33°E and Perak at 4.45°N, so the Nicobars (92.78–93.83°E, 6.75–9.17°N) fall inside it. Confirmed by rendering rather than arithmetic alone.
+  - **A fourth sketch polygon is required.** The Nicobar chain sits in open sea, outside all three existing rings (mainland, Indian plateau, Mekong delta), so markers there would have floated on water. A hand-drawn `NICOBARS` chain was added as a fourth feature.
+- **Cross-link decision:** the Weber (2025) Austronesian-substrate claim is stated in prose but **not linked**, because the nearest Austronesian languages are in Aceh and Sumatra and the only Austronesian atlas in this series is Formosan — pointing a reader to Taiwan for a Nicobar substrate claim would be geographically false. Recorded so a later pass does not "complete" it, as `[AU-109]` records the `yue`/`hainan` decision.
+- **⚠ A terminal lesson from this entry, worth having in the rulebook.** The first attempt to fetch these ISO codes used a multi-line `node -e` script inside a **double-quoted zsh string**, and failed: zsh performed **history expansion on the `!` in `if(!rev)`** ("event not found"), then word-split on the brackets. The fix is to **write non-trivial scripts to a file and run the file** — which is what `/tmp/fetch-nicobar.js` and `/tmp/fetch-islands.js` are. Same class as `[DP-101]`: shell quoting is a parser, and it runs before the program does.
+
+- **⚠ This entry changes the figures `[AU-109]` recorded, and says so rather than editing them.** `[AU-109]` stands as the record of the 40-node build; after this entry the atlas reads **46 nodes · 169 markers · 12 branches drawn · 14 palette classes · 4 sketch polygons** (mainland, Indian plateau, Mekong delta, Nicobar chain). Counts quoted in prose go stale the moment a branch is added — which is `[PR-102]`'s lesson, applied.
+- **Verified after the addition:**
+  - `node --check atlas-austroasiatic.js` → OK. `tools/check-atlas.js` → `nodes 46 · markers 169 · iso 46 · features 46`, all twelve atlas files still valid.
+  - `tools/check-prose.js atlas-*.js` → **all twelve clean, exit 0.** The new Nicobarese prose was written to rule 9 from the start and needed **no** corrective pass — unlike `[AU-109]`, where the same author in the same session produced 62 warning glyphs. Writing to the rule rather than fixing afterwards is what made the difference.
+  - A coverage check on the loaded module: **iso, features and sound each have exactly one entry per node (46/46) with no orphans; `areas` has exactly one entry per palette class (14/14)**. Written to `/tmp/check-aa-coverage.js`.
+  - The session verifier now runs **129 assertions, 0 failures** (up from 94), including a **point-in-polygon test that every Nicobarese marker falls inside the island ribbon** rather than in open water — the check that would have caught a mis-drawn chain. Cross-links checked rose from 33 to **37**.
+  - **⚠ One assertion failed first, and it was the test that was wrong, not the atlas:** it looked up `A.sound['chaura']` and `A.sound['nancowry']`, but the listen map is keyed by **node id**, so those pages live under `chaurateressa` and `centralnic`. Fixed in the harness. A verifier that is wrong about its own subject produces false confidence, so this is recorded rather than quietly corrected.
+  - **Rendered in headless Edge:** `#austroasiatic/nicobarese` shows 南亚语系, `aria-current="page"`, the branch in the tree, and the new `#38c9c0` class applied; **zero** occurrences of `infobox`, `this node`, `>The atlas<` or any `AU-` log id. `#austroasiatic/car` shows "absolutive", "ergative" and the quoted "highly eccentric". The 33 bare `node(s)` matches in the dumped DOM are all **engine identifiers** in `EastAsiaAtlas.html` (`function setHash(key, node)`, `// nodeId → node`) — the same category as the CSS comment `[PR-101]` already recorded.
+- **⚠ The `!` trap was hit again while writing this entry.** A one-liner passed to `node -e` inside double quotes died on `zsh: event not found` because of `!k.includes(i)` — the identical failure this entry documents above, and by the same author in the same session. The lesson is not "know about zsh history expansion"; it is **do not put non-trivial JavaScript in a quoted shell argument** — write the file, run the file. It has now been learned twice.
 
 ## Cross-family notes — reader-facing prose
 
@@ -1669,6 +1715,18 @@ apply to **every** atlas file, present and future. Prefix `PR-`.
   This was a defect of **voice**, which no structural validator can catch: it survived
   `node --check`, `tools/check-atlas.js` and three headless smoke tests on the first atlas that had
   it, and was only found by reading the rendered page.
+
+### [PR-102] ⚠ The prose guard's own prefix list had drifted twice — and two counts were hand-copied
+
+- **Found by re-deriving instead of trusting.** Both findings below share one root cause: a value that *described* the artifact had been **typed by hand** rather than read from the artifact. Neither was visible from inside the file that contained it.
+- **Finding 1 — the guard was blind to two namespaces.** `tools/check-prose.js`'s `research log id` rule carried a hand-written alternation of family prefixes. During the Austroasiatic build it was found to be missing **`AU-`** — this family's own prefix — and `AU-` was added. That fix was **incomplete**: **`PR-` (the cross-family prose namespace) was still missing**, so a leaked `[PR-101]` in shipped text would have passed the very guard written to prevent that.
+  - **How it was caught:** the prefix set was derived from `research.md`'s own entry headings (`^### [XX-N]`) and compared against the guard's list. The ledger uses **13**; the guard knew **12**.
+  - **Proof, not inspection:** `/\b(?:FO|HM|JP|KO|KD|MG|SR|TB|TK|TU|DP|AU)-\d{2,3}\b/` returns **false** on `"leaked PR-101"`; the derived pattern returns **true**. A fixture file containing `PR-101 and AU-109` is now failed with exit 1.
+  - **The fix:** the alternation is **derived at load time** from `research.md` (`^###\s+\[([A-Z]{2,3})-\d`), with a fallback constant so the tool still runs without the ledger beside it. Adding a family can no longer leave the guard blind to its prefix.
+  - **Lesson:** a guard that *enumerates* what it guards will drift from the thing it guards. Derive from the source of truth — or expect to be wrong quietly, which is the worst possible failure mode for a check whose entire purpose is to fail loudly.
+- **Finding 2 — two counts in this session's own docs were wrong.** `[AU-109]` and the queue entry described the atlas as **128 markers** (it is **151**) and as "12 palette classes plus the root and stage" (it is **13 including them**). Both were re-derived from the loaded module and corrected, with the correction stated in place rather than silently overwritten.
+  - **Why this matters more than a typo:** `tools/check-atlas.js` already prints the true figures (`nodes 40 · markers 151 · iso 40 · features 40`). The numbers were available and correct; they were simply not copied. A ledger whose counts cannot be trusted is a ledger that has to be re-verified in full.
+  - **Candidate guard, deliberately not built:** a `--counts` mode on `check-atlas.js` that greps `research.md` and `languages.md` for claims of the form `<n> nodes · <n> markers` and fails on a mismatch. Deferred rather than added, because the counts appear in prose of several shapes and a sloppy matcher would produce false failures — but recorded here so the option is not lost.
 
 ## Disputed / conflicting sources
 

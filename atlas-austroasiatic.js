@@ -3,16 +3,16 @@
  * Data file for EastAsiaAtlas.html (see languages.md §1.3 for the contract,
  * §2.11 for this family's brief, and research.md §"Austroasiatic (Phase 7)"
  * for the evidence log — every load-bearing date and figure below is logged
- * there as AU-101 … AU-108).
+ * there as AU-101 … AU-110).
  *
  * THE THING THIS ATLAS HAS TO GET RIGHT: the family is drawn WITHOUT a
  * Mon–Khmer node. The older two-way split — Mon–Khmer on one side, Munda on
  * the other — was abandoned in favour of a flatter classification around 2000,
- * so an atlas that still drew it would be twenty-five years out of date. Eleven
+ * so an atlas that still drew it would be twenty-five years out of date. Twelve
  * branches hang directly off the family, in Sidwell's order, and Munda is one
  * of them rather than half the family.
  *
- * Three further things this atlas is careful about:
+ * Four further things this atlas is careful about:
  *  1. Vietnamese tones are drawn as what they are: two independent lost
  *     distinctions — initial-consonant voicing and final-consonant type —
  *     crossing to give six tones. Ruc shows the same change mid-way, with
@@ -21,8 +21,15 @@
  *     that speak them — Ol Chiki (1925), Sorang Sompeng (1936), Warang Citi
  *     (1950s), Mundari Bani (1949–1980) and Chong (2000/2010). All four Munda
  *     ones are now in Unicode. No other family in this series can match that.
- *  3. Three branches are NOT drawn — Nicobarese, Pakanic and Mang — because
- *     they fall outside a mainland-and-Munda scope. The root node names them.
+ *  3. Two branches are NOT drawn — Pakanic and Mang — one because it lies
+ *     inside the Chinese atlas's own ground and one because too little is
+ *     documented to draw it honestly. The root node names both, so a reader
+ *     who knows the family does not conclude they were forgotten.
+ *  4. Nicobarese IS drawn, as the family's only island branch. It is also its
+ *     most surprising: verb-initial, heavily suffixing and with agreement
+ *     systems, which is not the shape of Austroasiatic at all — and Car
+ *     Nicobarese marks the absolutive rather than the ergative, the reverse of
+ *     the world's usual pattern. See [AU-110].
  * ---------------------------------------------------------------------------
  */
 (function () {
@@ -36,12 +43,13 @@
    "linkages", so naming them would assert more than the evidence does. */
 const DATA = {
  id:"austroasiatic", en:"Austroasiatic", zh:"南亚语系", py:"Nányà yǔxì", sp:"≈117 million, by estimate",
- region:"Mainland Southeast Asia and eastern India — from the Chota Nagpur Plateau to the Vietnamese coast, with outposts in southern China and down the Malay peninsula",
+ region:"Mainland Southeast Asia, eastern India and the Nicobar Islands — from the Chota Nagpur Plateau to the Vietnamese coast, with outposts in southern China, down the Malay peninsula and out into the Bay of Bengal",
  cls:"c-anc",
- mk:[[21.03,105.85,"Hanoi — the northern edge of Vietic"],[16.46,107.59,"Huế — central Vietnam"],[11.56,104.92,"Phnom Penh — Khmer country"],[16.49,97.63,"Mawlamyine — Mon country"],[13.41,103.87,"Angkor — Old Khmer and its inscriptions"],[23.36,85.33,"Ranchi — the Chota Nagpur Plateau"],[25.57,91.88,"Shillong — Khasi country"],[4.45,101.35,"Perak — Semai country"],[19.89,102.14,"Luang Prabang — Khmu country"]],
+ mk:[[21.03,105.85,"Hanoi — the northern edge of Vietic"],[16.46,107.59,"Huế — central Vietnam"],[11.56,104.92,"Phnom Penh — Khmer country"],[16.49,97.63,"Mawlamyine — Mon country"],[13.41,103.87,"Angkor — Old Khmer and its inscriptions"],[23.36,85.33,"Ranchi — the Chota Nagpur Plateau"],[25.57,91.88,"Shillong — Khasi country"],[4.45,101.35,"Perak — Semai country"],[19.89,102.14,"Luang Prabang — Khmu country"],[9.17,92.78,"Car Nicobar — the family's island branch"]],
  h:[`Austroasiatic is one of the world's primary language families, spoken by about <b>117 million people</b> across mainland Southeast Asia, eastern India and southern China. It is the family of <b>Vietnamese</b> and <b>Khmer</b>, the national languages of Vietnam and Cambodia — and those two, with <b>Mon</b>, are the only Austroasiatic languages with a long written history. Everything else in this atlas is a minority language somewhere, and many of them are small.`,
    `The shape of the family is lopsided in a way worth stating at the start. <b>More than two-thirds of all Austroasiatic speakers speak Vietnamese</b>, so the family's demographic centre is one language. Its linguistic diversity is elsewhere: in the highlands of Laos and central Vietnam, in the Malay peninsula's rainforests, and — unexpectedly — on the <b>Chota Nagpur Plateau</b> of eastern India, where the <b>Munda</b> languages are spoken. That last group is Austroasiatic in India because of a migration out of Indochina, which is where the Munda branch begins.`,
-   `<b>Eleven of the family's branches are drawn here.</b> Three are deliberately left out, because they fall outside a mainland-and-Munda scope: <b>Nicobarese</b>, spoken in the Nicobar Islands in the Bay of Bengal; <b>Pakanic</b>, two small languages of Guangxi and Yunnan; and <b>Mang</b>, a single language of Yunnan and northern Vietnam with too little documented to draw honestly. Naming them here means a reader who knows the family does not have to wonder whether they were forgotten.`,
+   `<b>Twelve of the family's branches are drawn here.</b> Two are deliberately left out: <b>Pakanic</b>, two small and poorly described languages of Guangxi and Yunnan whose ground the Chinese atlas already covers; and <b>Mang</b>, a single language of Yunnan and northern Vietnam with too little documented to draw honestly. Naming them here means a reader who knows the family does not have to wonder whether they were forgotten. <b>One of the twelve is an island group</b> — <a href="#austroasiatic/nicobarese">Nicobarese</a>, out in the Bay of Bengal, a thousand kilometres from anything else on this map.`,
+   `<b>The family does not have one shape, and the island branch shows it.</b> Austroasiatic is usually described through its mainland languages. <a href="#austroasiatic/nicobarese">Nicobarese</a> is verb-initial, marks its verbs with agreement, and builds words with suffixes — a combination the sources describe as uncommon in mainland Southeast Asia. It is Austroasiatic all the same, and it sits in this tree doing something none of its relatives do.`,
    `<b>One older picture of this family is deliberately not drawn.</b> Until about 2000 the standard account split Austroasiatic in two — <b>Mon–Khmer</b> on one side, <b>Munda</b> on the other. That bifurcation has since been abandoned in favour of a flatter classification, so no Mon–Khmer grouping appears here, and Munda stands as one branch among eleven rather than half the family.`],
  t:[["c. 3000–2000 BCE","Proto-Austroasiatic, in southern China or the Mekong valley"],
     ["c. 2500–2000 BCE","Sidwell's proposed locus: the Red River Delta"],
@@ -654,8 +662,89 @@ const DATA = {
           ["2026","UNESCO classifies Khasi as Vulnerable"]],
        chips:[["Latin alphabet, from the 1840s","scr"],["vulnerable"]],
        kids:[] }
+    ] },
+
+  { id:"nicobarese", en:"Nicobarese", zh:"尼科巴语支", py:"Níkēbā yǔzhī", sp:"≈62,600 across the branch — six languages",
+    region:"The Nicobar Islands, in the Bay of Bengal between the Andaman Islands and Sumatra — part of India",
+    cls:"c-nic",
+    mk:[[9.17,92.78,"Car Nicobar — the northernmost island"],[8.455,93.045,"Chowra"],[7.98,93.55,"Nancowry"],[7.03,93.8,"Great Nicobar — the southernmost"]],
+    h:[`Nicobarese is the family's <b>island branch</b> — six languages spoken on the Nicobar Islands, a chain in the Bay of Bengal between the Andaman Islands and Sumatra. The islands are Indian territory today, and their distance from every other Austroasiatic language is the reason this branch is usually left off a map of the family.`,
+       `<b>It does not look Austroasiatic, and that is what makes it worth drawing.</b> These languages are <b>verb-initial</b>, they carry <b>elaborate systems of agreement marked on the verb</b>, and they build words with <b>suffixes</b> — which the sources describe as <b>uncommon in mainland Southeast Asia</b>. A reader who has met Vietnamese or Khmer will not predict any of that, and it is the same family all the same.`,
+       `<b>And there is a live question about where that comes from.</b> The <b>morphological similarities</b> between Nicobarese and the <b>Austronesian</b> languages were among the evidence cited for the old <b>Austric hypothesis</b>, which proposed a deep relationship between Austroasiatic and Austronesian. The same resemblance has more recently been read the other way — by Weber (2025), as a sign that Nicobarese may carry an <b>Austronesian substrate</b>, a layer left by an earlier population speaking a language of that family. Both readings are given here; neither is settled.`,
+       `<b>Two different trees have been published for these languages, both by the same scholar.</b> The first groups them as <b>Car</b>, a <b>Chaura–Teressa</b> pair, and then a <b>Central</b> and a <b>Southern</b> group. The second, built by comparing vocabulary computationally, moves Car and <b>Shompen</b> out to be branches of their own at the northern and southern ends. The older shape is the one drawn here, because it is the one the literature most often cites — and the newer one is named rather than quietly dropped.`,
+       `<b>One member may not belong at all.</b> <b>Shompen</b>, spoken in the interior of Great Nicobar, is listed in its own sources as a <b>possible language isolate</b>, with its membership of this branch marked by a question mark. It is drawn here because the balance of the evidence keeps it in the family — but its place is stated as doubtful, not settled.`],
+    t:[["c. 3rd–4th c. CE","The islands appear in Sri Lankan chronicles as Naggadipa, \"the island of the naked\""],
+       ["1050","The Chola inscription at Thanjavur records Nakkavaram — the source of the name \"Nicobar\""],
+       ["1754","The Danish East India Company begins a settlement, run from Tranquebar"],
+       ["1868","Denmark sells the islands to Britain; they pass to British India in 1869"],
+       ["1942–1945","Japan occupies the islands during the Second World War"],
+       ["26 December 2004","A tsunami devastates the coasts; Katchal and Teressa are among the worst affected"]],
+    chips:[["verb-initial, suffixing, with agreement on the verb","scr"],["six languages, about 62,600 speakers"],["Car Nicobar is understood right across the islands"]],
+    kids:[
+
+     { id:"car", en:"Car Nicobarese", nat:"Pū", zh:"卡尔尼科巴语", py:"Kǎ'ěr Níkēbā yǔ", sp:"37,000, 2005",
+       region:"Car Nicobar island — the northernmost and most populous of the Nicobar Islands",
+       cls:"c-nic",
+       mk:[[9.17,92.78,"Car Nicobar"],[9.15,92.80,"Malacca — the main settlement on the island"]],
+       h:[`Car Nicobarese is the <b>largest language of the branch</b>, at about <b>37,000 speakers</b>, and the one other islanders are most likely to understand. Its speakers call it <b>Pū</b>.`,
+          `<b>Its grammar is the most unusual thing about it.</b> The other Nicobarese languages mark their subjects and objects in the ordinary way, with <b>nominative–accusative</b> alignment. Car does something else: it is <b>ergative</b>, and split-ergative at that, with the pattern shifting according to word order.`,
+          `<b>And its ergativity runs backwards.</b> In almost every ergative language known, the marker and the verb agreement go on the <b>ergative</b> argument — the doer of a transitive verb. In Car Nicobarese they go on the <b>other</b> one instead: the single subject of an intransitive verb, and the thing acted upon. That is a <b>marked absolutive</b> pattern, and it is rare enough that the sources call the alignment <b>"highly eccentric"</b>.`,
+          `<b>It is written in Latin letters.</b> The sources record no script of its own, and nothing suggests there ever was one.`],
+       t:[["c. 1050","Nakkavaram, the Chola name for the islands, is inscribed at Thanjavur"],
+          ["2005","37,000 speakers recorded"]],
+       chips:[["ergative — and marks the absolutive","scr"],["the branch's largest language"]],
+       kids:[] },
+     { id:"chaurateressa", en:"Chaura & Teressa", nat:"Sanënyö · Lurö", zh:"乔拉-特雷萨语", py:"Qiáolā–Tèléisà yǔ", sp:"5,910 + 2,080 — the 2001 census",
+       region:"Chowra and Teressa islands, with Bompoka, in the middle of the Nicobar chain",
+       cls:"c-nic",
+       mk:[[8.455,93.045,"Chowra (Sanenya)"],[8.27,93.13,"Teressa (Luroo)"]],
+       h:[`Two languages of two small islands in the middle of the chain, drawn together because they are each other's closest relatives. <b>Chaura</b>, which its speakers call <b>Sanënyö</b>, has about <b>5,910 speakers</b>; <b>Teressa</b>, which they call <b>Lurö</b>, has about <b>2,080</b>. Both figures are from the 2001 census.`,
+          `<b>Their islands were hit hard in December 2004.</b> In the tsunami of <b>26 December</b> that year, Teressa was reported to have been <b>split into two pieces</b> by the wave, and the neighbouring island of Trinket into three. The report is carried in the sources with a note that it was never confirmed, and it is given here as the sources give it rather than as a settled fact.`,
+          `<b>They are not ergative like Car.</b> Chaura and Teressa mark their subjects and objects the ordinary way, with nominative–accusative alignment — which makes <a href="#austroasiatic/car">Car Nicobarese</a> the odd one out in this branch rather than its model.`],
+       t:[["2001","5,910 Chaura and 2,080 Teressa speakers counted"],
+          ["26 December 2004","Teressa is reported split in two by the tsunami — never confirmed"]],
+       chips:[["Sanënyö and Lurö — the speakers' own names"],["Teressa reported split in two, 2004","warn"]],
+       kids:[] },
+
+     { id:"centralnic", en:"Central Nicobarese (Nancowry, Camorta, Katchal)", nat:"Mūöt · Tehnu", zh:"中尼科巴语", py:"Zhōng Níkēbā yǔ", sp:"10,100 — the 2001 census",
+       region:"Nancowry, Camorta and Katchal islands, with Trinket, in the centre of the chain",
+       cls:"c-nic",
+       mk:[[8.12,93.5,"Kamorta"],[7.98,93.55,"Nancowry (Mūöt)"],[7.95,93.38,"Katchal (Tehnu)"],[8.08,93.58,"Trinket"]],
+       h:[`The languages of the middle islands — <b>Nancowry</b>, <b>Camorta</b>, <b>Katchal</b> and <b>Trinket</b> — counted together at about <b>10,100 speakers</b>. Nancowry calls itself <b>Mūöt</b>, and Katchal <b>Tehnu</b>.`,
+          `<b>They are drawn as one group because the standard language codes give them no separate ones.</b> Nancowry and Katchal have no individual code of their own, and Camorta's entry records none at all; all three sit under a single collective code. That is a fact about how these varieties are registered, not about how different they are — the sources describe them as distinct forms of one group.`,
+          `<b>Katchal is the island named in the worst reports of the 2004 tsunami.</b> Accounts of the disaster put the death toll <b>on Katchal alone at 4,600</b>, on an island whose language had under six thousand speakers. The figure is repeated here with the caveat it carries in its source: it was <b>never confirmed</b>, and is described as a report rather than a count.`],
+       t:[["2001","10,100 speakers counted across the central islands"],
+          ["26 December 2004","Katchal is reported to have lost 4,600 people — a figure never confirmed"]],
+       chips:[["three islands under one collective code","scr"],["Katchal: 4,600 reported dead, unconfirmed","warn"]],
+       kids:[] },
+
+     { id:"southernnic", en:"Southern Nicobarese", nat:"Sambelong", zh:"南尼科巴语", py:"Nán Níkēbā yǔ", sp:"7,500 — the 2001 census",
+       region:"Little Nicobar and Great Nicobar, with Kondul and Pulo Milo — the southern end of the chain",
+       cls:"c-nic",
+       mk:[[7.33,93.68,"Little Nicobar"],[7.215,93.715,"Kondul"],[7.03,93.8,"Great Nicobar"]],
+       h:[`The languages of the southern islands — <b>Little Nicobar</b>, <b>Great Nicobar</b>, <b>Kondul</b> and Pulo Milo — counted at about <b>7,500 speakers</b>. The name the sources give it is <b>Sambelong</b>.`,
+          `<b>It is the branch's second-largest group and its southernmost.</b> Great Nicobar runs down to <b>Indira Point</b>, the southern tip of India, which <b>sank by more than four metres</b> in the earthquake of December 2004 and whose lighthouse was damaged.`,
+          `<b>And it shares its largest island with a language that may not be related to it.</b> The interior of Great Nicobar is <b>Shompen</b> country — see the <a href="#austroasiatic/shompen">Shompen entry</a>.`],
+       t:[["2001","7,500 speakers counted"],
+          ["26 December 2004","Indira Point subsides 4.25 metres; the lighthouse is damaged"]],
+       chips:[["Sambelong — the name in the sources"],["India's southernmost point is on this island"]],
+       kids:[] },
+
+     { id:"shompen", en:"Shompen (Shom Peng)", nat:"Shom Peng", zh:"肖姆彭语", py:"Xiàomǔpéng yǔ", sp:"400, 2004 — membership questioned",
+       region:"The interior of Great Nicobar Island — the only part of this chain that is not on a coast",
+       cls:"c-nic",
+       mk:[[6.9,93.82,"The interior of Great Nicobar"],[7.03,93.8,"Great Nicobar"]],
+       h:[`Shompen is spoken by about <b>400 people</b> in the <b>interior of Great Nicobar</b> — not on the coast, as every other language in this branch is.`,
+          `<b>Whether it belongs to the family at all is an open question.</b> The sources list it as a <b>possible language isolate</b>, traditionally treated as Austroasiatic, and mark its place inside Nicobarese with a <b>question mark at both levels</b>. It is drawn here because the balance of the evidence keeps it in the family — but a reader should know that the sources are not agreed.`,
+          `<b>Its speakers may be the oldest population on the islands.</b> The Shompen are described as possibly of <b>Mesolithic</b> Southeast Asian origin — a different, and much earlier, arrival than the Austroasiatic-speaking islanders around them.`],
+       t:[["c. Mesolithic","The Shompen's ancestors are described as possibly the islands' earliest population"],
+          ["2004","400 speakers recorded"]],
+       chips:[["classified as Nicobarese with a question mark","warn"],["400 speakers, in the island interior"]],
+       kids:[] }
     ] }
   ] };
+
+
 
 
 /* ---------- ISO 639-3 codes (SIL) — the codes behind the Forvo links.
@@ -692,7 +781,10 @@ const ISO = {
  munda:'sat · unr · hoc · srb (branch)',
   santali:'sat', mundari:'unr · unx', ho:'hoc', sora:'srb',
  khasian:'kha (branch)',
-  khasi:'kha'
+  khasi:'kha',
+ nicobarese:'caq · crv · tef · ncb · nik (branch)',
+  car:'caq', chaurateressa:'crv · tef', centralnic:'ncb (three islands, one code)',
+  southernnic:'nik', shompen:'sii'
 };
 
 
@@ -703,7 +795,8 @@ const FEATURES = {
   `<b>Only three of its languages have a long written record</b> — Vietnamese, Khmer and Mon. The rest of the family is oral history or a script invented in the last hundred years.`,
   `<b>Its old two-way split is gone.</b> Until about 2000 Austroasiatic was divided into Mon–Khmer and Munda; that bifurcation has been abandoned, so eleven branches are drawn flat instead.`,
   `<b>Five scripts were invented by the people who speak these languages</b> — Ol Chiki, Sorang Sompeng, Warang Citi and Mundari Bani in the Munda branch, plus one for Chong. All four Munda scripts are in Unicode.`,
-  `<b>Three branches are not drawn here</b> — Nicobarese, Pakanic and Mang — because they fall outside a mainland-and-Munda scope.`],
+  `<b>Two branches are not drawn here</b> — Pakanic and Mang. One sits inside the ground the Chinese atlas already covers, and one has too little documented to draw honestly.`,
+  `<b>Nicobarese is drawn, and it is the family's island branch</b> — verb-initial, suffixing, and marking agreement on the verb. That is not the shape of Austroasiatic at all, which is exactly why it belongs on the map.`],
  protoaa:[
   `<b>A reconstruction still in progress.</b> The work that exists is mostly Proto-Mon–Khmer — everything except Munda — collected in Shorto's dictionary; a full Proto-Austroasiatic reconstruction is being assembled now, with 500 etyma published only in 2024.`,
   `<b>Implosive stops and eight long/short vowel pairs.</b> The proto-language is reconstructed with *ɓ, *ɗ and a tentative *ʄ — that last one added specifically to account for the Katuic languages.`,
@@ -879,13 +972,39 @@ const FEATURES = {
   `<b>About 1 million speakers</b> and an official language of Meghalaya; classified as vulnerable.`,
   `<b>Written in a Latin alphabet devised by Welsh Presbyterian missionaries</b> from the 1840s — the opposite route to the Munda branch, where speakers designed their own scripts decades later.`,
   `<b>Gender, SVO order and no tone</b>, all well documented and all untypical of the family.`,
-  `<b>It once had a script of its own</b>, before the Latin alphabet replaced it.`]
+  `<b>It once had a script of its own</b>, before the Latin alphabet replaced it.`],
+ nicobarese:[
+  `<b>Verb-initial, suffixing, and marking agreement on the verb</b> — a combination the sources describe as uncommon in mainland Southeast Asia.`,
+  `<b>The resemblance to Austronesian is unexplained.</b> It was cited as evidence for the old Austric hypothesis, and has more recently been read as a possible Austronesian substrate.`,
+  `<b>Two different trees have been published for these six languages</b>, both by the same scholar, disagreeing about where Car and Shompen belong.`,
+  `<b>Six languages, about 62,600 speakers</b> — the whole branch is smaller than a single mid-sized mainland language.`],
+ car:[
+  `<b>Ergative, split-ergative, and marking the absolutive</b> — where nearly every ergative language marks the doer of a transitive verb, this one marks the single subject and the thing acted upon instead.`,
+  `<b>The largest language of the branch</b>, at about 37,000 speakers, and the one other islanders are most likely to understand.`,
+  `<b>Written in Latin letters</b>; the sources record no script of its own.`],
+ chaurateressa:[
+  `<b>Two languages, one sub-branch</b> — Chaura (Sanënyö) and Teressa (Lurö), on two small islands in the middle of the chain.`,
+  `<b>Nominative–accusative, unlike Car</b>: they mark subjects and objects the ordinary way.`,
+  `<b>Teressa was reported split in two by the 2004 tsunami</b>, a report carried in the sources but never confirmed.`],
+ centralnic:[
+  `<b>Three islands under one collective code.</b> Nancowry and Katchal have no individual language code, and Camorta records none — a fact about how the varieties are registered, not about how different they are.`,
+  `<b>About 10,100 speakers</b>, counted in the 2001 census across Nancowry, Camorta, Katchal and Trinket.`,
+  `<b>Katchal is named in the worst reports of the 2004 tsunami</b>, at 4,600 dead on one island — a figure never confirmed.`],
+ southernnic:[
+  `<b>The branch's second-largest group and its southernmost</b>, at about 7,500 speakers. Its name in the sources is Sambelong.`,
+  `<b>Shares Great Nicobar with Shompen</b>, a language whose membership of this family is itself in question.`,
+  `<b>Indira Point, the southern tip of India, sank more than four metres</b> in the December 2004 earthquake.`],
+ shompen:[
+  `<b>A possible language isolate</b>, listed as Austroasiatic by tradition and as Nicobarese with a question mark at both levels.`,
+  `<b>About 400 speakers in the island interior</b> — the only language in this branch that is not spoken on a coast.`,
+  `<b>Its speakers may be the islands' oldest population</b>, described as possibly of Mesolithic Southeast Asian origin — an earlier arrival than the islanders around them.`]
 };
 
 /* ---------- schematic outline (simplified, embedded; [lng,lat] rings) ----------
    Drawn by hand here: the mainland Southeast Asian landmass, the Malay
    peninsula hanging off it, the Indian eastern plateau where Munda is spoken,
-   and the Mekong delta. Not a coastline survey — see the sketch caption. */
+   the Mekong delta, and the Nicobar chain out in the Bay of Bengal. Not a
+   coastline survey — see the sketch caption. */
 const MAINLAND = [[97.50,16.80],[98.20,13.90],[99.60,10.00],[100.30,7.40],[101.20,6.50],
  [102.10,5.60],[103.40,3.20],[104.30,1.50],[103.00,1.30],[101.60,2.80],[100.40,5.20],
  [99.30,8.00],[98.60,11.50],[97.90,14.60],[96.80,16.20],[95.30,16.00],[94.50,17.60],
@@ -895,7 +1014,13 @@ const MAINLAND = [[97.50,16.80],[98.20,13.90],[99.60,10.00],[100.30,7.40],[101.2
 const INDIA_E = [[84.30,19.20],[85.90,19.60],[87.10,21.50],[87.80,24.30],[86.40,25.60],
  [84.90,26.10],[83.30,25.00],[82.40,22.60],[81.80,20.10],[83.00,19.00],[84.30,19.20]];
 const MEKONG_DELTA = [[105.10,8.60],[106.90,9.00],[107.30,10.50],[105.90,11.20],[104.80,10.20],[105.10,8.60]];
-const AU_GEO = { type:'FeatureCollection', features:[MAINLAND,INDIA_E,MEKONG_DELTA].map(r=>({
+/* The Nicobars are one long ribbon rather than separate islands: at this scale a
+   faithful chain would be thinner than the markers standing on it, and every
+   Nicobarese marker has to fall on land rather than in open water. The ribbon is
+   therefore deliberately wider than the real islands are. */
+const NICOBARS = [[92.62,9.32],[92.90,8.60],[93.05,8.10],[93.30,7.50],[93.55,6.95],[93.80,6.68],
+ [94.00,6.78],[93.85,7.30],[93.70,7.90],[93.62,8.45],[93.20,8.85],[92.95,9.30],[92.62,9.32]];
+const AU_GEO = { type:'FeatureCollection', features:[MAINLAND,INDIA_E,MEKONG_DELTA,NICOBARS].map(r=>({
   type:'Feature', properties:{}, geometry:{ type:'Polygon', coordinates:[r] } })) };
 
 
@@ -922,7 +1047,9 @@ const AREAS = {
  'c-mon':[[[94.20,17.90],[98.30,17.60],[98.60,13.40],[96.00,12.20],[94.30,14.80]]],
  'c-asl':[[[100.10,6.90],[103.60,6.20],[104.30,2.40],[102.40,1.50],[100.60,3.20]]],
  'c-mun':[[[82.00,26.30],[87.60,25.90],[88.10,21.40],[84.20,18.80],[81.60,20.30]]],
- 'c-kha':[[[89.90,26.40],[93.20,26.10],[93.60,24.30],[91.10,24.00],[89.70,25.20]]]
+ 'c-kha':[[[89.90,26.40],[93.20,26.10],[93.60,24.30],[91.10,24.00],[89.70,25.20]]],
+ 'c-nic':[[[92.62,9.32],[92.90,8.60],[93.05,8.10],[93.30,7.50],[93.55,6.95],[93.80,6.68],
+           [94.00,6.78],[93.85,7.30],[93.70,7.90],[93.62,8.45],[93.20,8.85],[92.95,9.30]]]
 };
 
 
@@ -935,10 +1062,13 @@ const AREAS = {
      · there is NO page for Semai, Temiar, Jahai or Batek under any name tried,
        so the whole Aslian branch ships with EMPTY lists — including Semai, which
        has 60,438 speakers and a published grammar;
-     · also empty: O'du (`o_du.htm` 404), Chong, Bru, Pear, Thavung, Arem and Ruc.
-   Twenty-one URLs were confirmed live: vietnamese, muong, khmer, mon, santali,
+     · also empty: O'du (`o_du.htm` 404), Chong, Bru, Pear, Thavung, Arem and Ruc;
+     · the INVERSE trap on the Nicobarese branch: `nicobarese.htm` is 404 while
+       four of its languages DO have pages, so the branch carries four live links.
+       A check that tried only the branch name would have recorded none at all.
+   Twenty-five URLs were confirmed live: vietnamese, muong, khmer, mon, santali,
    khasi, khmu, wa, palaung, katu, bahnar, sedang, mundari, ho, sora, burmese,
-   kuy, pacoh, olchiki, shan and langfam. ---------- */
+   kuy, pacoh, olchiki, shan, langfam, car, chaura, nancowry and shompen. ---------- */
 const OM = 'https://www.omniglot.com/writing/';
 const SOUND = {
  austroasiatic:[['Language families — Omniglot', OM+'langfam.htm']],
@@ -975,7 +1105,13 @@ const SOUND = {
   ho:         [['Ho — Omniglot', OM+'ho.htm']],
   sora:       [['Sora — Omniglot', OM+'sora.htm']],
  khasian:     [['Khasi — Omniglot', OM+'khasi.htm']],
-  khasi:      [['Khasi language and alphabet — Omniglot', OM+'khasi.htm']]
+  khasi:      [['Khasi language and alphabet — Omniglot', OM+'khasi.htm']],
+  nicobarese: [],
+  car:        [['Car Nicobarese — Omniglot', OM+'car.htm']],
+  chaurateressa: [['Chaura — Omniglot', OM+'chaura.htm']],
+  centralnic: [['Nancowry — Omniglot', OM+'nancowry.htm']],
+  southernnic: [],
+  shompen:    [['Shompen — Omniglot', OM+'shompen.htm']]
 };
 
 
@@ -983,33 +1119,34 @@ window.ATLASES = window.ATLASES || {};
 window.ATLASES.austroasiatic = {
   key: 'austroasiatic',
   title:   { zh: '南亚语系', en: 'Austroasiatic' },
-  tagline: 'Eleven branches from the Chota Nagpur Plateau to the Vietnamese coast — where tone was watched being born, and where five scripts were invented by the people who speak the languages',
-  stats:   [['40', 'languages and groups'], ['11', 'branches drawn, of 13'], ['5', 'scripts invented by their own speakers']],
+  tagline: 'Twelve branches from the Chota Nagpur Plateau to the Vietnamese coast, and out into the Bay of Bengal — where tone was watched being born, and where five scripts were invented by the people who speak the languages',
+  stats:   [['46', 'languages and groups'], ['12', 'branches drawn, 2 left out'], ['5', 'scripts invented by their own speakers']],
   palette: {
     anc: '#c9c2cf', his: '#8b94a8', vie: '#d9663f', kat: '#4fa8d8', bah: '#5fbf6a',
     pea: '#c74f8a', khm: '#b48ad9', pal: '#3f9e8f', kmr: '#d95f6a', mon: '#7fa650',
-    asl: '#d9a83f', mun: '#8c5a2b', kha: '#6b7fd9'
+    asl: '#d9a83f', mun: '#8c5a2b', kha: '#6b7fd9', nic: '#38c9c0'
   },
-  legend:  [['anc','The family — eleven branches, three not drawn'],['his','Proto-Austroasiatic · reconstructed'],
+  legend:  [['anc','The family — twelve branches drawn, two left out'],['his','Proto-Austroasiatic · reconstructed'],
             ['vie','Vietic — Vietnamese, Mường and the Chut relics'],['kat','Katuic — the Annamite range'],
             ['bah','Bahnaric — the central highlands'],['pea','Pearic — what Khmer lost'],
             ['khm','Khmuic — the northern Lao uplands'],['pal','Palaungic — Shan State and Yunnan'],
             ['kmr','Khmeric — Khmer alone'],['mon','Monic — Mon, and the old Andaman coast'],
             ['asl','Aslian — Orang Asli of the Malay peninsula'],['mun','Munda — Austroasiatic in India'],
-            ['kha','Khasian — Meghalaya, 2,000 km west']],
+            ['kha','Khasian — Meghalaya, 2,000 km west'],
+            ['nic','Nicobarese — the Nicobar Islands, in the Bay of Bengal']],
   view:    { center: [99, 15.5], zoom: 4.2 },
   outline: { color: '#9c8fb0', fill: 'rgba(156,143,176,0.05)' },
   sketchGeo: AU_GEO,
   captions: {
-    note:   '● Markers show <b>representative localities</b> where the selected variety is rooted. This family spans an unusual amount of ground — the Munda languages are in eastern India, two thousand kilometres from everything else here, and the Aslian languages run down the Malay peninsula — so the initial view is framed to hold both ends, and the outer markers are reached by panning or by clicking an entry, which fits the map to its markers. <b>Nothing in this family is a majority language except Vietnamese and Khmer</b>, so almost every marker sits inside a country whose national language is unrelated to it.',
-    areas:  '<b style="color:var(--gold)">Approximate core areas</b> — coarse hand-drawn blocks showing roughly where each branch sits. Three need warning. The <b>Munda</b> and <b>Khasian</b> blocks are the family’s western outliers, in India, and they are that far from everything else because their speakers walked there. The <b>Aslian</b> block runs down a peninsula that is otherwise not Austroasiatic at all. And the <b>family</b> block is a frame rather than a territory: these languages are islands inside other people’s countries, and the block covers ground that is mostly Vietnamese, Thai, Burmese or Malay. The marker layer is the factual one.',
-    sketch: '<b style="color:var(--gold)">Schematic map</b> — a hand-drawn mainland Southeast Asia, the Malay peninsula, the Indian eastern plateau where Munda is spoken, and the Mekong delta; simplified from memory of the geography, with the markers at true coordinates. The far-western markers for Santali, Mundari, Ho and Sora sit on the plateau block, and Khasi sits in the Meghalaya hills above it. Works fully offline.'
+    note:   '● Markers show <b>representative localities</b> where the selected variety is rooted. This family spans an unusual amount of ground — the Munda languages are in eastern India, two thousand kilometres from everything else here; the Aslian languages run down the Malay peninsula; and the Nicobarese branch is out on islands in the Bay of Bengal, well west of anything else on this map — so the initial view is framed to hold all of it, and the outer markers are reached by panning or by clicking an entry, which fits the map to its markers. <b>Nothing in this family is a majority language except Vietnamese and Khmer</b>, so almost every marker sits inside a country whose national language is unrelated to it.',
+    areas:  '<b style="color:var(--gold)">Approximate core areas</b> — coarse hand-drawn blocks showing roughly where each branch sits. Four need warning. The <b>Munda</b> and <b>Khasian</b> blocks are the family’s western outliers, in India, and they are that far from everything else because their speakers walked there. The <b>Aslian</b> block runs down a peninsula that is otherwise not Austroasiatic at all. The <b>Nicobarese</b> block is a thin ribbon of islands out in the Bay of Bengal, drawn wider than the real chain so that its markers land on it. And the <b>family</b> block is a frame rather than a territory: these languages are islands inside other people’s countries, and the block covers ground that is mostly Vietnamese, Thai, Burmese or Malay. The marker layer is the factual one.',
+    sketch: '<b style="color:var(--gold)">Schematic map</b> — a hand-drawn mainland Southeast Asia, the Malay peninsula, the Indian eastern plateau where Munda is spoken, the Mekong delta, and the Nicobar chain in the Bay of Bengal; simplified from memory of the geography, with the markers at true coordinates. The far-western markers for Santali, Mundari, Ho and Sora sit on the plateau block, Khasi sits in the Meghalaya hills above it, and the Nicobarese markers sit on the island ribbon. Works fully offline.'
   },
 
   fonts: ['Noto Serif', 'Noto Serif SC', 'Noto Sans Thai', 'Noto Sans Lao', 'Noto Sans Myanmar',
           'Noto Sans Khmer', 'Noto Sans Devanagari', 'Noto Sans Ol Chiki',
           'Noto Sans Warang Citi', 'Noto Sans Sora Sompeng', 'Noto Sans Nag Mundari'],
-  filterPlaceholder: 'e.g. Vietnamese, Khmer, Mon, Santali, Khasi, Wa, Semai, Ruc…',
+  filterPlaceholder: 'e.g. Vietnamese, Khmer, Mon, Santali, Khasi, Wa, Semai, Ruc, Nicobarese…',
   listen: {
     om: 'https://www.omniglot.com/writing/langfam.htm',
     fv: 'https://forvo.com/languages/',
@@ -1018,7 +1155,7 @@ window.ATLASES.austroasiatic = {
   rootId: 'austroasiatic',
   stages: ['protoaa'],
   kinds: { root: 'The family', stage: 'Reconstructed ancestor', branch: 'Branch', leaf: 'A language' },
-  sources: 'Sources: A.-G. Haudricourt, “De l’origine des tons en vietnamien” (1954), whose analysis of the Vietnamese tones is drawn as a grid on the Vietnamese entry · H. L. Shorto, <i>A Mon–Khmer Comparative Dictionary</i>, for the reconstruction that preceded Sidwell’s · P. Sidwell, “Classifying the Austroasiatic Languages: History and State of the Art” (2009) and his later phylogenetic work (2018, 2021), for the flat classification that replaced the Mon–Khmer/Munda split, and his 2022 proposal placing Proto-Austroasiatic in the Red River Delta · Sidwell & Rau (2015) for the reconstructed vowel inventory, and the 500 etyma published in 2024 · G. Diffloth on Munda, and for the “Wa corridor” between the Salween and the Mekong · R. Ferlus on Vietic and tonogenesis · L. C. Thompson, <i>A Vietnamese Reference Grammar</i>, for the tone system and its dialect distribution · K. D. Smith (1975) on Sedang phonology · G. Benjamin on Temiar grammar · N. Burenhult on Jahai odour terminology · M. Aung-Thwin (2005), cited for the position that the Mon script was not prior to Burmese · the UNESCO <i>Atlas of the World’s Languages in Danger</i> for every endangerment grade except Chong’s, which is reported on Fishman’s GIDS scale and labelled as such · the 2011 Indian census for Santali, Mundari, Ho and Sora · the 2009 Vietnamese census for Katu · Ethnologue and Glottolog for ISO 639-3 codes and speaker counts. Six things here are deliberately left unresolved. <b>The Mon–Khmer grouping is not drawn</b>, because that bifurcation was abandoned around 2000. <b>Sedang’s vowel record is reported as contested</b>, not claimed: the sources say the world-record holder “depends closely on how the languages are described”. <b>Palaung’s speaker figures are given as components</b>, one of them undated, rather than summed into a single number. <b>Wa’s total is given as a range</b>, 900,000 against Bradley’s 820,000. <b>Chong’s script is dated both 2000 and 2010</b> because the source gives both, and its endangerment is on a different scale from everywhere else in this family. And <b>Ruc has no ISO 639-3 code at all</b> — it is Glottolog-only, and reads “—” here rather than being given a neighbouring code.',
+  sources: 'Sources: A.-G. Haudricourt, “De l’origine des tons en vietnamien” (1954), whose analysis of the Vietnamese tones is drawn as a grid on the Vietnamese entry · H. L. Shorto, <i>A Mon–Khmer Comparative Dictionary</i>, for the reconstruction that preceded Sidwell’s · P. Sidwell, “Classifying the Austroasiatic Languages: History and State of the Art” (2009) and his later phylogenetic work (2018, 2021), for the flat classification that replaced the Mon–Khmer/Munda split, and his 2022 proposal placing Proto-Austroasiatic in the Red River Delta · Sidwell & Rau (2015) for the reconstructed vowel inventory, and the 500 etyma published in 2024 · G. Diffloth on Munda, and for the “Wa corridor” between the Salween and the Mekong · R. Ferlus on Vietic and tonogenesis · L. C. Thompson, <i>A Vietnamese Reference Grammar</i>, for the tone system and its dialect distribution · K. D. Smith (1975) on Sedang phonology · G. Benjamin on Temiar grammar · N. Burenhult on Jahai odour terminology · M. Aung-Thwin (2005), cited for the position that the Mon script was not prior to Burmese · the UNESCO <i>Atlas of the World’s Languages in Danger</i> for every endangerment grade except Chong’s, which is reported on Fishman’s GIDS scale and labelled as such · P. Sidwell (2017) and (2022) for the two published classifications of Nicobarese, which disagree about where Car and Shompen belong · Reid (1994) for the Austric evidence drawn from Nicobarese–Austronesian morphology, and Weber (2025) for reading the same resemblance as a possible Austronesian substrate · the 2011 Indian census for Santali, Mundari, Ho and Sora · the 2009 Vietnamese census for Katu · the 2001 Indian census, with a 2005 count for Car Nicobarese alone, for the Nicobarese figures · Ethnologue and Glottolog for ISO 639-3 codes and speaker counts. Seven things here are deliberately left unresolved. <b>The Mon–Khmer grouping is not drawn</b>, because that bifurcation was abandoned around 2000. <b>Sedang’s vowel record is reported as contested</b>, not claimed: the sources say the world-record holder “depends closely on how the languages are described”. <b>Palaung’s speaker figures are given as components</b>, one of them undated, rather than summed into a single number. <b>Wa’s total is given as a range</b>, 900,000 against Bradley’s 820,000. <b>Chong’s script is dated both 2000 and 2010</b> because the source gives both, and its endangerment is on a different scale from everywhere else in this family. And <b>Ruc has no ISO 639-3 code at all</b> — it is Glottolog-only, and reads “—” here rather than being given a neighbouring code. And <b>Shompen’s membership of the family is stated as questioned</b>, because its own sources mark it twice over — a possible language isolate, and Nicobarese only by tradition.',
   tree: DATA, iso: ISO, features: FEATURES, sound: SOUND, areas: AREAS
 };
 })();

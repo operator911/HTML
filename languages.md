@@ -24,7 +24,7 @@ Companion to `TODO.md` (airport sims) and `index.html` (the shelf).
 | 9 | **Koreanic 朝鲜语族** | `atlas-korean.js` | ✅ built | 18 nodes · 78 markers · 3 historical stages as siblings of the living branch; **Jeju given its own node without resolving the language-or-dialect question (KO-101, KO-107)**; Chungcheong and Gangwon shipped *with* the note that standard dialectology puts them inside the central area (KO-105); three weak diaspora figures flagged in the prose (KO-108) |
 | 10 | **Formosan 台湾南岛语** | `atlas-formosan.js` | ✅ built | **26 nodes · 101 markers** · **the grouping is a PLACE, not a family** — `acceptance = geographic`, `glotto = none`, "up to nine separate primary subfamilies", so there is no Proto-Formosan trunk (`FO-101`) · Tsouic drawn **and marked doubtful** because all three member infoboxes say `fam2 = "Tsouic ?"` (`FO-103`) · Pazeh–Kaxabu shipped as **one node in two opposite states** — extinct 2010, alive at 12 speakers (`FO-105`) · Yami and Tsat drawn **outside** the nine branches, joined by geography only (`FO-106`) · 14 Omniglot pages verified live — the best-covered family in the series (`FO-108`) · **prose rewritten out of development jargon** — `infobox` 25× → 0, ⚠ 30× → 2, nothing factual dropped (`FO-107`) |
 | 11 | **Turkic 突厥语族** | `atlas-turkic.js` | ✅ built | **38 nodes · 173 markers** · the widest atlas in the series — **full-family scope**, `[60, 42]` / zoom 2.6, Istanbul → Yakutsk (built to option (b) on instruction, against the brief's recommendation, `TK-101`) · **Old Turkic deliberately NOT drawn as the trunk** (`TK-110`) · Khazar shipped with its branch **stated as disputed in its own source** and its whole corpus named (`TK-109`) · Fuyu Kyrgyz given its own node rather than filed as a Khakas dialect (`TK-104`) · two new fonts validated, `Noto Sans Cyrillic` found not to exist (`TK-108`) · link health **measured**: four expected Omniglot pages do not exist (`TK-110`) |
-| 12 | **Vietic & MSEA Austroasiatic** | `atlas-austroasiatic.js` | ✅ built | **40 nodes · 151 markers · 11 branches of 13 drawn**; the grouping is a genuine family, so the root is an ancestor rather than a place — but **the old Mon–Khmer/Munda bifurcation is deliberately NOT drawn**, because it was abandoned around 2000 (`AU-102`) · **Nicobarese, Pakanic and Mang named on the root as left out** (`AU-101`) · Vietnamese tones drawn as a **grid of two lost distinctions** — initial voicing × final-consonant type — with the mid-transition stage still spoken in Ruc (`AU-103`) · **five scripts invented by their own speakers**, four of them Munda and all in Unicode (`AU-107`) · Sedang's vowel record shipped **as contested, not claimed** (`AU-104`) · Chong's script dated both 2000 and 2010 in one source, both dates shipped (`AU-105`) · the Mon→Burmese script direction stated as disputed rather than settled (`AU-106`) · link health measured — **no Omniglot page for any Aslian language** (`AU-108`) |
+| 12 | **Vietic & MSEA Austroasiatic** | `atlas-austroasiatic.js` | ✅ built | **46 nodes · 169 markers · 12 branches drawn, 2 left out**; the grouping is a genuine family, so the root is an ancestor rather than a place — but **the old Mon–Khmer/Munda bifurcation is deliberately NOT drawn**, because it was abandoned around 2000 (`AU-102`) · **Pakanic and Mang named on the root as left out**, while **Nicobarese is drawn** as the family's island branch (`AU-101`, `AU-110`) · Vietnamese tones drawn as a **grid of two lost distinctions** — initial voicing × final-consonant type — with the mid-transition stage still spoken in Ruc (`AU-103`) · **five scripts invented by their own speakers**, four of them Munda and all in Unicode (`AU-107`) · Sedang's vowel record shipped **as contested, not claimed** (`AU-104`) · Chong's script dated both 2000 and 2010 in one source, both dates shipped (`AU-105`) · the Mon→Burmese script direction stated as disputed rather than settled (`AU-106`) · **Car Nicobarese marks the absolutive where the world's ergative languages mark the ergative**, and **Shompen ships with its family membership questioned at two levels** (`AU-110`) · link health measured — **no Omniglot page for any Aslian language**, while four Nicobarese languages do have pages (`AU-108`, `AU-110`) |
 | 13 | **Siberian isolate pocket** (Nivkh, Yukaghir, Chukotko-Kamchatkan, Ket, Ainu) | `atlas-siberian.js` | 💤 planned | file does not exist yet; Phase 8 capstone; the "peoples before the farmers" map |
 
 > **Do not mark a family ✅ on the strength of a plan.** As of this revision `atlas-sinitic.js`,
@@ -1063,13 +1063,15 @@ western plain), `hakka` (Liudui).
 Li Jen-kuei (李壬癸) on Formosan languages · Adelaar on Siraya · Council of Indigenous
 Peoples language-status reports · Ethnologue/Glottolog.
 
-### 2.11 Vietic & mainland-SE-Asia Austroasiatic — ✅ built (`atlas-austroasiatic.js`, 40 nodes · 151 markers)
+### 2.11 Vietic & mainland-SE-Asia Austroasiatic — ✅ built (`atlas-austroasiatic.js`, 46 nodes · 169 markers)
 
-**Built as:** eleven branches of thirteen, ordered as Sidwell (2018) groups them but **without drawing
+**Built as:** twelve branches, ordered as Sidwell (2018) groups them but **without drawing
 his Eastern/Northern/Southern groupings as intermediate levels**, because his own source calls many of
 them tentative and possibly "linkages". **The Mon–Khmer/Munda bifurcation is not drawn** — it was
 abandoned around 2000, and an atlas still using it would be twenty-five years out of date (`AU-102`).
-Three branches are named on the root as deliberately left out: **Nicobarese, Pakanic and Mang** (`AU-101`).
+Two branches are named on the root as deliberately left out: **Pakanic and Mang** (`AU-101`). **Nicobarese
+is drawn**, as the family's only island branch — added on instruction after first being left out on a
+geography call (`AU-110`).
 
 **The centrepiece** is Haudricourt's tonogenesis, drawn as a grid: three syllable endings × two kinds of
 initial consonant = the six Vietnamese tones, with the sounds themselves since vanished. The
@@ -1081,10 +1083,22 @@ this atlas makes (`#sinitic/old`).
 Warang Citi (Ho, 1950s), Mundari Bani (Mundari, 1949–1980) and one for Chong — four of them Munda and all
 four now in Unicode. No other family in this series comes close (`AU-107`).
 
+**The island branch, added last.** Nicobarese was drawn on instruction after first being left out on a
+geography call, and it earns its place: six languages on the Nicobar Islands in the Bay of Bengal,
+**verb-initial, suffixing, and marking agreement on the verb** — which the sources describe as **uncommon in
+mainland Southeast Asia**, so the branch does not look Austroasiatic at all. The resemblance to
+**Austronesian** was cited as evidence for the old Austric hypothesis, and is now read by Weber (2025) as a
+possible **Austronesian substrate**; both readings ship, neither settled. **Car Nicobarese's ergativity runs
+backwards** — it marks the *absolutive* where nearly every ergative language in the world marks the
+ergative, a pattern its sources call "highly eccentric". Two competing Sidwell classifications (2017 and
+2022) disagree about where Car and Shompen belong: the 2017 shape is drawn, the 2022 revision named. **Four
+of its languages have live Omniglot pages** — more than the entire Aslian branch manages (`AU-110`).
+
 **Deliberately shipped unresolved:** Sedang's world-record vowel claim (reported as contested, `AU-104`);
 Palaung's speaker figures as separate components, one undated; Wa's total as a range against Bradley's;
 Chong's script dated both 2000 and 2010 in one source; the Mon→Burmese script direction as disputed
-rather than settled (`AU-106`); and **Ruc with no ISO 639-3 code at all** (`AU-108`).
+rather than settled (`AU-106`); **Ruc with no ISO 639-3 code at all** (`AU-108`); and **Shompen's membership
+of the family**, questioned at two levels in its own sources (`AU-110`).
 
 **Pitch.** Tonogenesis as a story you can watch happen: Vietnamese tones arose from lost
 final consonants exactly as the Sinitic atlas's Old Chinese node describes for Chinese
@@ -1234,8 +1248,11 @@ series. **Formosan was built as a place rather than a family**, because its own 
 Glottolog code and says the languages form "up to nine separate primary subfamilies" — so there is no
 Proto-Formosan trunk, and Yami and Tsat are drawn outside the nine branches because neither is Formosan.
 **Austroasiatic closes Phase 7** and was built with its classification decision made first: the old
-Mon–Khmer/Munda split is **not drawn**, because it was abandoned around 2000, so eleven branches hang
-flat off the family and Munda is one of them rather than half of it. Its centrepiece is Haudricourt's
+Mon–Khmer/Munda split is **not drawn**, because it was abandoned around 2000, so twelve branches hang
+flat off the family and Munda is one of them rather than half of it — including **Nicobarese**, added on
+instruction as the family's island branch, which turns out to be the least Austroasiatic-looking member of
+the family: verb-initial, suffixing, and with **Car Nicobarese marking the absolutive where nearly every
+ergative language marks the ergative**. Its centrepiece is Haudricourt's
 tonogenesis drawn as a grid — three syllable endings × two kinds of initial consonant = six Vietnamese
 tones — with the middle stage still spoken in **Ruc**, a language of a few hundred speakers that also
 preserves the `*k-` prefixes used to reconstruct **Old Chinese**. A GitHub Pages build failure (Jekyll's
