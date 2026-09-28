@@ -129,8 +129,73 @@ ol.timeline li{margin:0 0 .7rem;padding:0 0 0 1rem;position:relative}
 ol.timeline li::before{content:"";position:absolute;left:-.41rem;top:.42rem;width:.6rem;height:.6rem;border-radius:50%;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 55%,transparent)}
 ol.timeline .yr{display:block;font-family:var(--serif);font-weight:600;color:var(--c);font-size:.95rem}
 ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
-@media (max-width:1180px){.grip{display:none}body{overflow:auto;height:auto}.app{display:block}.tree-pane{order:2;border-right:0;border-top:1px solid var(--line)}.map-pane{order:1;height:52vh;min-height:340px}#tree{max-height:46vh}.info-pane{position:fixed;inset:auto 0 0 0;z-index:1200;max-height:78dvh;border-left:0;border-top:1px solid var(--gold);box-shadow:0 -18px 40px rgba(0,0,0,.55);transform:translateY(102%);transition:transform .28s ease;border-radius:14px 14px 0 0;background:var(--panel)}body.sheet .info-pane{transform:translateY(0)}.sheet-handle{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--line)}.sheet-handle button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.3rem .8rem;font:inherit;font-size:.82rem;cursor:pointer}}
+/* ---------- narrow widths: one full-bleed map, two detents (see languages.md §1.4)
+   Below the breakpoint the three columns cannot share a phone screen, so the map
+   takes the whole area under the header and the tree and the history become bottom
+   sheets that slide over one another — `sheet-tree` picks a variety, `sheet-info`
+   reads it, `sheet-none` gives the screen to the map. The heights live here and
+   nowhere else bar one mirror: --sheet-h is what the map chrome, the attribution
+   and map.setPadding() (which centres markers in the *uncovered* map) all clear
+   themselves by. The hidden sheet is `visibility:hidden`, not `display:none`, both
+   so it keeps its size and so it leaves the tab order. */
+@media (max-width:1180px){
+  body{overflow:hidden;height:100dvh}
+  .grip{display:none}
+  .stats{display:none}
+  /* the one-line pitch is a luxury at 390px — the root node opens with it anyway */
+  .tagline{display:none}
+  header{padding:.6rem .9rem .5rem}
+  .app{display:block;position:relative}
+  .map-pane{position:absolute;inset:0}
+  .map-note{max-width:min(62vw,260px);font-size:.7rem}
+  .tree-pane,.info-pane{position:absolute;left:0;right:0;bottom:0;z-index:1200;border:0;
+    border-top:1px solid var(--gold);border-radius:16px 16px 0 0;box-shadow:0 -18px 44px rgba(0,0,0,.6);
+    transform:translateY(103%);visibility:hidden;
+    transition:transform .3s ease,visibility 0s linear .3s}
+  .tree-pane{height:46dvh}
+  .info-pane{height:84dvh}
+  body.sheet-tree .tree-pane,body.sheet-info .info-pane{transform:none;visibility:visible;
+    transition:transform .3s ease,visibility 0s}
+  .sheet-handle{position:relative;display:flex;align-items:center;gap:.5rem;flex:0 0 auto;
+    padding:.85rem .9rem .5rem;border-bottom:1px solid var(--line)}
+  .sheet-handle::before{content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);
+    width:2.4rem;height:3px;border-radius:99px;background:var(--line)}
+  .sheet-handle button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:.34rem .6rem;font:inherit;font-size:.78rem;cursor:pointer;min-height:34px}
+  .sheet-handle button:hover,.sheet-handle button:focus-visible{border-color:var(--gold);color:var(--gold)}
+  .tree-head{padding:.5rem .8rem .45rem}
+  /* iOS zooms the whole page to read a control smaller than 16px, and there is no
+     horizontal room here to give back once it has */
+  #filter{font-size:16px}
+  /* the placeholder says "Filter…"; keep the label as the input's accessible name only */
+  .tree-head label{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);border:0}
+  #tree{max-height:none;overscroll-behavior:contain}
+  #info{overscroll-behavior:contain}
+  .tnode{padding:.5rem .45rem;min-height:40px}
+  .map-toggle{bottom:calc(var(--sheet-h,0px) + 1rem);transition:bottom .3s ease,opacity .2s ease}
+  .map-toggle.areas{bottom:calc(var(--sheet-h,0px) + 2.8rem)}
+  .areas-cap{bottom:calc(var(--sheet-h,0px) + 4.7rem)}
+  /* lift the whole bottom-right control stack, because MapLibre's own
+     `.maplibregl-ctrl-attrib.maplibregl-compact{margin:10px}` is two classes deep and
+     a margin on the attribution alone would never out-specify it. */
+  .maplibregl-ctrl-bottom-right{bottom:var(--sheet-h,0px);transition:bottom .3s ease}
+  .sheet-open{position:absolute;left:.6rem;right:auto;bottom:calc(var(--sheet-h,0px) + 1rem);z-index:1300;display:none}
+  body.sheet-none .sheet-open{display:inline-block}
+  /* at the reading detent there is no map left to put chrome on */
+  body.sheet-info .map-toggle,body.sheet-info .map-note,body.sheet-info .areas-cap,
+  body.sheet-info .sketch-cap,body.sheet-info .maplibregl-ctrl-attrib{opacity:0;pointer-events:none}
+  body.sheet-tree{--sheet-h:46dvh}
+  body.sheet-info{--sheet-h:84dvh}
+  body.sheet-none{--sheet-h:0px}
+}
+@media (max-width:1180px) and (prefers-reduced-motion:reduce){
+  .tree-pane,.info-pane,.map-toggle,.map-note{transition:none}
+}
 @media (min-width:1181px){.sheet-handle{display:none}}
+.sheet-name{font-family:var(--serif);font-size:.9rem;color:var(--ink-dim);min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheet-acts{margin-left:auto;display:flex;gap:.4rem;flex:0 0 auto}
+.sheet-open{display:none}
 /* ---------- family toggle (Phase 0; see languages.md §1.4) ---------- */
 .families{flex:0 0 100%;display:flex;flex-wrap:wrap;gap:.3rem;margin:.5rem 0 0;padding:0}
 .families button{font:inherit;font-size:.74rem;line-height:1.25;padding:.26rem .64rem;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);cursor:pointer;display:inline-flex;align-items:center;gap:.34rem;letter-spacing:.01em}
@@ -142,7 +207,16 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
 .pending{padding:1.1rem .9rem;font-family:var(--serif);color:var(--ink-dim);font-size:.95rem}
 .pending p{margin:.4rem 0}
 .pending code{font-family:var(--sans);font-size:.82em;color:var(--gold)}
-@media (max-width:1180px){.families button{font-size:.7rem;padding:.22rem .56rem}}
+/* This has to stay below the .families rules above, which are not in a media query —
+   source order, not specificity, decides flex-wrap here. Thirteen pills wrapped over
+   four rows was costing the map a third of a phone screen, so on narrow widths they
+   become one snap-scrolling rail instead. */
+@media (max-width:1180px){
+  .families{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    padding-bottom:.3rem;scroll-snap-type:x proximity}
+  .families::-webkit-scrollbar{display:none}
+  .families button{flex:0 0 auto;scroll-snap-align:start;font-size:.7rem;padding:.3rem .6rem;min-height:34px}
+}
 </style>
 </head>
 <body>
@@ -155,7 +229,14 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
   <nav class="families" id="families" aria-label="Language family atlases"></nav>
 </header>
 <main class="app">
-  <aside class="pane tree-pane" aria-label="Classification of the selected family">
+  <aside class="pane tree-pane" id="treePane" aria-label="Classification of the selected family">
+    <div class="sheet-handle">
+      <span class="sheet-name">Classification</span>
+      <span class="sheet-acts">
+        <button id="raiseSheet" type="button" aria-controls="infoPane">↑ History</button>
+        <button class="min-sheet" type="button" aria-controls="treePane">⤓ Full map</button>
+      </span>
+    </div>
     <div class="tree-head">
       <label for="filter">Filter varieties</label>
       <input id="filter" type="search" placeholder="Filter…" autocomplete="off">
@@ -171,10 +252,17 @@ ol.timeline .ev{color:var(--ink-dim);font-size:.85rem}
     <button id="areasToggle" class="map-toggle areas" type="button" aria-pressed="false" aria-controls="areasCap">◧ areas (approx.)</button>
     <p class="areas-cap" id="areasCap"></p>
     <p class="sketch-cap" id="sketchCap"></p>
+    <button id="showSheet" class="map-toggle sheet-open" type="button" aria-controls="treePane">☰ Tree</button>
   </section>
   <div class="grip" id="gripInfo" role="separator" aria-orientation="vertical" aria-label="Resize history panel (double-click resets)" tabindex="0"></div>
   <aside class="pane info-pane" id="infoPane" aria-live="polite" aria-label="History of the selected language">
-    <div class="sheet-handle"><span id="sheetTitle" style="font-family:var(--serif)"></span><button id="closeSheet" type="button">Close</button></div>
+    <div class="sheet-handle">
+      <span id="sheetTitle" class="sheet-name"></span>
+      <span class="sheet-acts">
+        <button id="closeSheet" type="button" aria-controls="treePane">← Tree</button>
+        <button class="min-sheet" type="button" aria-controls="infoPane">⤓ Full map</button>
+      </span>
+    </div>
     <div id="info"><p class="empty">Hover or tap a variety in the tree to read its history.</p></div>
   </aside>
 </main>
@@ -464,6 +552,9 @@ function activate(key, node) {
   selectedId = null;
   select(start, !same || !!node, false);
   setHash(key, start.id, false);
+  /* On a phone, arriving by deep link means the reader wants the history and toggling
+     family means they want the picker. There are no detents on desktop, so no-op. */
+  if (!wide.matches) setSheet(node ? 'info' : 'tree');
 }
 
 /* ---------------------------------------------------------------- map plumbing */
@@ -562,6 +653,7 @@ if (typeof maplibregl !== 'undefined') {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
     map.on('style.load', () => { addMarkerLayer(); if (baseStyle === 'positron-en') applyEnglishLabels(); });
     map.on('idle', ensureOverlay);   // safety net: some environments skip style.load after setStyle
+    map.on('load', () => syncMapPad());   // on a phone the sheet is up before the style lands
     map.on('error', () => {});       // keep console quiet for expected tile/style retries
   } catch (e) {
     map = null;                      // no WebGL / blocked CDN — the tree still works
@@ -587,7 +679,12 @@ function showMarkers(n, selected, fit) {
     const b = ms.reduce((b, [la, ln]) => b.extend([ln, la]),
       new maplibregl.LngLatBounds([ms[0][1], ms[0][0]], [ms[0][1], ms[0][0]]));
     const lngSpan = b.getEast() - b.getWest();
-    map.fitBounds(b, { padding: 60, maxZoom: lngSpan > 90 ? 3 : (lngSpan > 40 ? 4 : (ms.length === 1 ? 7 : 6)) });
+    /* A phone shows a fraction of the map a desktop does, so the same 60px gutter and
+       the same single-marker zoom both over-shoot it. What the sheet covers is already
+       accounted for by map.setPadding(), which fitBounds respects. */
+    let z = lngSpan > 90 ? 3 : (lngSpan > 40 ? 4 : (ms.length === 1 ? 7 : 6));
+    if (!wide.matches) z = Math.max(3, z - 1);
+    map.fitBounds(b, { padding: wide.matches ? 60 : 24, maxZoom: z });
   }
 }
 function areaFeatures(selCls) {
@@ -702,7 +799,8 @@ function buildNode(n, depth) {
       '<span class="t-sp">' + (n.sp || '') + '</span>' +
     '</span>';
   const preview = () => {
-    if (!wide.matches) return;
+    /* Runs on touch now too, because the map stays on screen at narrow widths: a tap
+       previews, and the click that follows is what fits the bounds. */
     renderInfo(n);
     showMarkers(n, n.id === selectedId, false);
     areasSel = n.cls || 'c-anc';
@@ -752,7 +850,9 @@ function select(n, fit, push) {
   showMarkers(n, true, fit !== false);
   areasSel = n.cls || 'c-anc';
   if (areasOn) paintAreas();
-  if (!wide.matches) document.body.classList.add('sheet');
+  /* Stay where the reader is: selecting leaves the tree up and lets the map fly,
+     which is what hovering does on a desktop. Only a hidden sheet is brought back. */
+  if (!wide.matches && document.body.classList.contains('sheet-none')) setSheet('tree');
   if (push !== false && ATLAS) setHash(ATLAS.key, n.id, true);
 }
 
@@ -777,9 +877,73 @@ function applyFilter(q) {
 }
 filterEl.addEventListener('input', () => applyFilter(filterEl.value.trim().toLowerCase()));
 
-/* ----------------------------------------------------------------- sheet close */
-el('closeSheet').addEventListener('click', () => document.body.classList.remove('sheet'));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.body.classList.remove('sheet'); });
+/* --------------------------------------------------- mobile detents (narrow only)
+   Below the breakpoint the tree and the history are bottom sheets over a full-bleed
+   map. Three states on <body>, and only one ever visible: `sheet-tree` is the picker,
+   `sheet-info` the reading detent, `sheet-none` gives the whole screen to the map.
+   Heights live in the stylesheet (--sheet-h); map.setPadding() mirrors the active one
+   so fitBounds centres the markers in the part of the map the sheet has not covered.
+   Selecting a variety deliberately does NOT raise the history — the tree stays up and
+   the map flies, which is what hovering does on a desktop. ------------------------- */
+const treePane = el('treePane');
+const infoPane = el('infoPane');
+function sheetHeight() {
+  if (wide.matches) return 0;
+  const b = document.body;
+  if (b.classList.contains('sheet-info')) return infoPane.offsetHeight;
+  if (b.classList.contains('sheet-tree')) return treePane.offsetHeight;
+  return 0;
+}
+function syncMapPad() {
+  if (!map) return;
+  map.setPadding({ top: 0, left: 0, right: 0, bottom: sheetHeight() });
+}
+function setSheet(state, fromUser) {
+  if (wide.matches) return;
+  const b = document.body;
+  b.classList.remove('sheet-tree', 'sheet-info', 'sheet-none');
+  b.classList.add('sheet-' + state);
+  syncMapPad();
+  if (!fromUser) return;
+  /* follow the focus into whichever detent the reader just moved to */
+  const t = state === 'info' ? el('closeSheet') : state === 'tree' ? el('raiseSheet') : el('showSheet');
+  if (t) t.focus();
+}
+el('raiseSheet').addEventListener('click', () => setSheet('info', true));
+el('closeSheet').addEventListener('click', () => setSheet('tree', true));
+el('showSheet').addEventListener('click', () => setSheet('tree', true));
+document.querySelectorAll('.min-sheet').forEach((b) => b.addEventListener('click', () => setSheet('none', true)));
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || wide.matches) return;
+  /* Escape steps a detent down: history → tree → full map → tree. */
+  setSheet(document.body.classList.contains('sheet-info') ? 'tree' : 'none');
+});
+/* Crossing the breakpoint, or a viewport that changes height under us (iOS collapses
+   its URL bar, rotating a phone does the rest), both need the padding re-measured. */
+function onWideChange() {
+  const b = document.body;
+  if (wide.matches) {
+    b.classList.remove('sheet-tree', 'sheet-info', 'sheet-none');
+    if (map) { map.setPadding({ top: 0, left: 0, right: 0, bottom: 0 }); map.resize(); }
+    return;
+  }
+  if (!/sheet-(tree|info|none)/.test(b.className)) b.classList.add('sheet-tree');
+  if (map) map.resize();
+  syncMapPad();
+}
+if (wide.addEventListener) wide.addEventListener('change', onWideChange);
+else if (wide.addListener) wide.addListener(onWideChange);
+if (map && typeof ResizeObserver !== 'undefined') {
+  let lastH = -1;
+  new ResizeObserver((es) => {
+    const h = Math.round(es[0].contentRect.height);
+    if (h === lastH) return;
+    lastH = h;
+    map.resize();
+    syncMapPad();
+  }).observe(el('map'));
+}
+
 
 /* -------------------------------------- basemap cycle: dark → English → sketch */
 const NEXT = { fiord: ['positron-en', '🔤 English labels'], 'positron-en': ['sketch', '◈ offline sketch'], sketch: ['fiord', '🌑 dark map'] };
@@ -853,6 +1017,7 @@ makeResizable(el('gripInfo'), 'right');
 
 /* ------------------------------------------------------------------------ init */
 buildFamilies();
+if (!wide.matches) document.body.classList.add('sheet-tree');   // the picker is the default detent
 (function init() {
   const p = parseHash();
   load(p.key, p.node);

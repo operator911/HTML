@@ -520,6 +520,52 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     files-on-disk note updated to eleven atlases, the Formosan queue section split off from
     Austroasiatic's and marked ✅ with `[FO-107]` and `[FO-108]` appended; this file's §0 row 10 →
     ✅ built, §2.10 header → ✅ built with the scope note above, and the Phase 7 roadmap row updated.
+- **2026-09-27 · Mobile layout — the narrow-width view is now one map with two detents.
+  No atlas file, no contract field and no atlas-facing behaviour changed.**
+  - **What was actually wrong: three things, only one of them cosmetic.** (1) The narrow
+    breakpoint set `.app{display:block}` and then `order:1 / order:2` on the map and tree
+    panes — but `order` only applies to flex and grid items, so those rules were **dead**,
+    the intended "map first" stacking never fired, and the tree pushed the map below the
+    fold. (2) Every tap added `body.sheet`, raising a `max-height:78dvh` fixed panel over
+    the **whole** viewport, so the `flyTo` that the same tap had just triggered happened
+    underneath it — this is the "map completely obscured" complaint. (3) Hover-preview was
+    switched off below the breakpoint, so there was no non-committing way to make the map
+    react at all.
+  - **What it is now.** The map is full-bleed under the header and the two former side
+    panes are bottom sheets that slide over one another: `sheet-tree` (46dvh, the picker),
+    `sheet-info` (84dvh, the reading detent), `sheet-none` (the whole screen to the map).
+    Selecting a variety deliberately does **not** raise the history — the tree stays up and
+    the map flies, which is the desktop's hover behaviour translated to touch; the history
+    is one explicit `↑ History` away and a `☰ Tree` pill on the map returns. A deep link
+    opens on the history, a family toggle opens on the picker, `Escape` steps one detent
+    down, and the parked sheet is `visibility:hidden` so it keeps its size *and* leaves the
+    tab order. `--sheet-h` is the single source of truth for the sheet height: the map
+    chrome, the attribution and `map.setPadding()` all clear themselves by it, so
+    `fitBounds` centres markers in the part of the map the sheet has **not** covered rather
+    than in the part you cannot see. The fit padding drops 60 → 24 and one notch off
+    `maxZoom` below the breakpoint, because a phone does not have a desktop's map.
+  - **Two cascade bugs found by measuring rather than by reading.** The family-pills rule
+    had to move into a **second** media query placed *below* `.families` — those base rules
+    are not inside a media query, so source order and not specificity decides `flex-wrap`,
+    and thirteen pills were still wrapping over four rows and costing the map a third of the
+    screen. And `margin-bottom` on `.maplibregl-ctrl-attrib` did nothing, because MapLibre's
+    own `.maplibregl-ctrl-attrib.maplibregl-compact` sets `margin:10px` at two classes deep;
+    lifting `.maplibregl-ctrl-bottom-right` instead is what works.
+  - **New guard: `tools/check-layout.js`, and it belongs in the definition of done.** It
+    drives headless Edge over CDP and asserts **geometry**, which nothing else here can
+    see: the map is full-bleed with a sized canvas, the picker is on screen without
+    scrolling, the map keeps ≥200px clear of the sheet, every piece of map chrome and the
+    attribution clears the sheet, `getPadding().bottom` tracks the active detent, the parked
+    sheet leaves the tab order, the four detent controls do what they claim, `#sinitic/yuehai`
+    deep-links into the reading detent, and at 1440×900 the grid, its three columns and
+    click-to-select are untouched. It takes a hash (`EastAsiaAtlas.html#turkic`) so every
+    atlas can be run through it. **41 assertions, 0 failures — verified on Sinitic, Turkic
+    (the widest view frame in the series), Silk Road (special mode) and Tibeto-Burman (the
+    largest tree).** The reason it exists is the same class of miss as `FO-107`: a sheet
+    that covers the map passes `node --check`, `check-atlas.js` **and** `check-prose.js`
+    all at once.
+  - Desktop is unchanged by construction: every new rule is inside the `max-width:1180px`
+    block or a mobile-only state class, and the checker asserts the grid at 1440×900.
 - **Next:** nothing — **the series is complete.** Phase 8, the optional Siberian capstone (§2.13), was
   built in this session as `atlas-siberian.js` (21 nodes · 47 markers). It needed the same structural
   departure Formosan did: the grouping is a **place**, not a family, so there is no Proto-Paleo-Siberian
@@ -1266,7 +1312,7 @@ never reconstructed from memory at the end.
       **`node tools/check-prose.js atlas-<family>.js`** — it strips developer comments first and
       fails on internal vocabulary, so a clean run means the shipped text is jargon-free.
 - [ ] Hash routes work (`#family/node`); toggle in and out of the atlas without errors
-- [ ] Smoke-tested in a browser: filter, sketch mode, area overlay, sheet mode on narrow widths
+- [ ] Smoke-tested in a browser: filter, sketch mode, area overlay — **and `node tools/check-layout.js 'EastAsiaAtlas.html#<family>'`**, which asserts the narrow-width detents and the desktop grid geometrically. It is the only checker here that can see layout: a sheet covering the map passes every other one.
 - [ ] Status updated in §0 of this file; `index.html` card added if it is the first atlas after Sinitic
 
 ---
