@@ -542,8 +542,9 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     tab order. `--sheet-h` is the single source of truth for the sheet height: the map
     chrome, the attribution and `map.setPadding()` all clear themselves by it, so
     `fitBounds` centres markers in the part of the map the sheet has **not** covered rather
-    than in the part you cannot see. The fit padding drops 60 → 24 and one notch off
-    `maxZoom` below the breakpoint, because a phone does not have a desktop's map.
+    than in the part you cannot see. The gutter itself is 60px on a desktop map and 24px on a
+    phone, plus whatever the raised sheet covers — see the camera rules below for why it is
+    declared exactly once and never passed to `fitBounds`.
   - **Two cascade bugs found by measuring rather than by reading.** The family-pills rule
     had to move into a **second** media query placed *below* `.families` — those base rules
     are not inside a media query, so source order and not specificity decides `flex-wrap`,
@@ -551,6 +552,45 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     screen. And `margin-bottom` on `.maplibregl-ctrl-attrib` did nothing, because MapLibre's
     own `.maplibregl-ctrl-attrib.maplibregl-compact` sets `margin:10px` at two classes deep;
     lifting `.maplibregl-ctrl-bottom-right` instead is what works.
+  - **Follow-up the same day: picking a *family* now flies the map — it never had.**
+    `activate()` called `applyView(A)` *inside* `if (!same)` and computed
+    `select(start, !same || !!node, …)`, so tapping the pill of the family already on screen
+    re-rendered the tree and moved nothing at all; and on a cross-family switch the
+    `applyView` flight was cancelled by the `fitBounds` that immediately followed it, because
+    `fitBounds` supersedes a transition in progress — the curated `view` was silently thrown
+    away on every atlas. The rule is now **two intents, two frames**: a *family* pick (its
+    pill, the bare `#family` route, back/forward to it) flies to that atlas's authored `view`
+    and does **not** fit, so the framing someone curated survives, and survives being already
+    loaded; a *variety* pick keeps `fitBounds` and never touches the authored view.
+    `setSheet()` moved ahead of both, because `map.setPadding()` is what a flight centres
+    itself in and the sheet has to be up, or gone, before one starts.
+  - **`fitBounds(b, {padding: n})` while `map.setPadding()` is holding the sheet height drops
+    the flight, silently.** This is the "map doesn't fly" bug, and nothing about it is visible:
+    the markers land exactly right, only the camera never moves. `fitBounds` reads the gutter off
+    the transform, hands its own `padding` option to the same ease, MapLibre compensates the
+    centre back against the padding it is leaving, concludes the camera is already where the fit
+    wants it, and never starts — `isMoving()` is `false` on the line after `fitBounds` returns.
+    Shown both ways in one page in one run: with the option it sits still, without it the map
+    travels and lands centred in the part of the map the sheet has not taken. The gutter is
+    therefore declared in exactly **one** place, `syncMapPad()` — 60px wide, 24px narrow, plus
+    whatever the raised sheet covers — and the word `padding` never appears in a `fitBounds`
+    call. That also retired the phone's `-1 zoom` compensation: it was papering over a fit that
+    had never honestly accounted for how little map a phone leaves you.
+  - **Two more ways the same flight died, both found by probing rather than reading.**
+    `setPadding()` *is* `jumpTo({padding})`, so writing the padding the map already has still
+    ends whatever transition is running — `{duration: 0}` does not help, it still jumps — which
+    is why `syncMapPad()` returns early unless the value actually changed. And at the reading
+    detent the padding was 733px against a 739px map pane: `fitBounds` had a *negative* viewport
+    to fit into and declined to move at all, off-screen markers and all. The claim is capped now
+    so a 120px strip of map stays fittable under the tallest sheet. The checker asserts the
+    travel, not the arrival, because a map that never moved and a map that arrived look identical
+    in a screenshot.
+  - **A flight that arrives before the style does used to be lost, not deferred.**
+    `showMarkers()` returns early while `getSource('markers')` is still missing, and the repaint
+    on `style.load` called it back with `fit = false` — correct for a base-map swap, wrong for a
+    variety deep-linked on a slow connection, which painted its markers and left the camera on
+    the family frame. `lastSel` now carries the one unpaid `fit`, and only that one; swapping the
+    base map still leaves the camera where the reader left it.
   - **New guard: `tools/check-layout.js`, and it belongs in the definition of done.** It
     drives headless Edge over CDP and asserts **geometry**, which nothing else here can
     see: the map is full-bleed with a sized canvas, the picker is on screen without
@@ -559,9 +599,10 @@ Legend: ✅ done · 🔜 in progress · 💤 planned · 🌫 someday
     sheet leaves the tab order, the four detent controls do what they claim, `#sinitic/yuehai`
     deep-links into the reading detent, and at 1440×900 the grid, its three columns and
     click-to-select are untouched. It takes a hash (`EastAsiaAtlas.html#turkic`) so every
-    atlas can be run through it. **41 assertions, 0 failures — verified on Sinitic, Turkic
-    (the widest view frame in the series), Silk Road (special mode) and Tibeto-Burman (the
-    largest tree).** The reason it exists is the same class of miss as `FO-107`: a sheet
+    atlas can be run through it. **49 assertions, 0 failures — verified on all thirteen atlases,
+    and on Sinitic three times running** (the camera bug it was written for was intermittent, so
+    one green run proves nothing), including Turkic (the widest view frame), Silk Road (special
+    mode) and Tibeto-Burman (the largest tree). The reason it exists is the same class of miss as `FO-107`: a sheet
     that covers the map passes `node --check`, `check-atlas.js` **and** `check-prose.js`
     all at once.
   - Desktop is unchanged by construction: every new rule is inside the `max-width:1180px`

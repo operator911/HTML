@@ -543,18 +543,27 @@ function activate(key, node) {
     applyLegend(A);
     areasSel = null;
     applyOutline(A);
-    applyView(A);
   }
   markActive(key);
   buildTree();
   filterEl.value = '';
-  const start = (node && byId[node]) ? byId[node] : (byId[A.rootId] || A.tree);
-  selectedId = null;
-  select(start, !same || !!node, false);
-  setHash(key, start.id, false);
-  /* On a phone, arriving by deep link means the reader wants the history and toggling
-     family means they want the picker. There are no detents on desktop, so no-op. */
+  /* Set the detent before anything moves: map.setPadding() is what a flight centres
+     itself in, so the sheet has to be up (or gone) before one starts. */
   if (!wide.matches) setSheet(node ? 'info' : 'tree');
+  const root = byId[A.rootId] || A.tree;
+  const start = (node && byId[node]) ? byId[node] : root;
+  /* Two intents, two frames. Landing on a *family* — its pill, the bare `#family` route,
+     back/forward to it — means "show me the whole family", so the map flies to that
+     atlas's authored view, and `applyView` sits outside the `!same` block so that it
+     still does so when that atlas is already the one on screen. Landing on a *variety*
+     means "show me where this one is", which fitBounds does off its marker set.
+     Never both: fitBounds cancels a flight already under way, which is why picking a
+     family looked like nothing at all. */
+  const wholeFamily = start === root;
+  if (wholeFamily) applyView(A);
+  selectedId = null;
+  select(start, !wholeFamily, false);
+  setHash(key, start.id, false);
 }
 
 /* ---------------------------------------------------------------- map plumbing */
@@ -643,7 +652,7 @@ function addMarkerLayer() {
     map.on('mouseleave', 'mk', onMkLeave);
     mkHandlersBound = true;
   }
-  if (lastSel) showMarkers(lastSel.n, lastSel.selected, false);   // repaint after style swap
+  if (lastSel) showMarkers(lastSel.n, lastSel.selected, lastSel.fit);   // repaint after style swap
 }
 if (typeof maplibregl !== 'undefined') {
   try {
@@ -668,7 +677,11 @@ if (!map) {
 
 function showMarkers(n, selected, fit) {
   if (!map) return;
-  lastSel = { n: n, selected: selected };
+  /* `fit` is remembered only for as long as it cannot be honoured: while the style is
+     still loading there is no marker source to bounds-fit, and addMarkerLayer() owes the
+     reader that one flight when it repaints. Once the source exists the debt is cleared,
+     so swapping the base map later never yanks the camera. */
+  lastSel = { n: n, selected: selected, fit: !!fit && !map.getSource('markers') };
   if (!map.getSource('markers')) return;   // style still loading; addMarkerLayer() repaints on load
   const ms = markersOf(n);
   map.getSource('markers').setData({ type: 'FeatureCollection',
@@ -679,12 +692,13 @@ function showMarkers(n, selected, fit) {
     const b = ms.reduce((b, [la, ln]) => b.extend([ln, la]),
       new maplibregl.LngLatBounds([ms[0][1], ms[0][0]], [ms[0][1], ms[0][0]]));
     const lngSpan = b.getEast() - b.getWest();
-    /* A phone shows a fraction of the map a desktop does, so the same 60px gutter and
-       the same single-marker zoom both over-shoot it. What the sheet covers is already
-       accounted for by map.setPadding(), which fitBounds respects. */
-    let z = lngSpan > 90 ? 3 : (lngSpan > 40 ? 4 : (ms.length === 1 ? 7 : 6));
-    if (!wide.matches) z = Math.max(3, z - 1);
-    map.fitBounds(b, { padding: wide.matches ? 60 : 24, maxZoom: z });
+    /* No `padding` here on purpose: the gutter — 60px of desktop map, 24px on a phone, and
+       whatever the raised sheet covers — is declared once, in syncMapPad(). Repeating it
+       here replaces the sheet padding mid-ease and MapLibre talks itself out of the flight.
+       Because the fit is now honest about the sheet, the same maxZoom ladder serves both
+       widths; a phone needed no extra zoom compensation, it needed to fit what you can see. */
+    const z = lngSpan > 90 ? 3 : (lngSpan > 40 ? 4 : (ms.length === 1 ? 7 : 6));
+    map.fitBounds(b, { maxZoom: z });
   }
 }
 function areaFeatures(selCls) {
@@ -887,6 +901,8 @@ filterEl.addEventListener('input', () => applyFilter(filterEl.value.trim().toLow
    the map flies, which is what hovering does on a desktop. ------------------------- */
 const treePane = el('treePane');
 const infoPane = el('infoPane');
+/* the least map a fit is allowed to work with, in px — marker, label and a little air */
+const MIN_MAP_BAND = 120;
 function sheetHeight() {
   if (wide.matches) return 0;
   const b = document.body;
@@ -896,7 +912,25 @@ function sheetHeight() {
 }
 function syncMapPad() {
   if (!map) return;
-  map.setPadding({ top: 0, left: 0, right: 0, bottom: sheetHeight() });
+  /* THE one place the map's gutter is declared. fitBounds reads the padding off the
+     transform, so passing it to fitBounds as well is not a no-op — it replaces the sheet
+     padding for the duration of that ease, MapLibre then compensates the centre back to
+     the padding it is leaving, decides the camera is already where the fit wants it, and
+     drops the flight outright (reproducible: isMoving() is false the instant fitBounds
+     returns). Hence `padding` never appears in a fitBounds call.
+     setPadding() is itself implemented as jumpTo({padding}), which also ends any
+     transition under way, so an unchanged padding is not written at all. */
+    const edge = wide.matches ? 60 : 24;
+  /* Never let the sheet's claim leave the map with nowhere to fit. With the reading detent
+     up (84dvh) the padding would exceed the pane's own height — a negative viewport — and
+     fitBounds silently declines to move at all, which is indistinguishable from "the map is
+     broken". Cap the claim so a usable strip survives above the sheet; the sheet itself is
+     the same height either way, this only changes where markers land in it. */
+  const room = Math.max(0, map.getContainer().clientHeight - edge * 2 - MIN_MAP_BAND);
+  const bottom = Math.min(sheetHeight() + edge, room);
+  const cur = map.getPadding();
+  if (cur.bottom === bottom && cur.top === edge && cur.left === edge && cur.right === edge) return;
+  map.setPadding({ top: edge, left: edge, right: edge, bottom: bottom });
 }
 function setSheet(state, fromUser) {
   if (wide.matches) return;
@@ -924,7 +958,7 @@ function onWideChange() {
   const b = document.body;
   if (wide.matches) {
     b.classList.remove('sheet-tree', 'sheet-info', 'sheet-none');
-    if (map) { map.setPadding({ top: 0, left: 0, right: 0, bottom: 0 }); map.resize(); }
+    if (map) { map.resize(); syncMapPad(); }
     return;
   }
   if (!/sheet-(tree|info|none)/.test(b.className)) b.classList.add('sheet-tree');

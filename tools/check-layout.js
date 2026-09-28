@@ -103,6 +103,23 @@ const MEASURE = `(function(){
   };
 })()`;
 
+/* camera + framing, for the rule that a family pill frames the family and a node frames
+   its own markers — the two must not fight, since fitBounds cancels a flight in progress */
+const CAM = 'map ? (map.getCenter().lng.toFixed(2) + "," + map.getCenter().lat.toFixed(2) + " z" + map.getZoom().toFixed(2)) : "nomap"';
+const SETTLED = 'typeof map === "undefined" || !map || (!map.isMoving() && !map.isEasing())';
+const PICK_LEAF = '(document.querySelector("#tree .tnode.lvl3") || document.querySelector("#tree .tnode.lvl2") || document.querySelector("#tree .tnode.lvl1")).click()';
+const PICK_FAMILY = 'document.querySelector("#families [aria-current]").click()';
+const FRAMING = `(function(){
+  const root = byId[ATLAS.rootId] || ATLAS.tree;
+  const ms = markersOf(root);
+  const b = map.getContainer().getBoundingClientRect();
+  let on = 0;
+  ms.forEach(function (m) { const p = map.project([m[1], m[0]]);
+    if (p.x > -20 && p.x < b.width + 20 && p.y > -20 && p.y < b.height + 20) on++; });
+  return { total: ms.length, on: on, selected: (document.querySelector("#info h2") || {}).textContent, root: root.en };
+})()`;
+
+
 /* ---- run ------------------------------------------------------------------ */
 async function main() {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-layout-'));
@@ -176,7 +193,8 @@ async function main() {
     assert('areas toggle clears the sheet', m.areasToggle.bottom <= m.tree.top + 1, 'bottom ' + m.areasToggle.bottom);
     if (m.attrib) assert('attribution clears the sheet', m.attrib.bottom <= m.tree.top + 1, 'bottom ' + m.attrib.bottom);
     else skip('attribution clears the sheet', 'map not loaded');
-    assert('sheet padding tracks the tree', m.pad === m.tree.h, 'padding ' + m.pad + ' vs tree ' + m.tree.h);
+    assert('sheet padding tracks the tree', m.pad === m.tree.h + 24,
+           'padding ' + m.pad + ' vs tree ' + m.tree.h + ' + a 24px gutter');
     assert('sheet grabber row is present', m.treeHandle && m.treeHandle.disp !== 'none' && m.treeHandle.h >= 30,
            JSON.stringify(m.treeHandle && m.treeHandle.h));
     const rowH = await evalIn("Math.round(document.querySelector('#tree .tnode').getBoundingClientRect().height)");
@@ -187,7 +205,14 @@ async function main() {
     m = await state('info');
     assert('history raised', m.info.vis === 'visible' && m.info.h >= m.vh * 0.7, m.info.vis + ' ' + m.info.h + 'px');
     assert('tree parked behind it', m.tree.vis === 'hidden', m.tree.vis);
-    assert('padding tracks the history', m.pad === m.info.h, 'padding ' + m.pad + ' vs info ' + m.info.h);
+    /* 84dvh of sheet leaves the map a sliver. The padding is capped rather than allowed to
+       claim more than the pane has, because a zero-or-negative viewport makes fitBounds
+       decline to move at all — silently, with the markers correctly drawn off-screen. */
+    assert('padding tracks the history, capped to what the map has',
+           m.pad === Math.min(m.info.h + 24, m.map.h - 24 - 24 - 120),
+           'padding ' + m.pad + ' vs info ' + m.info.h + ' in a ' + m.map.h + 'px map');
+    assert('the reading detent still leaves fittable map', m.map.h - m.pad >= 120,
+           (m.map.h - m.pad) + 'px left under the sheet');
     assert('map chrome bows out', m.mapToggle.op === '0', 'opacity ' + m.mapToggle.op);
 
     /* ============ full map =================================================== */
@@ -197,7 +222,7 @@ async function main() {
            'body="' + m.body + '" tree=' + m.tree.vis + ' info=' + m.info.vis);
     assert('a way back is on screen', m.showSheet && m.showSheet.disp !== 'none' &&
            m.showSheet.top >= 0 && m.showSheet.bottom <= m.vh, JSON.stringify(m.showSheet));
-    assert('padding released', m.pad === 0, String(m.pad));
+    assert('the gutter survives with no sheet', m.pad === 24, String(m.pad));
 
     /* ============ the buttons, not just the state function =================== */
     console.log('\nnarrow — the controls themselves');
@@ -215,6 +240,11 @@ async function main() {
 
     /* ============ a deep link lands where it should ========================== */
     console.log('\nnarrow — deep link');
+    /* a deep link before the style lands cannot fit to anything (no marker source yet),
+       so the map has to be up or this tests the wrong thing */
+    if (!await waitFor("map && map.getSource('markers')", 20000)) {
+      console.log('  note  the map style never loaded — the deep link will not fit');
+    }
     await evalIn("location.hash = '#sinitic/yuehai'");
     if (await waitFor("/sheet-info/.test(document.body.className)", 8000)) {
       const d = await evalIn(MEASURE);
@@ -224,6 +254,69 @@ async function main() {
       const d = await evalIn(MEASURE);
       bad('deep link opens on the history', 'body="' + d.body + '" h2="' + d.h2 + '"');
     }
+
+    /* the pill has to re-frame even when that atlas is already the one on screen */
+    console.log('\nnarrow — picking the family pill flies the map back out');
+    /* the deep link above fitted to a variety; let that flight land before sampling,
+       or "before" is just the position the page loaded at and nothing looks like it moved */
+    await sleep(250);
+    await waitFor(SETTLED, 9000);
+    const camBefore = await evalIn(CAM);
+    await evalIn(PICK_FAMILY);
+    await sleep(250);
+    await waitFor(SETTLED, 9000);
+    const camAfter = await evalIn(CAM);
+    assert('the pill moves the map at 390px too', camBefore !== 'nomap' && camBefore !== camAfter,
+           camBefore + ' -> ' + camAfter);
+    assert('and lands on the picker, not the history', /sheet-tree/.test((await evalIn(MEASURE)).body),
+           'a family pick is a request for the list');
+
+    /* map.setPadding() is jumpTo({padding}) under the hood, so a padding write that
+       changes nothing must not be a padding write at all — it cancels the fitBounds that
+       a selection just started. A reflow (webfont landing, iOS collapsing its URL bar)
+       resizes #map without changing the sheet's height, which is exactly how a flight
+       used to die halfway to its target. */
+    console.log('\nnarrow — a no-op padding write must not cancel a flight');
+    if (!m.mapReady) {
+      skip('a no-op padding write spares the flight', 'no WebGL/network — map unavailable');
+    } else {
+      await evalIn("map.jumpTo({center:[104,18],zoom:3.8}); 'ok'");
+      await sleep(250);
+      await evalIn("map.easeTo({center:[113.7,22.7],zoom:5,duration:1000}); 'ok'");
+      await sleep(150);
+      const midFlight = await evalIn("map.isMoving()");
+      await evalIn("syncMapPad()");
+      await sleep(150);
+      const stillFlying = await evalIn("map.isMoving()");
+      assert('a no-op padding write spares the flight', midFlight && stillFlying,
+             'moving ' + midFlight + ' -> ' + stillFlying + ' after syncMapPad()');
+      await waitFor(SETTLED, 9000);
+    }
+
+
+    /* ---- the regression that hid here for two rounds ---------------------------
+       fitBounds(b, {padding: n}) while map.setPadding() is holding the sheet height
+       makes MapLibre compute a target it then decides it is already at, and the flight
+       is dropped without ever starting — isMoving() is false on the very next line.
+       Nothing you can see in a screenshot: the markers are right, the camera just
+       never moves. So assert the travel, not the arrival. */
+    console.log('\nnarrow — a fit issued under a raised sheet must actually travel');
+    if (!m.mapReady) {
+      skip('a fit under a raised sheet travels', 'no WebGL/network — map unavailable');
+    } else {
+      await evalIn("setSheet('info')");
+      await waitFor("getComputedStyle(document.getElementById('infoPane')).visibility === 'visible'", 2500);
+      await evalIn("map.jumpTo({center:[104,18], zoom:3.8}); 'somewhere the family is not'");
+      await sleep(250);
+      await evalIn("showMarkers(byId[ATLAS.rootId] || ATLAS.tree, true, true); 'fit'");
+      await sleep(200);
+      const travelling = await evalIn("map.isMoving() || map.isEasing()");
+      await waitFor(SETTLED, 9000);
+      const landed = await evalIn("map.getCenter().lng.toFixed(2) + ',' + map.getCenter().lat.toFixed(2)");
+      assert('a fit under a raised sheet travels', travelling,
+             'isMoving() was false right after fitBounds — it stayed at ' + landed);
+    }
+
 
     /* ============ desktop must not have changed ============================== */
     console.log('\ndesktop 1440x900 — the grid');
@@ -237,7 +330,7 @@ async function main() {
     assert('history keeps its column', m.info.w >= 300 && m.info.vis === 'visible', 'info ' + m.info.w + 'px');
     assert('sheet chrome is gone', m.showSheet.disp === 'none' && m.handle.disp === 'none',
            'showSheet ' + m.showSheet.disp + ', handle ' + m.handle.disp);
-    assert('padding reset on the way out', m.pad === 0, String(m.pad));
+    assert('the desktop gutter is back', m.pad === 60, String(m.pad));
     assert('tree still populated', m.nodes > 10, m.nodes + ' nodes');
 
     /* selecting on the desktop must behave exactly as it always did */
@@ -246,6 +339,28 @@ async function main() {
                            "body:document.body.className,hash:location.hash})");
     assert('clicking a variety selects it', d2.h2 && d2.h2.length > 1 && /#\w+\//.test(d2.hash), JSON.stringify(d2));
     assert('and raises no sheet on desktop', !/sheet-(tree|info|none)/.test(d2.body), d2.body);
+
+    /* ---- a family pill frames the family; a node frames its own markers -------- */
+    console.log('\ndesktop — the family pill re-frames the map');
+    if (!m.mapReady) {
+      skip('the pill flies the map back out', 'no WebGL/network — map unavailable');
+    } else {
+      await waitFor(SETTLED, 9000);
+      await evalIn(PICK_LEAF);
+      await sleep(250);
+      await waitFor(SETTLED, 9000);
+      const zoomed = await evalIn(CAM);
+      await evalIn(PICK_FAMILY);
+      await sleep(250);
+      await waitFor(SETTLED, 9000);
+      const flown = await evalIn(CAM);
+      assert('the pill flies the map back out', zoomed !== flown, 'camera stayed at ' + zoomed);
+      const fr = await evalIn(FRAMING);
+      assert('and frames the whole family', fr.total === 0 || fr.on / fr.total >= 0.9,
+             fr.on + '/' + fr.total + ' markers on screen at ' + flown);
+      assert('and selects the family itself', fr.selected === fr.root, fr.selected + ' vs ' + fr.root);
+    }
+
 
     /* ============ nothing threw ============================================== */
     const noise = /Failed to load resource|net::|ERR_|openfreemap|fonts\.(googleapis|gstatic)|unpkg|favicon|404 \(Not Found\)/i;
