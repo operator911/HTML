@@ -144,6 +144,7 @@ transition:background .5s}
 .pips{display:flex;gap:3px;justify-content:flex-end;margin-top:.5rem}
 .pips i{width:9px;height:2px;border-radius:2px;background:rgba(255,255,255,.2);transition:background .3s,box-shadow .3s}
 .pips i.done{background:var(--gold);box-shadow:0 0 6px rgba(232,192,122,.7)}
+.pips i.miss{background:#e2657a;box-shadow:0 0 6px rgba(226,101,122,.7)}
 .pips i.now{background:var(--gold-hi);box-shadow:0 0 9px var(--gold)}
 .hud-bottom{position:absolute;left:1.7rem;right:1.7rem;bottom:max(1.3rem,env(safe-area-inset-bottom));display:flex;align-items:flex-end;justify-content:space-between;gap:1rem}
 .speed{display:flex;align-items:baseline;gap:.35rem;font-variant-numeric:tabular-nums}
@@ -189,6 +190,13 @@ transition:background .5s}
 @media (max-height:620px) and (min-width:901px){
   .lede{display:none}.rule{margin:.9rem 0}.title-block h1{font-size:2.8rem}
   .panel-body{max-height:calc(100vh - 11rem)}
+}
+@media (max-height:720px) and (min-width:901px){
+  .panel section{padding:.82rem 1.15rem}
+  .panel h3{margin-bottom:.52rem}
+  .row{margin-top:.52rem}
+  .panel-head{padding:.72rem 1.15rem .55rem}
+  .panel-foot{padding:.42rem 1.15rem .6rem}
 }
 @media (max-height:520px){
   #pauseCard{padding:1rem 1.2rem .9rem}
@@ -307,6 +315,10 @@ transition:background .5s}
               <span class="lab">Sound</span>
               <button class="switch" id="soundSwitch" role="switch" aria-checked="true" aria-label="Sound"></button>
             </div>
+            <div class="row">
+              <span class="lab">Music</span>
+              <button class="switch" id="musicSwitch" role="switch" aria-checked="true" aria-label="Music"></button>
+            </div>
           </section>
         </div>
         <div class="panel-foot"><span class="live" id="fps">— fps</span><span id="renderInfo">procedural</span></div>
@@ -401,7 +413,7 @@ scene.add(camera);
 
 const state = {
   mode: 'menu', tod: 'golden', wx: 'clear', quality: 'balanced',
-  fog: 1, bloom: true, sound: true,
+  fog: 1, bloom: true, sound: true, music: true,
   score: 0, combo: 1, rings: 0, lap: 1, nextIndex: 0,
   demo: true, time: 0, flightTime: 0, lastPass: 0
 };
@@ -1648,8 +1660,8 @@ function makeHoopHalo(hex) {
     `
   });
 }
-const hoopCore = { idle: makeHoopCore('#3fa9bd'), next: makeHoopCore('#ffb347'), passed: makeHoopCore('#2f5a66') };
-const hoopHalo = { idle: makeHoopHalo('#3fa9bd'), next: makeHoopHalo('#ffb347'), passed: makeHoopHalo('#2b4c57') };
+const hoopCore = { idle: makeHoopCore('#3fa9bd'), next: makeHoopCore('#ffb347'), passed: makeHoopCore('#2f5a66'), miss: makeHoopCore('#ff5a4f') };
+const hoopHalo = { idle: makeHoopHalo('#3fa9bd'), next: makeHoopHalo('#ffb347'), passed: makeHoopHalo('#2b4c57'), miss: makeHoopHalo('#ff5a4f') };
 const hoopGeo = new THREE.TorusGeometry(27, 1.1, 6, 40);
 const haloGeo = new THREE.TorusGeometry(27, 2.4, 4, 32);
 
@@ -1669,7 +1681,10 @@ for (let i = 0; i < HOOP_COUNT; i++) {
   halo.renderOrder = 9;
   g.add(core, halo);
   scene.add(g);
-  hoops.push({ pos: p, tan, quat: q, group: g, core, halo, radius: 27, passed: false, flash: 0, idx: i });
+  hoops.push({
+    pos: p, tan, quat: q, group: g, core, halo, radius: 27,
+    passed: false, missed: false, missTimer: 0, flash: 0, idx: i
+  });
 }
 world.hoops = hoops;
 
@@ -2138,7 +2153,7 @@ function resetCourse(startT) {
   state.score = 0; state.combo = 1; state.rings = 0; state.lap = 1;
   state.lastPass = state.time;
   state.nextIndex = 0;
-  hoops.forEach(h => { h.passed = false; h.flash = 0; });
+  hoops.forEach(h => { h.passed = false; h.missed = false; h.missTimer = 0; h.flash = 0; });
   setPlaneAt(startT === undefined ? 0.985 : startT);
   flight.prevAlong.fill(0);
   for (let i = 0; i < hoops.length; i++) {
@@ -2221,7 +2236,7 @@ function updateDemo(dt) {
       hoops[i].passed = true;
       hoops[i].flash = 1;
       state.nextIndex = (i + 1) % HOOP_COUNT;
-      if (state.nextIndex === 0) hoops.forEach(h => { h.passed = false; });
+      if (state.nextIndex === 0) hoops.forEach(h => { h.passed = false; h.missed = false; h.missTimer = 0; });
       burstUniforms.uOrigin.value.copy(hoops[i].pos);
       burstUniforms.uStart.value = state.time;
     }
@@ -2308,6 +2323,7 @@ function checkHoop() {
     if (i === state.nextIndex && flight.prevAlong[i] < 0 && along >= 0) {
       const radial = Math.sqrt(Math.max(0, _tmp.lengthSq() - along * along));
       if (radial < h.radius * 0.99) passHoop(h);
+      else if (radial < h.radius * 3.5) missHoop(h);
     }
     flight.prevAlong[i] = along;
   }
@@ -2327,6 +2343,8 @@ function passHoop(h) {
   state.score += gain;
   state.rings++;
   h.passed = true;
+  h.missed = false;
+  h.missTimer = 0;
   h.flash = 1;
   burstUniforms.uOrigin.value.copy(h.pos);
   burstUniforms.uStart.value = state.time;
@@ -2338,7 +2356,7 @@ function passHoop(h) {
   if (next === 0) {
     state.lap++;
     state.score += 500;
-    hoops.forEach(x => { x.passed = false; });
+    hoops.forEach(x => { x.passed = false; x.missed = false; x.missTimer = 0; });
     toast('Lap complete', '+500');
   } else {
     toast('Checkpoint ' + (h.idx + 1) + ' / ' + HOOP_COUNT, '+' + gain);
@@ -2346,6 +2364,24 @@ function passHoop(h) {
   const c = $('#combo');
   c.classList.add('pop');
   setTimeout(() => c.classList.remove('pop'), 240);
+  updateHUD(true);
+}
+function missHoop(h) {
+  const hadCombo = state.combo > 1;
+  state.combo = 1;
+  h.missed = true;
+  h.missTimer = 1.25;
+  h.flash = 0.55;
+  const next = (h.idx + 1) % HOOP_COUNT;
+  state.nextIndex = next;
+  if (next === 0) {
+    state.lap++;
+    hoops.forEach(x => { x.passed = false; x.missed = false; x.missTimer = 0; });
+    toast('Checkpoint missed', 'lap ' + state.lap);
+  } else {
+    toast('Missed checkpoint ' + (h.idx + 1), hadCombo ? 'combo reset' : 'next ring ahead');
+  }
+  audio.miss();
   updateHUD(true);
 }
 const pipsEl = $('#pips');
@@ -2357,7 +2393,9 @@ function updateHUD(force) {
   $('#cpNow').textContent = state.nextIndex + 1;
   const pips = pipsEl.children;
   for (let i = 0; i < pips.length; i++) {
-    pips[i].className = i < state.nextIndex ? 'done' : (i === state.nextIndex ? 'now' : '');
+    pips[i].className = i < state.nextIndex
+      ? (hoops[i].missed ? 'miss' : 'done')
+      : (i === state.nextIndex ? 'now' : '');
   }
   $('#pScore').textContent = state.score.toLocaleString('en-US');
   $('#pRings').textContent = state.rings;
@@ -2369,8 +2407,22 @@ function updateSpeedHUD() {
 }
 
 /* ── 28 · audio ──────────────────────────────────────────────── */
+const mtof = (n) => 440 * Math.pow(2, (n - 69) / 12);
+const WARM_CHORDS = [
+  { bass: 38, pad: [50, 54, 57, 61, 64], mel: [62, 64, 66, 69, 71, 74, 76] },
+  { bass: 35, pad: [47, 50, 54, 57, 61], mel: [59, 62, 64, 66, 69, 71, 74] },
+  { bass: 43, pad: [55, 59, 62, 66, 69], mel: [62, 64, 66, 67, 69, 71, 74] },
+  { bass: 45, pad: [57, 61, 64, 67, 71], mel: [61, 64, 66, 69, 71, 73, 76] }
+];
+const COOL_CHORDS = [
+  { bass: 35, pad: [47, 50, 54, 57, 61], mel: [59, 62, 64, 66, 69, 71, 74] },
+  { bass: 43, pad: [55, 59, 62, 66, 69], mel: [62, 64, 66, 67, 69, 71, 74] },
+  { bass: 38, pad: [50, 54, 57, 61, 64], mel: [62, 64, 66, 69, 71, 74, 76] },
+  { bass: 42, pad: [54, 57, 61, 64, 66], mel: [54, 57, 59, 61, 64, 66, 69] }
+];
 const audio = {
   ctx: null, ready: false, master: null, windGain: null, rainGain: null, windFilter: null, noiseBuf: null,
+  musicGain: null, delaySend: null, musicNext: 0, musicStep: 0, musicChord: WARM_CHORDS[0],
   init() {
     if (this.ctx) {
       if (this.ctx.state === 'suspended') this.ctx.resume();
@@ -2400,11 +2452,34 @@ const audio = {
       const rg = ctx.createGain(); rg.gain.value = 0;
       rainS.connect(rf).connect(rg).connect(master); rainS.start();
       this.rainGain = rg;
+
+      /* music bus + soft echo */
+      const musicGain = ctx.createGain();
+      musicGain.gain.value = state.music ? 0.38 : 0;
+      musicGain.connect(master);
+      this.musicGain = musicGain;
+      const delay = ctx.createDelay(1.2);
+      delay.delayTime.value = 0.42;
+      const fb = ctx.createGain(); fb.gain.value = 0.3;
+      const damp = ctx.createBiquadFilter(); damp.type = 'lowpass'; damp.frequency.value = 2200;
+      delay.connect(damp).connect(fb).connect(delay);
+      const wet = ctx.createGain(); wet.gain.value = 0.38;
+      delay.connect(wet).connect(musicGain);
+      this.delaySend = delay;
+      this.musicNext = ctx.currentTime + 0.5;
+      this.musicStep = 0;
+      this.musicChord = WARM_CHORDS[0];
       this.ready = true;
     } catch (err) { console.warn('audio unavailable', err); }
   },
   setEnabled(on) {
     if (this.master && this.ctx) this.master.gain.setTargetAtTime(on ? 0.5 : 0, this.ctx.currentTime, 0.12);
+  },
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  setMusic(on) {
+    if (this.musicGain && this.ctx) this.musicGain.gain.setTargetAtTime(on ? 0.38 : 0, this.ctx.currentTime, 0.3);
   },
   update() {
     if (!this.ready) return;
@@ -2414,11 +2489,108 @@ const audio = {
     this.windGain.gain.setTargetAtTime(windLevel, t, 0.35);
     this.windFilter.frequency.setTargetAtTime(240 + flight.speed * 4.4, t, 0.5);
     this.rainGain.gain.setTargetAtTime(ENV.rain * 0.1 + ENV.storm * 0.02, t, 0.6);
+    this.updateMusic();
+  },
+  updateMusic() {
+    if (!this.ready || !state.music) return;
+    const ctx = this.ctx;
+    if (ctx.state !== 'running') return;
+    const now = ctx.currentTime;
+    if (this.musicNext < now - 0.8) this.musicNext = now + 0.12;
+    while (this.musicNext < now + 0.75) {
+      this.scheduleMusic(this.musicNext);
+      this.musicNext += 0.62;
+    }
+  },
+  scheduleMusic(t) {
+    const cool = ENV.stars > 0.45 || state.tod === 'night' || state.tod === 'dusk';
+    const stormy = ENV.storm > 0.5;
+    const rainy = ENV.rain > 0.4;
+    const set = cool ? COOL_CHORDS : WARM_CHORDS;
+    const step = this.musicStep++;
+    if (step % 12 === 0) {
+      const chord = set[Math.floor(step / 12) % set.length];
+      this.musicChord = chord;
+      this.playPad(chord.pad, t, 8.4);
+      this.playBass(chord.bass, t, 7.6);
+    }
+    if (stormy) return;
+    const chord = this.musicChord;
+    const prob = rainy ? 0.22 : (cool ? 0.34 : 0.46);
+    if (Math.random() < prob) {
+      const m = chord.mel[Math.floor(Math.random() * chord.mel.length)] + (cool ? 0 : 12);
+      this.playPluck(m, t + 0.04);
+    }
+    if (Math.random() < 0.07) {
+      const m = chord.pad[2 + Math.floor(Math.random() * 2)] + 24;
+      this.playPluck(m, t + 0.32, 0.45);
+    }
+  },
+  playPad(midis, t, dur) {
+    const ctx = this.ctx;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.5, t + 1.6);
+    g.gain.setValueAtTime(0.5, t + dur - 2.4);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass'; f.frequency.value = 1150; f.Q.value = 0.4;
+    f.connect(g); g.connect(this.musicGain);
+    const oscs = [];
+    for (const m of midis) {
+      for (const det of [-5, 5]) {
+        const o = ctx.createOscillator();
+        o.type = 'triangle';
+        o.frequency.value = mtof(m);
+        o.detune.value = det;
+        const og = ctx.createGain(); og.gain.value = 0.038;
+        o.connect(og).connect(f);
+        o.start(t); o.stop(t + dur + 0.1);
+        oscs.push(o);
+      }
+    }
+    if (oscs[0]) oscs[0].onended = () => {
+      try { f.disconnect(); g.disconnect(); } catch (e) {}
+    };
+  },
+  playBass(m, t, dur) {
+    const ctx = this.ctx;
+    const o = ctx.createOscillator();
+    o.type = 'sine'; o.frequency.value = mtof(m);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.07, t + 0.9);
+    g.gain.setValueAtTime(0.07, t + dur - 1.8);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    o.connect(g).connect(this.musicGain);
+    o.onended = () => { try { g.disconnect(); } catch (e) {} };
+    o.start(t); o.stop(t + dur + 0.1);
+  },
+  playPluck(m, t, level = 1) {
+    const ctx = this.ctx;
+    const f = mtof(m);
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+    const o2 = ctx.createOscillator(); o2.type = 'triangle'; o2.frequency.value = f * 2.002;
+    const hg = ctx.createGain(); hg.gain.value = 0.16;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08 * level, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+    o.connect(g);
+    o2.connect(hg).connect(g);
+    g.connect(this.musicGain);
+    const send = ctx.createGain(); send.gain.value = 0.45;
+    g.connect(send).connect(this.delaySend);
+    o.onended = () => {
+      try { g.disconnect(); hg.disconnect(); send.disconnect(); } catch (e) {}
+    };
+    o.start(t); o.stop(t + 1.8);
+    o2.start(t); o2.stop(t + 1.8);
   },
   chime(n) {
     if (!this.ready || !state.sound) return;
     const ctx = this.ctx, t0 = ctx.currentTime;
-    const scale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51];
+    const scale = [587.33, 659.25, 739.99, 880, 987.77, 1174.66, 1318.51, 1479.98];
     const f = scale[clamp(n - 1, 0, scale.length - 1)];
     for (const [mult, gain, det] of [[1, 0.085, 0], [2, 0.028, 4], [3, 0.01, -6]]) {
       const o = ctx.createOscillator();
@@ -2428,7 +2600,23 @@ const audio = {
       g.gain.linearRampToValueAtTime(gain, t0 + 0.012);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.15);
       o.connect(g).connect(this.master);
+      o.onended = () => { try { g.disconnect(); } catch (e) {} };
       o.start(t0); o.stop(t0 + 1.2);
+    }
+  },
+  miss() {
+    if (!this.ready || !state.sound) return;
+    const ctx = this.ctx, t0 = ctx.currentTime;
+    for (const [freq, delay] of [[392, 0], [329.63, 0.13]]) {
+      const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = freq;
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1200;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t0 + delay);
+      g.gain.linearRampToValueAtTime(0.045, t0 + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 0.7);
+      o.connect(f).connect(g).connect(this.master);
+      o.onended = () => { try { f.disconnect(); g.disconnect(); } catch (e) {} };
+      o.start(t0 + delay); o.stop(t0 + delay + 0.8);
     }
   },
   thunder() {
@@ -2444,6 +2632,7 @@ const audio = {
     g.gain.linearRampToValueAtTime(0.42, t0 + 0.1);
     g.gain.exponentialRampToValueAtTime(0.0008, t0 + 2.7);
     src.connect(f).connect(g).connect(this.master);
+    src.onended = () => { try { f.disconnect(); g.disconnect(); } catch (e) {} };
     src.start(t0); src.stop(t0 + 2.8);
   }
 };
@@ -2467,7 +2656,7 @@ function startFlight() {
   state.nextIndex = ahead;
   state.score = 0; state.combo = 1; state.rings = 0; state.lap = 1;
   state.lastPass = state.time;
-  hoops.forEach(h => { h.passed = false; h.flash = 0; });
+  hoops.forEach(h => { h.passed = false; h.missed = false; h.missTimer = 0; h.flash = 0; });
   _fwd.set(0, 0, -1).applyQuaternion(planeGroup.quaternion);
   flight.yaw = Math.atan2(-_fwd.x, -_fwd.z);
   flight.pitch = Math.asin(clamp(_fwd.y, -1, 1));
@@ -2511,7 +2700,7 @@ function toMenu() {
   const p = courseCurve.getPointAt(flight.demoT);
   flight.pos.copy(p);
   planeGroup.position.copy(p);
-  hoops.forEach((h, i) => { h.passed = i < 2; h.flash = 0; });
+  hoops.forEach((h, i) => { h.passed = i < 2; h.missed = false; h.missTimer = 0; h.flash = 0; });
   state.nextIndex = 2;
   camInit = false;
   shotIdx = 6; shotTimer = 14;
@@ -2589,8 +2778,14 @@ function updateHoops(dt) {
   const next = hoops[state.nextIndex];
   for (const h of hoops) {
     const isNext = h === next;
-    h.core.material = isNext ? hoopCore.next : (h.passed ? hoopCore.passed : hoopCore.idle);
-    h.halo.material = isNext ? hoopHalo.next : (h.passed ? hoopHalo.passed : hoopHalo.idle);
+    if (h.missTimer > 0) {
+      h.missTimer = Math.max(0, h.missTimer - dt);
+      h.core.material = hoopCore.miss;
+      h.halo.material = hoopHalo.miss;
+    } else {
+      h.core.material = isNext ? hoopCore.next : (h.passed ? hoopCore.passed : hoopCore.idle);
+      h.halo.material = isNext ? hoopHalo.next : (h.passed ? hoopHalo.passed : hoopHalo.idle);
+    }
     if (h.flash > 0) h.flash = Math.max(0, h.flash - dt * 2.4);
     h.group.scale.setScalar(1 + h.flash * 0.2 + (isNext ? Math.sin(state.time * 2.2) * 0.01 : 0));
   }
@@ -2700,7 +2895,11 @@ window.addEventListener('blur', () => {
   input.boost = false;
 });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && state.mode === 'playing') pauseGame();
+  if (document.hidden) {
+    if (state.mode === 'playing') pauseGame();
+  } else {
+    audio.resume();
+  }
 });
 
 /* ── 33 · controls wiring ────────────────────────────────────── */
@@ -2709,6 +2908,12 @@ function toggleSound() {
   $('#soundSwitch').setAttribute('aria-checked', state.sound ? 'true' : 'false');
   if (state.sound) audio.init();
   audio.setEnabled(state.sound);
+}
+function toggleMusic() {
+  state.music = !state.music;
+  $('#musicSwitch').setAttribute('aria-checked', state.music ? 'true' : 'false');
+  if (state.music) audio.init();
+  audio.setMusic(state.music);
 }
 $('#startBtn').addEventListener('click', startFlight);
 $('#resumeBtn').addEventListener('click', resumeGame);
@@ -2755,6 +2960,7 @@ $('#bloomSwitch').addEventListener('click', () => {
   applyConditions(false);
 });
 $('#soundSwitch').addEventListener('click', toggleSound);
+$('#musicSwitch').addEventListener('click', toggleMusic);
 let resizeTimer = 0;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
@@ -2771,7 +2977,7 @@ flight.speed = 76;
   flight.pos.copy(p);
   planeGroup.position.copy(p);
 }
-hoops.forEach((h, i) => { h.passed = i < 2; });
+hoops.forEach((h, i) => { h.passed = i < 2; h.missed = false; h.missTimer = 0; });
 state.nextIndex = 2;
 camInit = false;
 updateDemo(0.016);
@@ -2823,7 +3029,7 @@ requestAnimationFrame(() => {
 /* small debug handle (harmless, useful for tuning) */
 window.__plane = {
   state, ENV, flight, camera, renderer, hoops, world, scene, renderFrame,
-  planeGroup, planeMesh, trail, rain, snow, beacon, mistMesh, bolt, cloudSea, sky,
+  planeGroup, planeMesh, trail, rain, snow, beacon, mistMesh, bolt, cloudSea, sky, audio,
   strikeLightning,
   setShot(i) { shotIdx = i; shotTimer = 999; }
 };
