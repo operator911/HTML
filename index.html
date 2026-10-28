@@ -30,6 +30,8 @@ h2::after{content:"";flex:1;height:1px;background:var(--line)}
 .featured .go{position:absolute;right:1.4rem;top:1.5rem;font-size:1.25rem;color:var(--gold)}
 .badge{display:inline-block;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:#141b2d;border-radius:99px;padding:.14rem .55rem;margin-left:.6rem;vertical-align:.18em;font-weight:600}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:1rem;margin-top:.4rem}
+.atlas-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card .zh{font-family:var(--cjk);color:var(--gold);font-weight:700;margin-right:.35rem}
 .card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:1.05rem 1.1rem;text-decoration:none;display:flex;flex-direction:column;gap:.45rem;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
 .card:hover,.card:focus-visible{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 55%,var(--line));box-shadow:0 10px 26px rgba(0,0,0,.4)}
 .card .dot{width:.65rem;height:.65rem;border-radius:50%;background:var(--c);box-shadow:0 0 8px color-mix(in srgb,var(--c) 55%,transparent)}
@@ -39,6 +41,7 @@ h2::after{content:"";flex:1;height:1px;background:var(--line)}
 .card .size{margin-top:auto;padding-top:.55rem;font-size:.68rem;color:var(--ink-faint);letter-spacing:.05em}
 footer{margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;display:flex;flex-wrap:wrap;gap:.4rem 1.4rem}
 footer .zh{font-family:var(--cjk);color:var(--gold)}
+@media (max-width:720px){.atlas-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -48,14 +51,6 @@ footer .zh{font-family:var(--cjk);color:var(--gold)}
   <h1>HTML Playground</h1>
   <span class="tagline">small worlds, rendered in the browser</span>
 </header>
-
-<h2>Featured</h2>
-<a class="featured" href="EastAsiaAtlas.html#sinitic">
-  <span class="go">→</span>
-  <span class="kicker">Interactive Atlas<span class="badge">New</span></span>
-  <h3><span class="zh">東亞語言</span>The East Asian Language Atlas</h3>
-  <p>One viewer, thirteen swappable atlases: Sinitic, Tungusic, Kra–Dai, Japonic &amp; Ainu, Mongolic, Koreanic, Tibeto-Burman, Hmong–Mien, Turkic, Formosan, Austroasiatic, the lost languages of the Silk Road, and the Siberian isolates. Each is a family tree beside a map of where every variety is rooted, with history, timeline, distinctive features and listening links for each node.</p>
-</a>
 
 <h2>Flight</h2>
 <div class="grid">
@@ -83,9 +78,20 @@ footer .zh{font-family:var(--cjk);color:var(--gold)}
   </a>
 </div>
 
-<h2>Interactive Atlas — v1</h2>
-<div class="grid">
-  <a class="card" style="--c:#d4a94f" href="ChineseLanguagesMap.html"><span class="dot"></span><span class="sub">Frozen v1</span><h3>Branches of Chinese</h3><p>The original single-family Sinitic atlas, kept as-is for reference. The live, multi-family version is the featured atlas above.</p><span class="size">112 KB</span></a>
+<h2>Interactive Language Atlases</h2>
+<div class="grid atlas-grid">
+  <a class="card" style="--c:#d4a94f" href="EastAsiaAtlas.html#sinitic">
+    <span class="dot"></span><span class="sub">V2 · Interactive Atlas</span>
+    <h3><span class="zh">東亞語言</span>The East Asian Language Atlas</h3>
+    <p>One viewer, thirteen swappable atlases: Sinitic, Tungusic, Kra–Dai, Japonic &amp; Ainu, Mongolic, Koreanic, Tibeto-Burman, Hmong–Mien, Turkic, Formosan, Austroasiatic, the lost languages of the Silk Road, and the Siberian isolates. Each is a family tree beside a map of where every variety is rooted, with history, timeline, distinctive features and listening links for each node.</p>
+    <span class="size">V2 · 13 atlases</span>
+  </a>
+  <a class="card" style="--c:#8f949a" href="ChineseLanguagesMap.html">
+    <span class="dot"></span><span class="sub">V1 · Frozen</span>
+    <h3>Branches of Chinese</h3>
+    <p>The original single-family Sinitic atlas, kept as-is for reference. The live, multi-family version is the V2 atlas above.</p>
+    <span class="size">112 KB</span>
+  </a>
 </div>
 
 
