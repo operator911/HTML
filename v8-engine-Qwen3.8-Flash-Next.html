@@ -54813,25 +54813,27 @@ function buildBank(bank) {
     `Bank angle 90° · DOHC · cylinders ${pistonId(bank, 0)}, ${pistonId(bank, 1)}, ${pistonId(bank, 2)}, ${pistonId(bank, 3)}`);
   veEx(headG, 0, 0.34 * Math.cos(def.a), 0.34 * Math.sin(def.a));
 
-  /* ---- valve cover ---- */
+  /* ---- valve cover (twin cam covers leaving a central coil valley) ---- */
   const covG = new Group(); bg.add(covG);
-  const cov = new Mesh(veBevelBox(0.60, 0.105, 0.265, 0.022), M.paintBlack);
-  cov.position.y = 0.442; cov.castShadow = true; covG.add(cov);
-  for (let k = -2; k <= 2; k++) {
-    const rib = new Mesh(veBevelBox(0.026, 0.11, 0.25, 0.006), M.paintBlack);
-    rib.position.set(k * 0.112, 0.442, 0); covG.add(rib);
-  }
+  [1, -1].forEach(sz => {
+    const cov = new Mesh(veBevelBox(0.60, 0.105, 0.116, 0.018), M.paintBlack);
+    cov.position.set(0, 0.442, sz * 0.073); cov.castShadow = true; covG.add(cov);
+    for (let k = -2; k <= 2; k++) {
+      const rib = new Mesh(veBevelBox(0.024, 0.108, 0.10, 0.005), M.paintBlack);
+      rib.position.set(k * 0.112, 0.442, sz * 0.073); covG.add(rib);
+    }
+  });
   const fill = new Mesh(veCyl(0.019, 0.021, 0.03, 18), M.paintBlack);
-  fill.position.set(-0.235, 0.505, iz * 0.03); covG.add(fill);
+  fill.position.set(-0.235, 0.502, iz * 0.075); covG.add(fill);
   const fillC = new Mesh(veCyl(0.0165, 0.0165, 0.006, 18), M.gold);
-  fillC.position.set(-0.235, 0.522, iz * 0.03); covG.add(fillC);
-  const badge = new Mesh(veBevelBox(0.13, 0.0024, 0.03, 0.005), M.gold);
-  badge.position.set(0.07, 0.4965, 0); covG.add(badge);
+  fillC.position.set(-0.235, 0.52, iz * 0.075); covG.add(fillC);
+  const badge = new Mesh(veBevelBox(0.13, 0.0024, 0.028, 0.005), M.gold);
+  badge.position.set(0.07, 0.4965, -iz * 0.075); covG.add(badge);
   for (let k = 0; k < 7; k++) {
     [0.142, -0.142].forEach(z => { const b = hexBolt(M.chrome, 0.005, 0.005); b.position.set(-0.27 + k * 0.09, 0.396, z); covG.add(b); });
   }
   veComp(covG, `Valve Cover — ${bank === 'R' ? 'Right' : 'Left'} Bank`,
-    'Stamped aluminium cam-carrier cover with internal baffles; seals the valve train and clamps the cam bearing caps.',
+    'Paired stamped-aluminium cam covers with internal baffles; they seal the valve train, clamp the cam bearing caps and frame the central coil valley.',
     'Black epoxy · 14 fasteners');
   veEx(covG, 0, 0.56 * Math.cos(def.a), 0.56 * Math.sin(def.a));
 
@@ -55106,19 +55108,37 @@ const veDist = new Group();
     'Rotor speed = ½ crank · order 1-8-4-3-6-5-7-2');
   veEx(g, -0.22, 0.34, -0.26);
 
-  // leads: cap terminals → plug boots
+  // leads: cap terminals → plug boots. Crossing bank arches above the plenum;
+  // near bank sweeps down the outboard cover line. Towers ordered by firing rank.
   const targets = [];
   Ve.banks.forEach(B => {
     VE.pinX.forEach((x, i) => {
-      targets.push(new Vector3(x, 0.452, 0.004 * B.iz).applyAxisAngle(new Vector3(1, 0, 0), B.def.a));
+      const id = pistonId(B.bank, i);
+      targets.push({
+        p: new Vector3(x, 0.452, 0.004 * B.iz).applyAxisAngle(new Vector3(1, 0, 0), B.def.a),
+        rank: (VE_FIRE[id] - 45) / 90,
+        cross: B.def.sign > 0,          // right-bank plugs sit across the intake
+      });
     });
   });
   const leadG = new Group(); veEngineRoot.add(leadG);
-  targets.forEach((tp, idx) => {
-    const a = (idx / 8) * Math.PI * 2 + 0.4;
-    const start = new Vector3(Math.cos(a) * 0.052, 0.068, Math.sin(a) * 0.052).add(g.position);
-    const mid = start.clone().lerp(tp, 0.5); mid.y += 0.055 + (idx % 4) * 0.008; mid.x += 0.02;
-    const t = tube([start, mid, tp], 0.0046, 20, 7, M.orange); t.castShadow = true;
+  targets.forEach(tg => {
+    const a = (tg.rank / 8) * Math.PI * 2 + 0.4;
+    const start = new Vector3(Math.cos(a) * 0.052, 0.072, Math.sin(a) * 0.052).add(g.position);
+    const e = tg.p;
+    const pts = tg.cross
+      ? [start,
+         new Vector3(start.x + 0.03, 0.60, start.z + 0.16),
+         new Vector3((start.x + e.x) * 0.5, 0.65, 0.10),
+         new Vector3(e.x, 0.60, 0.26),
+         new Vector3(e.x, 0.44, 0.345),
+         e]
+      : [start,
+         new Vector3(start.x - 0.02, 0.575, start.z - 0.06),
+         new Vector3(e.x, 0.50, e.z - 0.015),
+         new Vector3(e.x, 0.385, e.z + 0.005),
+         e];
+    const t = tube(pts, 0.0046, 28, 7, M.orange); t.castShadow = true;
     leadG.add(t);
   });
   veComp(leadG, 'HT Lead Loom',
