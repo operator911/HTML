@@ -61,35 +61,31 @@ function buildPedestals(M) {
 
   for (const x of [-0.28, 0.38]) {
     for (const z of [-0.5, 0.5]) {
-      const leg = tube([
-        [x, 0.22, z],
-        [x, 0.4, z * 0.72],
-        [x, 0.53, z * 0.28]
-      ], 0.028, M.standSteel, 18, 9);
+      // Substantial vertical columns read as structure, never as loose wires.
+      const leg = rbox(0.085, 0.31, 0.085, 0.012, M.standSteel);
+      leg.position.set(x, 0.35, z);
       g.add(leg);
       const foot = rbox(0.24, 0.028, 0.22, 0.006, M.standDark);
       foot.position.set(x, 0.218, z);
       g.add(foot);
-      addBolt(g, [x, 0.235, z], [0, 1, 0], 0.008, M.boltStand);
+      const footPlate = rbox(0.15, 0.018, 0.15, 0.005, M.standAccent);
+      footPlate.position.set(x, 0.238, z);
+      g.add(footPlate);
+      addBolt(g, [x, 0.252, z], [0, 1, 0], 0.009, M.boltStand);
+      const gusset = box(0.045, 0.17, 0.045, M.standSteel);
+      gusset.position.set(x, 0.43, z - Math.sign(z) * 0.13);
+      gusset.rotation.x = Math.sign(z) * 0.55;
+      g.add(gusset);
     }
-    const cross = cyl(0.026, 0.026, 0.82, M.standSteel, 14);
-    cross.rotation.x = Math.PI / 2;
-    cross.position.set(x, 0.44, 0);
+    const cross = rbox(0.11, 0.10, 0.96, 0.012, M.standSteel);
+    cross.position.set(x, 0.50, 0);
     g.add(cross);
-    const gusset = box(0.035, 0.2, 0.035, M.standSteel);
-    gusset.position.set(x, 0.52, 0.22);
-    gusset.rotation.x = 0.5;
-    g.add(gusset);
-    const gusset2 = gusset.clone();
-    gusset2.position.z = -0.22;
-    gusset2.rotation.x = -0.5;
-    g.add(gusset2);
+    const crossAccent = box(0.115, 0.018, 0.9, M.standAccent);
+    crossAccent.position.set(x, 0.555, 0);
+    g.add(crossAccent);
+    addBolt(g, [x, 0.565, 0.4], [0, 1, 0], 0.008, M.boltStand);
+    addBolt(g, [x, 0.565, -0.4], [0, 1, 0], 0.008, M.boltStand);
   }
-
-  // Cross beam under the saddle.
-  const beam = box(0.12, 0.09, 1.0, M.standSteel);
-  beam.position.set(0.05, 0.4, 0);
-  g.add(beam);
 
   return g;
 }
@@ -175,7 +171,6 @@ function buildDyno(M) {
 
   // Water hoses and cable conduit.
   g.add(tube([[1.02, AY - 0.08, 0.18], [0.95, 0.55, 0.32], [0.9, 0.12, 0.42], [0.98, 0.04, 0.56]], 0.018, M.rubberBlue, 32, 8));
-  g.add(tube([[1.34, AY - 0.1, -0.17], [1.45, 0.55, -0.3], [1.6, 0.04, -0.6], [1.9, 0.04, -1.1]], 0.012, M.hose, 30, 7));
 
   // Coupling, drive shaft and guard.
   const coupling = new THREE.Group();

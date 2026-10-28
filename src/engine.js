@@ -107,6 +107,28 @@ function makeHeatTube(points, radius, mat, tubular = 42) {
   return mesh;
 }
 
+
+// Monotone-chain convex hull used to route the accessory belt around the
+// outside of every pulley in the front drive.
+function convexHull2D(points) {
+  const pts = points.slice().sort((a, b) => a.y - b.y || a.z - b.z);
+  const cross = (o, a, b) => (a.y - o.y) * (b.z - o.z) - (a.z - o.z) * (b.y - o.y);
+  const lower = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
 export function createEngine(scene, M) {
   const root = new THREE.Group();
   root.name = 'engine';
@@ -116,6 +138,7 @@ export function createEngine(scene, M) {
   const pickables = [];
   const explodable = [];
   const dynamic = {};
+  const timingInternals = [];
   const cylinderMeta = [];
 
   const headerMat = heatTintMaterial(M);
@@ -346,6 +369,39 @@ export function createEngine(scene, M) {
   tBadge.rotation.y = -Math.PI / 2;
   tBadge.position.set(-0.354, 0.07, 0);
   timing.add(tBadge);
+
+  // Separate cam-drive covers hide the four exposed sprockets and chains.
+  for (const side of ['R', 'L']) {
+    const o = bankOut(side);
+    const z = o * 0.27;
+    const sideCover = rbox(0.05, 0.24, 0.18, 0.016, M.timing);
+    sideCover.position.set(-0.335, 0.31, z);
+    timing.add(sideCover);
+    const bulge = cyl(0.085, 0.085, 0.045, M.timing, 28);
+    bulge.rotation.z = Math.PI / 2;
+    bulge.position.set(-0.335, 0.31, z);
+    timing.add(bulge);
+    const access = cyl(0.04, 0.04, 0.012, M.aluDark, 24);
+    access.rotation.z = Math.PI / 2;
+    access.position.set(-0.361, 0.31, z);
+    timing.add(access);
+    const sideRib = box(0.016, 0.18, 0.014, M.aluDark);
+    sideRib.position.set(-0.361, 0.30, z + o * 0.062);
+    timing.add(sideRib);
+    const sideRib2 = sideRib.clone();
+    sideRib2.position.z = z - o * 0.062;
+    timing.add(sideRib2);
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * TAU;
+      addBolt(timing, [-0.361, 0.31 + Math.cos(ang) * 0.10, z + Math.sin(ang) * 0.065], [-1, 0, 0], 0.0055, M.bolt);
+    }
+    const sideLabel = fadeLabel(labelPlane(makeLabelTexture('DOHC', '', {
+      w: 256, h: 96, color: '#c8c3b7', size: 46, spacing: '2px'
+    }), 0.11, 0.041));
+    sideLabel.rotation.y = -Math.PI / 2;
+    sideLabel.position.set(-0.363, 0.225, z);
+    timing.add(sideLabel);
+  }
   explodable.push({ group: timing, base: timing.position.clone(), offset: new THREE.Vector3(-0.25, 0, 0) });
 
   // Bellhousing
@@ -773,10 +829,9 @@ export function createEngine(scene, M) {
       const coilTop = box(0.032, 0.008, 0.03, M.engineAccent);
       coilTop.position.set(x, 0.391, o * 0.12);
       bank.add(coilTop);
-      const wire = tube([
-        [x, 0.39, o * 0.12], [x + 0.01, 0.37, o * 0.145], [x, 0.345, o * 0.13]
-      ], 0.006, M.rubber, 16, 6);
-      bank.add(wire);
+      const coilBoot = cyl(0.009, 0.009, 0.028, M.rubber, 10);
+      coilBoot.position.set(x, 0.337, o * 0.116);
+      bank.add(coilBoot);
 
       const flash = new THREE.Sprite(new THREE.SpriteMaterial({
         map: sparkGlow, color: 0xffcf88, transparent: true, opacity: 0,
@@ -827,6 +882,7 @@ export function createEngine(scene, M) {
       // sprocket at the front
       const sprocket = new THREE.Group();
       sprocket.position.x = -0.295;
+      timingInternals.push(sprocket);
       cg.add(sprocket);
       const sprBody = cyl(0.052, 0.052, 0.012, M.steelDark, 36);
       sprBody.rotation.z = Math.PI / 2;
@@ -847,50 +903,6 @@ export function createEngine(scene, M) {
         sprocket.add(tooth);
       }
     }
-
-    // timing chain loop (static, behind the cover)
-    const camCentres = [
-      new THREE.Vector2(-o * 0.047, 0.39),
-      new THREE.Vector2(o * 0.047, 0.39)
-    ];
-    const crankC = new THREE.Vector2(0, 0);
-    const chain2D = [];
-    // right side up from crank to outboard cam
-    const A = camCentres[o > 0 ? 1 : 0];
-    const B = camCentres[o > 0 ? 0 : 1];
-    const push = (x, y) => chain2D.push(new THREE.Vector3(-0.304, y, x));
-    const steps = 18;
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = THREE.MathUtils.lerp(0.062, B.x + o * 0.02, t);
-      const y = THREE.MathUtils.lerp(0.02, B.y - 0.03, t);
-      push(x, y);
-    }
-    for (let i = 0; i <= steps; i++) {
-      const ang = Math.PI * (i / steps);
-      push(B.x + Math.cos(ang) * 0.055, B.y + Math.sin(ang) * 0.055);
-    }
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = THREE.MathUtils.lerp(B.x - 0.055, A.x + 0.055, t);
-      const y = THREE.MathUtils.lerp(B.y + 0.02, A.y + 0.02, t);
-      push(x, y);
-    }
-    for (let i = 0; i <= steps; i++) {
-      const ang = Math.PI * (i / steps);
-      push(A.x - Math.cos(ang) * 0.055, A.y + Math.sin(ang) * 0.055);
-    }
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = THREE.MathUtils.lerp(A.x - 0.055, -0.062, t);
-      const y = THREE.MathUtils.lerp(A.y - 0.02, 0.0, t);
-      push(x, y);
-    }
-    const chainCurve = new THREE.CatmullRomCurve3(chain2D, false, 'catmullrom', 0.2);
-    const chainGeo = new THREE.TubeGeometry(chainCurve, 120, 0.0065, 5, false);
-    const chain = new THREE.Mesh(chainGeo, M.steelDark);
-    chain.castShadow = false;
-    bank.add(chain);
 
     // valve cover (separate explodable group)
     const cover = new THREE.Group();
@@ -950,10 +962,12 @@ export function createEngine(scene, M) {
     });
 
     // breather hose from cover to intake valley
-    const breather = tube([
-      [0.24, 0.405, o * 0.06], [0.27, 0.44, o * 0.03], [0.25, 0.47, 0.0]
-    ], 0.009, M.hose, 22, 7);
-    cover.add(breather);
+    const breatherPort = cyl(0.018, 0.018, 0.036, M.coverRib, 14);
+    breatherPort.position.set(0.235, 0.458, o * 0.05);
+    cover.add(breatherPort);
+    const breatherTop = cyl(0.014, 0.014, 0.012, M.engineAccent, 12);
+    breatherTop.position.set(0.235, 0.48, o * 0.05);
+    cover.add(breatherTop);
   }
 
   /* ---------------------------------------------------------------- *
@@ -1194,9 +1208,6 @@ export function createEngine(scene, M) {
     o2.rotation.x = Math.PI / 2;
     o2.position.set(0.29, -0.12, o * 0.375);
     ex.add(o2);
-    const o2Wire = tube([[0.29, -0.12, o * 0.39], [0.31, -0.09, o * 0.41], [0.34, -0.03, o * 0.42]], 0.0035, M.hose, 16, 5);
-    ex.add(o2Wire);
-
     // side exit pipe
     const tail = makeHeatTube([
       [0.355, -0.155, o * 0.34], [0.44, -0.19, o * 0.37], [0.54, -0.27, o * 0.38],
@@ -1262,16 +1273,37 @@ export function createEngine(scene, M) {
   const altPulley = addPulley(-0.385, 0.03, -0.205, 0.045, 0.035, M.steel, 4);
   addPulley(-0.37, -0.1, -0.09, 0.038, 0.03, M.steelDark, 3);
 
-  // belt path (static)
-  const beltPts = [
-    [-0.395, 0.0, 0.082], [-0.395, 0.06, 0.10], [-0.395, 0.125, 0.075],
-    [-0.395, 0.14, -0.01], [-0.395, 0.08, -0.17], [-0.395, 0.02, -0.23],
-    [-0.395, -0.05, -0.18], [-0.395, -0.11, -0.09], [-0.395, -0.08, 0.01],
-    [-0.395, -0.03, 0.06]
+  // Six-rib belt routed around the outside of the whole accessory drive.
+  const beltCircles = [
+    { y: 0.0, z: 0.0, r: 0.078 },      // crank damper
+    { y: 0.11, z: 0.085, r: 0.060 },   // water pump
+    { y: 0.03, z: -0.205, r: 0.045 },  // alternator
+    { y: -0.10, z: -0.09, r: 0.038 },  // idler
+    { y: -0.11, z: 0.16, r: 0.045 },   // air-conditioning clutch
   ];
-  const belt = tube(beltPts, 0.008, M.rubber, 60, 6, true, 0.4);
-  belt.scale.z = 0.8;
+  const beltSamples = [];
+  for (const c of beltCircles) {
+    for (let i = 0; i < 32; i++) {
+      const a = (i / 32) * TAU;
+      beltSamples.push({ y: c.y + Math.cos(a) * (c.r + 0.008), z: c.z + Math.sin(a) * (c.r + 0.008) });
+    }
+  }
+  const beltHull = convexHull2D(beltSamples);
+  const beltCurve = new THREE.CatmullRomCurve3(
+    beltHull.map(p => new THREE.Vector3(0, p.y, p.z)), true, 'catmullrom', 0.12
+  );
+  const beltGeo = new THREE.TubeGeometry(beltCurve, 180, 0.0065, 6, true);
+  const belt = new THREE.Mesh(beltGeo, M.rubber);
+  belt.position.x = -0.385;
+  belt.scale.x = 2.2;
+  belt.castShadow = true;
+  belt.receiveShadow = true;
   accessories.add(belt);
+  // Idler mounting arm
+  const idlerArm = box(0.02, 0.10, 0.022, M.steelDark);
+  idlerArm.position.set(-0.36, -0.055, -0.09);
+  idlerArm.rotation.x = 0.35;
+  accessories.add(idlerArm);
 
   // water pump
   const wp = new THREE.Group();
@@ -1304,7 +1336,7 @@ export function createEngine(scene, M) {
   const altBracket = box(0.05, 0.13, 0.03, M.steelDark);
   altBracket.position.set(0.01, -0.075, 0.02);
   alt.add(altBracket);
-  const altCable = tube([[0.06, 0.04, -0.02], [0.09, 0.1, 0.01], [0.08, 0.16, 0.04]], 0.006, M.hose, 18, 6);
+  const altCable = tube([[0.06, 0.02, -0.02], [0.08, -0.02, -0.035], [0.1, -0.06, -0.05]], 0.006, M.hose, 16, 6);
   alt.add(altCable);
   accessories.add(alt);
   accessories.userData.spin = altPulley;
@@ -1321,14 +1353,8 @@ export function createEngine(scene, M) {
   ac.add(acClutch);
   accessories.add(ac);
 
-  // Thermostat housing and upper hose
-  const stat = rbox(0.07, 0.06, 0.07, 0.012, M.alu);
-  stat.position.set(-0.3, 0.19, 0.055);
-  accessories.add(stat);
-  const upperHose = tube([
-    [-0.3, 0.19, 0.055], [-0.34, 0.235, 0.04], [-0.36, 0.27, 0.015]
-  ], 0.018, M.rubber, 20, 8);
-  accessories.add(upperHose);
+  // The test-cell coolant plumbing is routed behind the engine; the front of
+  // the timing cover stays clean so the accessory drive reads clearly.
 
   // Engine mount pads on the block sides (the stand cradle supports the sump).
   for (const z of [-1, 1]) {
@@ -1422,6 +1448,10 @@ export function createEngine(scene, M) {
       cg.rotation.x = (state.crankTotal / 2) % TAU;
     }
     for (const p of spinning) p.rotation.x = state.crankAngle;
+
+    // The chain drive is internal; it is shown only in X-ray or exploded view.
+    const showTiming = state.cutFade > 0.12 || state.explodeFade > 0.25;
+    for (const o of timingInternals) o.visible = showTiming;
 
     // Cylinder kinematics
     const { crankR, rodL, bankAngle } = SPEC;
