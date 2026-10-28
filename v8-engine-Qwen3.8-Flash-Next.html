@@ -55334,7 +55334,13 @@ veScene.add(veDynoSpin);
 (function buildDyno() {
   const g = veDynoSpin;
   const shaft = new Mesh(veCyl(0.027, 0.027, 0.26, 20), M.steel);
-  shaft.rotation.z = Math.PI / 2; shaft.position.x = -0.09; shaft.castShadow = true; g.add(shaft);
+  shaft.rotation.z = Math.PI / 2; shaft.position.x = -0.048; shaft.castShadow = true; g.add(shaft);
+  // adapter hub + pilot boss bolted to the flywheel rear face — closes the gap to the crank
+  const adapt = new Mesh(veCyl(0.072, 0.072, 0.018, 26), M.steelDark);
+  adapt.rotation.z = Math.PI / 2; adapt.position.x = 0.076; adapt.castShadow = true; g.add(adapt);
+  const pilot = new Mesh(veCyl(0.028, 0.028, 0.05, 14), M.chrome);
+  pilot.rotation.z = Math.PI / 2; pilot.position.x = 0.10; g.add(pilot);
+  boltRing(g, 6, 0.05, 0.086, 0, 0, M.chrome, 0.005, 'x');
   const key = new Mesh(veBevelBox(0.06, 0.008, 0.008, 0.002), M.steelDark); key.position.set(-0.06, 0.028, 0); g.add(key);
   const f1 = new Mesh(veCyl(0.072, 0.072, 0.024, 26), M.steelDark); f1.rotation.z = Math.PI / 2; f1.position.x = -0.028; f1.castShadow = true; g.add(f1);
   const spider = new Mesh(veCyl(0.066, 0.066, 0.016, 26), M.orange); spider.rotation.z = Math.PI / 2; spider.position.x = -0.046; g.add(spider);
@@ -55371,7 +55377,7 @@ veScene.add(veDynoSpin);
   const plate2 = new Mesh(veBevelBox(0.11, 0.024, 0.005, 0.003), M.gold);
   plate2.position.set(0, 0.07, 0.197); h.add(plate2);
   veComp(h, 'Eddy-Current Dynamometer',
-    'Water-cooled eddy-current brake. The rotor disc keys to the crank nose; magnetic drag applies load while a torque arm on a load cell measures reaction force.',
+    'Water-cooled eddy-current brake. The rotor disc is keyed to the crank nose through a flex-coupling and an adapter hub bolted to the flywheel; magnetic drag applies load while a torque arm on a load cell measures reaction force.',
     'Rated 180 kW · Reaction arm on S-beam load cell');
 })();
 
@@ -55433,6 +55439,12 @@ const consoleG = new Group(); consoleG.position.set(-0.30, 0, 1.42); consoleG.ro
     const pn = new Mesh(veCyl(0.005, 0.005, 0.03, 8), M.chrome); pn.position.y = 0.016; pn.rotation.x = 0.5; sw.add(pn);
     const nut = new Mesh(veCyl(0.011, 0.011, 0.006, 6), M.steelDark); sw.add(nut);
   }
+  // junction box on the console post — the ceiling power whip lands here
+  const jbox = new Mesh(veBevelBox(0.1, 0.13, 0.06, 0.008), M.paintBlack); jbox.position.set(0.0, 1.06, 0.11); g.add(jbox);
+  const jboxLid = new Mesh(veBevelBox(0.08, 0.11, 0.008, 0.005), M.steelDark); jboxLid.position.set(0, 1.06, 0.145); g.add(jboxLid);
+  for (let k = 0; k < 2; k++) { const jb = hexBolt(M.chrome, 0.004); jb.position.set(0, 1.02 + k * 0.08, 0.148); jb.rotation.x = Math.PI / 2; g.add(jb); }
+  g.add(tube([[0, 1.128, 0.10], [-0.03, 1.15, 0.02]], 0.008, 8, 6, M.rubber));
+
   // hazard button
   const hz = new Mesh(veCyl(0.016, 0.016, 0.012, 16), new MeshBasicMaterial({ color: 0xb22 }));
   hz.position.set(0.13, 1.24, -0.02); hz.rotation.x = Math.PI / 2 - 0.42; g.add(hz);
@@ -55446,25 +55458,36 @@ const consoleG = new Group(); consoleG.position.set(-0.30, 0, 1.42); consoleG.ro
   const g = new Group(); veScene.add(g);
   const P = (x, y, z) => new Vector3(x, y + 0, z);
   const runs = [
-    // starter power — hugs the stand rail, below the engine viewline
-    [[-0.30, 1.30, 1.42], [-0.2, 1.0, 1.45], [0.1, 0.9, 1.22], [0.42, 0.94, 0.82], [0.48, 1.0, 0.45], [0.3, 0.94, 0.05], [-0.05, 0.93, -0.1], [-0.24, 0.92, -0.20]],
+    // starter power — exits desk rear corner, hugs the stand rail below the engine viewline
+    [[-0.393, 1.17, 1.53], [-0.5, 0.98, 1.42], [-0.3, 0.92, 1.3], [0.1, 0.9, 1.22], [0.42, 0.94, 0.82], [0.48, 1.0, 0.45], [0.3, 0.94, 0.05], [-0.05, 0.93, -0.1], [-0.24, 0.92, -0.2]],
     // ignition + sensors loom along stand rail
-    [[-0.30, 1.26, 1.42], [0.12, 1.02, 1.24], [0.46, 0.96, 0.86], [0.52, 0.92, 0.56], [0.2, 0.95, 0.55], [-0.2, 1.0, 0.52], [-0.24, 1.04, 0.22]],
-    // up to distributor, around the back-left
-    [[-0.24, 1.04, 0.22], [-0.3, 1.1, -0.05], [-0.32, 1.26, -0.22], [-0.22, 1.38, -0.32], [-0.16, 1.42, -0.29]],
+    [[-0.393, 1.17, 1.53], [-0.5, 1.0, 1.46], [-0.3, 0.96, 1.36], [0.12, 1.02, 1.24], [0.46, 0.96, 0.86], [0.52, 0.92, 0.56], [0.2, 0.95, 0.55], [-0.2, 1.0, 0.52], [-0.24, 1.04, 0.22]],
+    // up to distributor, around the rear face, clear of the flywheel rim
+    [[-0.24, 1.04, 0.22], [-0.3, 0.95, 0.1], [-0.42, 0.95, -0.05], [-0.44, 1.12, -0.24], [-0.3, 1.34, -0.31], [-0.16, 1.42, -0.29]],
     // alternator output
     [[0.46, 0.96, 0.86], [0.42, 0.94, 0.55], [0.36, 0.98, 0.32]],
     // earth strap down the console leg, taut
-    [[-0.30, 1.1, 1.42], [-0.33, 0.8, 1.28], [-0.42, 0.45, 0.9], [-0.5, 0.2, 0.3]],
+    [[-0.393, 1.12, 1.55], [-0.44, 0.7, 1.35], [-0.5, 0.3, 1.0], [-0.52, 0.16, 0.75]],
   ];
   runs.forEach((r, i) => {
     const thick = [0.010, 0.006, 0.006, 0.008, 0.012][i] || 0.006;
     const m = tube(r.map(p => P(...p)), thick, 26, 8, i === 1 || i === 2 ? M.rubberBlue : M.rubber);
     m.castShadow = true; g.add(m);
   });
-  // thin EGT thermocouple wires hugging headers
+  // EGT thermocouples: welded bungs on the header collectors, bare-metal wires
+  // dressed along the stand base to the console — both ends attached.
   [-1, 1].forEach(s => {
-    g.add(tube([[-0.3, VE.mountY - 0.02, s * 0.5], [-0.45, VE.mountY + 0.05, s * 0.42], [-0.62, VE.mountY + 0.1, s * 0.3], [-0.7, VE.mountY + 0.18, s * 0.12]], 0.0032, 16, 6, M.orange));
+    const tp = s > 0
+      ? [[0.36, VE.mountY - 0.17, 0.44], [0.45, 0.55, 0.52], [0.5, 0.1, 0.66], [0.1, 0.07, 0.78],
+         [-0.42, 0.07, 0.78], [-0.66, 0.12, 0.55], [-0.62, 0.5, 1.5], [-0.5, 1.18, 1.55], [-0.393, 1.17, 1.53]]
+      : [[0.36, VE.mountY - 0.17, -0.44], [0.45, 0.55, -0.52], [0.5, 0.1, -0.66], [0.1, 0.07, -0.78],
+         [-0.42, 0.07, -0.78], [-0.7, 0.12, -0.5], [-1.02, 0.1, -0.1], [-1.05, 0.12, 0.7],
+         [-0.88, 0.12, 1.45], [-0.62, 0.5, 1.6], [-0.5, 1.18, 1.58], [-0.393, 1.17, 1.53]];
+    g.add(tube(tp, 0.0034, 40, 6, M.steelDark));
+    const bung = new Mesh(veCyl(0.011, 0.0135, 0.034, 10), M.steelDark);
+    bung.position.set(0.345, VE.mountY - 0.165, s * 0.42); bung.rotation.set(0, 0, -1.25 * s); g.add(bung);
+    const bc = new Mesh(veCyl(0.006, 0.006, 0.014, 8), M.chrome);
+    bc.position.set(0.363, VE.mountY - 0.152, s * 0.437); bc.rotation.set(0, 0, -1.25 * s); g.add(bc);
   });
   // tie-wraps
   runs.forEach(r => r.forEach((p, k) => {
@@ -55661,8 +55684,8 @@ const veFans = [];
   sign('HIGH VOLTAGE', 4.2, 2.6, -D / 2 - 0.33, 0, 1.1);
   sign('EYES ON', -W / 2 + 0.03, 3.1, 1.4, Math.PI / 2, 0.9);
 
-  /* cable from ceiling trunking down to the relocated console, hugging the trusses */
-  const cc = tube([[-2.4, 3.92, -2.6], [-2.2, 3.88, -1.0], [-1.9, 3.8, 0.4], [-1.4, 3.3, 1.1], [-0.7, 2.5, 1.32], [-0.32, 1.8, 1.42]], 0.012, 30, 8, M.rubber);
+  /* cable from ceiling trunking, landing behind the console desk */
+  const cc = tube([[-2.4, 3.92, -2.6], [-2.25, 3.86, -0.6], [-2.05, 3.72, 0.8], [-1.5, 3.35, 1.6], [-0.85, 2.7, 1.9], [-0.52, 1.95, 1.86], [-0.44, 1.45, 1.72], [-0.398, 1.2, 1.56]], 0.012, 34, 8, M.rubber);
   g.add(cc);
 
   /* spare head on a stand near bench */
@@ -56330,6 +56353,8 @@ function loop() {
     if (comp) setTimeout(() => select(comp), 300);
   }
 })();
+
+
 loop();
 setTimeout(() => { const l = document.getElementById('boot'); if (l) { l.style.opacity = 0; setTimeout(() => l.remove(), 700); } }, 250);
 
