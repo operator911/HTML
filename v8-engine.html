@@ -80,6 +80,19 @@ body.locked #scene{cursor:none}
 .tel-cell:nth-child(3),.tel-cell:nth-child(4){border-bottom:0}
 .tel-cell label{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase;margin-bottom:3px}
 .tel-cell span{font-family:var(--mono);font-size:12px;color:var(--ink);letter-spacing:.03em}
+.motion-control{padding:11px 16px 13px;border-top:1px solid var(--line)}
+.motion-head{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:5px;white-space:nowrap}
+.motion-head b{color:var(--amber);font-weight:500;font-size:10px;letter-spacing:.03em}
+.motion-control input[type=range]{height:14px;margin:0}
+.motion-control input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(90deg,var(--amber) 0 var(--motion-fill,42%),rgba(255,255,255,.1) var(--motion-fill,42%) 100%)}
+.motion-control input[type=range]::-webkit-slider-thumb{width:14px;height:14px;margin-top:-5.5px;box-shadow:0 0 0 4px rgba(240,162,58,.16),0 2px 8px rgba(0,0,0,.5)}
+.motion-control input[type=range]::-moz-range-track{height:2px;border-radius:2px;background:rgba(255,255,255,.1)}
+.motion-control input[type=range]::-moz-range-progress{height:2px;background:var(--amber);border-radius:2px}
+.motion-control input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:#f7f3e9;border:2px solid var(--amber)}
+.motion-ticks{position:relative;height:9px;font-family:var(--mono);font-size:7px;letter-spacing:.03em;color:var(--faint);margin-top:1px}
+.motion-ticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.motion-ticks span:first-child{transform:none}
+.motion-ticks span:last-child{transform:translateX(-100%)}
 .firing{padding:11px 16px 14px}
 .firing label{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:8px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase;margin-bottom:8px;white-space:nowrap}
 .firing label em{display:none}
@@ -235,6 +248,11 @@ kbd{font-family:var(--mono);font-size:7px;color:var(--faint);border:1px solid rg
       <div class="tel-cell"><label>Torque</label><span id="torque">0 Nm</span></div>
       <div class="tel-cell"><label>Motion Scale</label><span id="timeScale">4.5%</span></div>
     </div>
+    <div class="motion-control">
+      <div class="motion-head"><span>Motion Control</span><b id="motionBase">4.5%</b></div>
+      <input type="range" id="motionSlider" min="0" max="100" step="0.5" value="41.5" aria-label="Visual motion scale">
+      <div class="motion-ticks"><span style="left:0%">0.5%</span><span style="left:43.4%">5%</span><span style="left:100%">100%</span></div>
+    </div>
     <div class="firing">
       <label><span>Firing Order</span><em>1 · 8 · 4 · 3 · 6 · 5 · 7 · 2</em></label>
       <div class="order" id="firingOrder"></div>
@@ -247,6 +265,7 @@ kbd{font-family:var(--mono);font-size:7px;color:var(--faint);border:1px solid rg
       <dt>Orbit</dt><dd>Drag to orbit, scroll to zoom, right-drag to pan.</dd>
       <dt>Walk</dt><dd>Click the view to capture the mouse. WASD moves, Shift sprints, Esc releases.</dd>
       <dt>Inspect</dt><dd>Click any major component to highlight it and read its specification.</dd>
+      <dt>Motion</dt><dd>Motion Control scales visual playback from 0.5% to 100% of real time. Slow-mo multiplies it by 0.12.</dd>
       <dt>Keys</dt><dd>Space start/stop · C cutaway · X exploded · M slow motion · R reset camera · F walk/orbit</dd>
     </dl>
   </aside>
@@ -34990,7 +35009,8 @@ kbd{font-family:var(--mono);font-size:7px;color:var(--faint);border:1px solid rg
     cutaway: false,
     exploded: false,
     mode: "orbit",
-    selected: null
+    selected: null,
+    motionScale: 0.045
   };
   var walk = {
     pos: new Vector3(0, 1.65, 2.7),
@@ -35286,11 +35306,44 @@ kbd{font-family:var(--mono);font-size:7px;color:var(--faint);border:1px solid rg
   var rpmValue = $("rpmValue");
   var rpmBar = $("rpmBar");
   var rpmTargetLabel = $("rpmTarget");
+  var motionSlider = $("motionSlider");
+  var motionBase = $("motionBase");
   function setSlider(value) {
     sim.sliderRpm = Math.max(0, Math.min(4e3, value));
     rpmSlider.value = String(sim.sliderRpm);
     rpmTargetLabel.textContent = `${sim.sliderRpm.toLocaleString()} RPM`;
     rpmSlider.style.setProperty("--fill", `${sim.sliderRpm / 4e3 * 100}%`);
+  }
+  var MOTION_MIN = 5e-3;
+  var MOTION_MAX = 1;
+  var MOTION_LOG = Math.log(MOTION_MAX / MOTION_MIN);
+  function scaleToSlider(scale) {
+    return 100 * Math.log(Math.max(MOTION_MIN, Math.min(MOTION_MAX, scale)) / MOTION_MIN) / MOTION_LOG;
+  }
+  function sliderToScale(value) {
+    return MOTION_MIN * Math.pow(MOTION_MAX / MOTION_MIN, Math.max(0, Math.min(100, value)) / 100);
+  }
+  function formatScale(scale) {
+    const pct = scale * 100;
+    if (pct >= 10) return `${Math.round(pct)}%`;
+    if (pct >= 1) return `${pct.toFixed(1)}%`;
+    return `${pct.toFixed(2)}%`;
+  }
+  function updateMotionDisplay() {
+    const effective = sim.motionScale * (sim.slow ? SPEC.slowScale : 1);
+    $("timeScale").textContent = formatScale(effective);
+    $("timeScale").title = `Base ${formatScale(sim.motionScale)} \xB7 ${sim.slow ? "slow motion \xD70.12" : "normal speed"}`;
+    motionSlider.title = `Visual playback speed: ${formatScale(sim.motionScale)} of real time`;
+  }
+  function setMotionScale(scale, announce = false) {
+    sim.motionScale = Math.max(MOTION_MIN, Math.min(MOTION_MAX, scale));
+    SPEC.visualScale = sim.motionScale;
+    const pos = scaleToSlider(sim.motionScale);
+    motionSlider.value = pos.toFixed(1);
+    motionSlider.style.setProperty("--motion-fill", `${pos}%`);
+    motionBase.textContent = formatScale(sim.motionScale);
+    updateMotionDisplay();
+    if (announce) toast(`Visual motion scale set to ${formatScale(sim.motionScale)}`);
   }
   function startEngine() {
     if (sim.running) return;
@@ -35400,7 +35453,6 @@ kbd{font-family:var(--mono);font-size:7px;color:var(--faint);border:1px solid rg
     $("cyclePhase").textContent = phase;
     const torque = sim.rpm > 5 ? Math.max(0, 310 + 145 * Math.sin(sim.rpm / 4e3 * Math.PI) - sim.rpm * 0.018) : 0;
     $("torque").textContent = `${Math.round(torque)} Nm`;
-    $("timeScale").textContent = sim.slow ? "0.54%" : "4.5%";
     $("slowBtn").classList.toggle("active", sim.slow);
     $("slowState").textContent = sim.slow ? "ON" : "OFF";
     const idx = Math.floor((engine.state.cycleDeg % 720 + 720) % 720 / 90) % 8;
@@ -35421,6 +35473,9 @@ kbd{font-family:var(--mono);font-size:7px;color:var(--faint);border:1px solid rg
       toast("Engine speed at 0 RPM \u2014 ignition off");
     }
   });
+  motionSlider.addEventListener("input", () => {
+    setMotionScale(sliderToScale(Number(motionSlider.value)));
+  });
   $("cutawayBtn").addEventListener("click", () => {
     sim.cutaway = !sim.cutaway;
     $("cutawayBtn").classList.toggle("active", sim.cutaway);
@@ -35437,8 +35492,8 @@ kbd{font-family:var(--mono);font-size:7px;color:var(--faint);border:1px solid rg
     sim.slow = !sim.slow;
     $("slowBtn").classList.toggle("active", sim.slow);
     $("slowState").textContent = sim.slow ? "ON" : "OFF";
-    $("timeScale").textContent = sim.slow ? "0.54%" : "4.5%";
-    toast(sim.slow ? "Slow motion \u2014 mechanical motion reduced to 0.5%" : "Real-time visual motion restored");
+    updateMotionDisplay();
+    toast(sim.slow ? "Slow motion engaged \u2014 visual playback multiplied by 0.12" : "Slow motion off \u2014 base motion scale restored");
   });
   $("assembleBtn").addEventListener("click", () => {
     if (!sim.exploded) {
@@ -35579,6 +35634,7 @@ kbd{font-family:var(--mono);font-size:7px;color:var(--faint);border:1px solid rg
   tickClock();
   setInterval(tickClock, 15e3);
   setSlider(1200);
+  setMotionScale(0.045);
   updateViewHint();
   updateStatus();
   var firstFrame = true;

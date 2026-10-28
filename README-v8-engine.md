@@ -31,6 +31,7 @@ python3 -m http.server 8000
 | Exploded view | `EXPLODED` or `X` |
 | Restore components | `ASSEMBLE` |
 | Slow motion | `SLOW-MO` or `M` |
+| Visual motion scale | `MOTION CONTROL` slider, 0.5%–100% |
 | Reset camera | `RESET CAM` or `R` |
 | Part inspection | Click any major component |
 | Toggle walk / orbit | `F` |
@@ -57,10 +58,12 @@ python3 -m http.server 8000
 ## A note on motion scale
 
 A real engine at 1,200–4,000 rpm rotates far too quickly to inspect by eye. The
-mechanical motion is therefore shown at **4.5% of real time** (and **0.54%** in
-slow motion). The RPM readout, firing order, valve events and torque display remain
-the real values; only the visual playback speed is scaled. This is shown in the
-telemetry panel as **Motion Scale**.
+default visual playback is therefore **4.5% of real time**; the **Motion Control**
+slider adjusts the base scale logarithmically from **0.5% to 100%**. Slow motion
+multiplies the chosen base by 0.12, so the default slow-motion speed is **0.54%**.
+The RPM readout, firing order, valve events and torque display remain the real
+values; only the visual playback speed is scaled. The effective scale is shown in
+the telemetry panel as **Motion Scale**.
 
 ## Source and build
 

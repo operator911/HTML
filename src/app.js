@@ -155,6 +155,7 @@ const sim = {
   exploded: false,
   mode: 'orbit',
   selected: null,
+  motionScale: 0.045,
 };
 
 const walk = {
@@ -465,12 +466,48 @@ const rpmSlider = $('rpmSlider');
 const rpmValue = $('rpmValue');
 const rpmBar = $('rpmBar');
 const rpmTargetLabel = $('rpmTarget');
+const motionSlider = $('motionSlider');
+const motionBase = $('motionBase');
 
 function setSlider(value) {
   sim.sliderRpm = Math.max(0, Math.min(4000, value));
   rpmSlider.value = String(sim.sliderRpm);
   rpmTargetLabel.textContent = `${sim.sliderRpm.toLocaleString()} RPM`;
   rpmSlider.style.setProperty('--fill', `${(sim.sliderRpm / 4000) * 100}%`);
+}
+
+// Visual motion scale is logarithmic: 0.5% (inspection) to 100% (real time).
+// Slow motion multiplies the chosen base scale by 0.12.
+const MOTION_MIN = 0.005;
+const MOTION_MAX = 1.0;
+const MOTION_LOG = Math.log(MOTION_MAX / MOTION_MIN);
+function scaleToSlider(scale) {
+  return 100 * Math.log(Math.max(MOTION_MIN, Math.min(MOTION_MAX, scale)) / MOTION_MIN) / MOTION_LOG;
+}
+function sliderToScale(value) {
+  return MOTION_MIN * Math.pow(MOTION_MAX / MOTION_MIN, Math.max(0, Math.min(100, value)) / 100);
+}
+function formatScale(scale) {
+  const pct = scale * 100;
+  if (pct >= 10) return `${Math.round(pct)}%`;
+  if (pct >= 1) return `${pct.toFixed(1)}%`;
+  return `${pct.toFixed(2)}%`;
+}
+function updateMotionDisplay() {
+  const effective = sim.motionScale * (sim.slow ? SPEC.slowScale : 1);
+  $('timeScale').textContent = formatScale(effective);
+  $('timeScale').title = `Base ${formatScale(sim.motionScale)} · ${sim.slow ? 'slow motion ×0.12' : 'normal speed'}`;
+  motionSlider.title = `Visual playback speed: ${formatScale(sim.motionScale)} of real time`;
+}
+function setMotionScale(scale, announce = false) {
+  sim.motionScale = Math.max(MOTION_MIN, Math.min(MOTION_MAX, scale));
+  SPEC.visualScale = sim.motionScale;
+  const pos = scaleToSlider(sim.motionScale);
+  motionSlider.value = pos.toFixed(1);
+  motionSlider.style.setProperty('--motion-fill', `${pos}%`);
+  motionBase.textContent = formatScale(sim.motionScale);
+  updateMotionDisplay();
+  if (announce) toast(`Visual motion scale set to ${formatScale(sim.motionScale)}`);
 }
 
 function startEngine() {
@@ -586,7 +623,6 @@ function updateSim(dt, uiDt, t) {
   $('cyclePhase').textContent = phase;
   const torque = sim.rpm > 5 ? Math.max(0, 310 + 145 * Math.sin((sim.rpm / 4000) * Math.PI) - sim.rpm * 0.018) : 0;
   $('torque').textContent = `${Math.round(torque)} Nm`;
-  $('timeScale').textContent = sim.slow ? '0.54%' : '4.5%';
   $('slowBtn').classList.toggle('active', sim.slow);
   $('slowState').textContent = sim.slow ? 'ON' : 'OFF';
 
@@ -615,6 +651,10 @@ rpmSlider.addEventListener('input', () => {
   }
 });
 
+motionSlider.addEventListener('input', () => {
+  setMotionScale(sliderToScale(Number(motionSlider.value)));
+});
+
 $('cutawayBtn').addEventListener('click', () => {
   sim.cutaway = !sim.cutaway;
   $('cutawayBtn').classList.toggle('active', sim.cutaway);
@@ -633,8 +673,8 @@ $('slowBtn').addEventListener('click', () => {
   sim.slow = !sim.slow;
   $('slowBtn').classList.toggle('active', sim.slow);
   $('slowState').textContent = sim.slow ? 'ON' : 'OFF';
-  $('timeScale').textContent = sim.slow ? '0.54%' : '4.5%';
-  toast(sim.slow ? 'Slow motion — mechanical motion reduced to 0.5%' : 'Real-time visual motion restored');
+  updateMotionDisplay();
+  toast(sim.slow ? 'Slow motion engaged — visual playback multiplied by 0.12' : 'Slow motion off — base motion scale restored');
 });
 
 $('assembleBtn').addEventListener('click', () => {
@@ -795,6 +835,7 @@ tickClock();
 setInterval(tickClock, 15000);
 
 setSlider(1200);
+setMotionScale(0.045);
 updateViewHint();
 updateStatus();
 
