@@ -81,6 +81,7 @@ export class UI {
       <div class="title">Fractal <em>Odyssey</em></div>
       <div class="subtitle"></div>
       <div class="shotname"></div>
+      <div class="credit">coded by Qwen3.8-Flash-Next Q5</div>
     </div>`);
     this.subtitleEl = brand.querySelector('.subtitle')!;
     this.shotEl = brand.querySelector('.shotname')!;
