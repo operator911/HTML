@@ -293,6 +293,7 @@ export class Odyssey {
         if (this.pinchDist > 0) {
           const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
           this.active.wheel({ x: mid.x, y: mid.y, factor: Math.pow(d / this.pinchDist, PINCH_ZOOM_BASE) } satisfies WheelEventLite);
+          this.markInteraction();
           this.touchWorld();
         }
         this.pinchDist = d;

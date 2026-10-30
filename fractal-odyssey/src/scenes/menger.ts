@@ -273,6 +273,7 @@ export class MengerWorld extends BaseWorld {
 
   update(f: FrameState): void {
     const cinematic = f.autoplay && f.playing && !this.dragging && f.idle > 4;
+    this.flying = cinematic;
     const u = this.mat.uniforms;
     applyPalette({ uniforms: u }, f.palette);
     u.uTime.value = f.time; u.uRealTime.value = f.real;
@@ -309,15 +310,23 @@ export class MengerWorld extends BaseWorld {
     r.render(this.scene, this.ortho);
   }
 
-  pointerDown(): void { this.dragging = true; this.syncOrbitFromEye(); }
+  pointerDown(): void { this.grabControl(); this.dragging = true; }
   pointerMove(e: PointerEventLite): void { if (this.dragging) this.orbit.drag(e.dx, e.dy, this.cssW); }
   pointerUp(): void { this.dragging = false; }
   wheel(e: WheelEventLite): void {
-    this.syncOrbitFromEye();
+    this.grabControl();
     this.orbit.wheelTo(e.factor, e.x, e.y, this.cssW, this.cssH);
   }
+  private flying = true;
+  private grabControl(): void {
+    // hand the camera from the cinematic flight to the orbit rig exactly once
+    // per gesture; re-syncing per wheel/pinch event would fight the gesture
+    if (!this.flying) return;
+    this.flying = false;
+    this.syncOrbitFromEye();
+  }
   private syncOrbitFromEye(): void {
-    // hand over smoothly from cinematic flight to manual orbit
+    // seamless takeover: adopt the flight camera's current pose as-is
     const v = this.eye.clone();
     const len = Math.max(v.length(), 1e-6);
     let az = Math.atan2(v.z, v.x);
@@ -326,7 +335,7 @@ export class MengerWorld extends BaseWorld {
     this.orbit.set({
       az,
       el: Math.asin(clamp(v.y / len, -1, 1)),
-      rad: clamp(len * 1.6, this.orbit.minRad, this.orbit.maxRad),
+      rad: clamp(len, this.orbit.minRad, this.orbit.maxRad),
     });
   }
 
