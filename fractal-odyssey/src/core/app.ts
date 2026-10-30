@@ -89,6 +89,9 @@ export class Odyssey {
       preserveDrawingBuffer: false,
     });
     this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // we encode manually
+    // take full ownership of touch gestures on the canvas (see index.html CSS);
+    // set in JS too so it holds even if stylesheets load after first paint
+    canvas.style.touchAction = 'none';
     const gl = this.renderer.getContext();
     const dbg = gl.getExtension('WEBGL_debug_renderer_info');
     if (dbg) this.gpuName = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL));
