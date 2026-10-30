@@ -53,6 +53,8 @@ export class UI {
   private idleTimer = 0;
   private hiddenAll = false;
   private toastT = 0;
+  private touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  private lastTap = { t: -9999, x: 0, y: 0 };
 
   constructor(private app: Odyssey, root: HTMLElement) {
     this.root = root;
@@ -345,7 +347,8 @@ export class UI {
   toggleUI(): void {
     this.hiddenAll = !this.hiddenAll;
     this.root.classList.toggle('hidden-all', this.hiddenAll);
-    if (!this.hiddenAll) this.toast('Interface restored — press H to hide again');
+    if (!this.hiddenAll) this.toast('Interface restored');
+    else if (this.touch) this.toast('Double-tap anywhere to bring the interface back');
   }
 
   toast(msg: string): void {
@@ -361,6 +364,11 @@ export class UI {
     const wake = () => {
       this.root.classList.remove('idle-fade');
       clearTimeout(this.idleTimer);
+      // Touch screens have no hover to wake the chrome, so a mouse-driven idle
+      // auto-hide would strand the controls (the world switcher looked "lost").
+      // Keep the chrome visible on coarse pointers; explicit hide (H / eye)
+      // still works there, restored by a double-tap.
+      if (this.touch) return;
       this.idleTimer = window.setTimeout(() => {
         const a = this.app;
         if (a.autoplay && a.playing && a.idleSeconds > 3 &&
@@ -373,6 +381,19 @@ export class UI {
     window.addEventListener('pointermove', wake);
     window.addEventListener('pointerdown', wake);
     window.addEventListener('keydown', wake);
+    // double-tap to restore the interface on touch devices (no H key available).
+    // Compare event.timeStamp — not wall-clock now — so heavy frame renders on a
+    // slow device can't stretch the gap between two taps and break detection.
+    window.addEventListener('pointerdown', (e) => {
+      if (!this.touch || !this.hiddenAll) return;
+      if (e.timeStamp - this.lastTap.t < 500
+          && Math.hypot(e.clientX - this.lastTap.x, e.clientY - this.lastTap.y) < 48) {
+        this.toggleUI();
+        this.lastTap.t = -9999;
+      } else {
+        this.lastTap = { t: e.timeStamp, x: e.clientX, y: e.clientY };
+      }
+    });
     wake();
   }
 

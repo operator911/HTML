@@ -47,7 +47,8 @@
 
 /* ---------- world selector ---------- */
 .worldbar {
-  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
   display: flex; align-items: center; gap: 6px; padding: 7px 9px; pointer-events: auto;
 }
 .worldbar button {
@@ -201,7 +202,7 @@ input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: none;
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 .hint {
-  position: absolute; bottom: 92px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
   font-size: 11px; letter-spacing: .12em; color: var(--ink-faint); text-align: center;
   pointer-events: none; transition: opacity 1.2s ease; white-space: nowrap;
 }
