@@ -14,9 +14,13 @@ export class SphericalCam {
 
   drag(dxPx: number, dyPx: number, w: number): void {
     const k = 3.2 / w;
-    this.tAz -= dxPx * k;
+    // grab-style horizontal: dragging right must spin the front surface TOWARD
+    // the finger (to match the 2D pan). With the camera at (cos az, sin az)
+    // looking at the target, that means az INCREASES with dx — the opposite of
+    // the usual OrbitControls sign, which is why the default felt inverted.
+    this.tAz += dxPx * k;
     this.tEl = clamp(this.tEl + dyPx * k, -1.45, 1.45);
-    this.velAz = -dxPx * k;
+    this.velAz = dxPx * k;
     this.velEl = dyPx * k;
   }
 
