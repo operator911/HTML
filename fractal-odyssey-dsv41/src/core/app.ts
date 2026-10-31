@@ -8,6 +8,8 @@ import { Fractal2D, createJulia, createMandelbrot } from '../scenes/fractal2d';
 import { Mandelbulb } from '../scenes/mandelbulb';
 import { Menger } from '../scenes/menger';
 import { Attractor } from '../scenes/attractor';
+import { QuaternionJulia } from '../scenes/quaternion';
+import { Mandelbox } from '../scenes/mandelbox';
 import { clamp, mulberry32, pick, smoothstep } from './math';
 
 interface Transition {
@@ -118,6 +120,11 @@ export class App {
       this.setWorld(wid, { shot: Number(qs.get('shot') ?? 0) });
     }
     if (qs.has('palette')) this.setPalette(qs.get('palette')!);
+    if (qs.has('sa') && this.scene.kind === '2d') {
+      const f = this.scene as Fractal2D;
+      f.testMode = true;
+      f.saEnabled = qs.get('sa') !== '0';
+    }
     if (qs.has('t')) {
       const t = Number(qs.get('t'));
       this.shotT = Math.max(0, t);
@@ -149,6 +156,8 @@ export class App {
       case 'bulb': s = new Mandelbulb(gl, this.caps, this.vao, p, q); break;
       case 'menger': s = new Menger(gl, this.caps, this.vao, p, q); break;
       case 'attractor': s = new Attractor(gl, this.caps, this.vao, p, q); break;
+      case 'quaternion': s = new QuaternionJulia(gl, this.caps, this.vao, p, q); break;
+      case 'mandelbox': s = new Mandelbox(gl, this.caps, this.vao, p, q); break;
     }
     s.resize(this.renderW, this.renderH);
     this.scenes.set(id, s);
@@ -504,7 +513,7 @@ export class App {
           e.preventDefault();
           this.prevShot();
           break;
-        case '1': case '2': case '3': case '4': case '5': {
+        case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
           const i = Number(e.key) - 1;
           if (WORLDS[i]) this.setWorld(WORLDS[i].id);
           break;

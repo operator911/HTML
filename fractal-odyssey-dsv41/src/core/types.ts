@@ -1,6 +1,6 @@
 import type { Palette } from './palettes';
 
-export type WorldId = 'mandelbrot' | 'julia' | 'bulb' | 'menger' | 'attractor';
+export type WorldId = 'mandelbrot' | 'julia' | 'bulb' | 'menger' | 'attractor' | 'quaternion' | 'mandelbox';
 export type QualityId = 'low' | 'medium' | 'high' | 'ultra';
 
 export interface QualityPreset {

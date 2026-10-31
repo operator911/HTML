@@ -28,7 +28,7 @@ export const WORLDS: WorldMeta[] = [
     facts: [
       'The set is connected: despite its infinite perimeter, it is a single piece.',
       'Its area is about 1.50659177 — tiny for something with a fractal dimension of 2.',
-      'Deep zoom uses a double-precision reference orbit and single-precision offsets (perturbation theory), keeping the image mathematically exact to roughly 10¹².',
+      'Deep zoom uses a double-precision reference orbit and single-precision offsets (perturbation theory), keeping the image mathematically exact to roughly 10¹². A validated 4th-order series approximation can skip the first few hundred iterations; toggle Series SA for the exact reference orbit.',
       'The little black bulbs are not copies pasted on: each is a genuine smaller Mandelbrot set, produced by the same equation.',
     ],
     controls: ['drag — pan', 'scroll / pinch — dive toward the cursor', 'shift + drag — rotate the plane', 'alt + click — open the Julia set at that point'],
@@ -113,6 +113,46 @@ export const WORLDS: WorldMeta[] = [
     ],
     controls: ['drag — pan (or turn the Lorenz butterfly)', 'scroll / pinch — zoom', 'each movement changes the system and its parameters'],
     defaultPalette: 'ion',
+  },
+  {
+    id: 'quaternion',
+    numeral: 'VI',
+    name: 'Quaternion Julia',
+    short: 'Quaternion',
+    kicker: 'World VI · four dimensions, sliced',
+    equation: 'q ↦ q² + c ,   q, c ∈ ℍ\nq = x + yi + zj + wk',
+    intro: [
+      'A quaternion has one real and three imaginary directions. Square one and you get a number in four dimensions; iterate that rule and the set of starting points that never escape is a four-dimensional Julia set.',
+      'We can only see a three-dimensional slice of it. Here the slice is a hyperplane of constant w — the Slice w slider moves it through the fourth dimension — and the parameter c is itself a quaternion. As c drifts, the slice folds, buds and flowers into a different organism entirely.',
+    ],
+    facts: [
+      'Quaternion multiplication is not commutative: i·j = k but j·i = −k. That asymmetry is what makes the shapes organic rather than symmetric.',
+      'The object on screen is a genuine 3D slice through a 4D fractal — not a projection or a texture. The Slice w slider moves that window through the fourth dimension.',
+      'The classic c = −0.2 + 0.6i + 0.2j + 0.2k produces a connected, coral-like body; other c values dissolve it into dust.',
+      'It is rendered with a distance estimator derived from the quaternion derivative, so the surface is found by marching, not by polygons.',
+    ],
+    controls: ['drag — orbit', 'scroll / pinch — move closer or farther', 'shift + drag — slide the frame', 'drag the Slice w slider — travel through the fourth dimension'],
+    defaultPalette: 'ion',
+  },
+  {
+    id: 'mandelbox',
+    numeral: 'VII',
+    name: 'Mandelbox',
+    short: 'Mandelbox',
+    kicker: 'World VII · folded space',
+    equation: 'z ↦ s · fold(z) + p\nbox fold: zᵢ ↦ clamp(zᵢ, −1, 1)·2 − zᵢ\nsphere fold: r < ½ → ×4 ; r < 1 → ÷r²',
+    intro: [
+      'Take a point, fold it back inside a cube whenever it leaves, then turn the inside of a sphere inside-out. Scale the result and add the original point. Repeat.',
+      'The Mandelbox is what happens when that recipe is iterated forever: a recursive cathedral of rooms, pillars and negative space. The scale factor is its DNA — nudge it and the entire architecture rearranges itself.',
+    ],
+    facts: [
+      'The box fold mirrors any coordinate outside [−1, 1] back into the cube.',
+      'The sphere fold inverts the interior of a sphere of radius ½ and re-scales the shell up to radius 1.',
+      'Negative scales around −1.5 produce cathedrals; around −2.2 the structure opens into a lattice of cubic rooms.',
+      'Like the other 3D worlds, it is a distance field: the camera marches rays through the formula rather than drawing meshes.',
+    ],
+    controls: ['drag — orbit', 'scroll / pinch — move closer or farther', 'shift + drag — slide the frame', 'the Scale slider rebuilds the architecture live'],
+    defaultPalette: 'solaris',
   },
 ];
 

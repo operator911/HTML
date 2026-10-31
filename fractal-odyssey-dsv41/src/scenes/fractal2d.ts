@@ -47,6 +47,11 @@ uniform int uRebaseIdx;
 uniform vec2 uRebaseHi;
 uniform vec2 uRebaseLo;
 uniform vec2 uRefOffset;
+uniform int uSkip;
+uniform vec2 uSA1;
+uniform vec2 uSA2;
+uniform vec2 uSA3;
+uniform vec2 uSA4;
 uniform vec2 uJitter;
 uniform float uShift;
 uniform float uExposure;
@@ -56,6 +61,10 @@ out vec4 fragColor;
 ${PALETTE_GLSL}
 
 const float BAIL2 = 65536.0;
+
+vec2 cmul(vec2 a, vec2 b) {
+  return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
 
 void main() {
   vec2 fc = gl_FragCoord.xy + uJitter;
@@ -80,11 +89,17 @@ void main() {
     }
     if (!escaped) n = uMaxIter;
   } else {
-    vec2 dz = (uJulia == 1) ? q : vec2(0.0);
     vec2 dc = (uJulia == 1) ? vec2(0.0) : q - uRefOffset;
+    vec2 dz = (uJulia == 1) ? q : vec2(0.0);
     int j = 0;
     int i = 0;
     int rebases = 0;
+    if (uSkip > 0) {
+      vec2 dc2 = cmul(dc, dc);
+      dz = cmul(uSA1, dc) + cmul(uSA2, dc2) + cmul(uSA3, cmul(dc2, dc)) + cmul(uSA4, cmul(dc2, dc2));
+      j = uSkip;
+      i = uSkip;
+    }
     while (i < uMaxIter) {
       if (j >= uRefLen) break;
       vec4 ref = texelFetch(uRef, ivec2(j, 0), 0);
@@ -93,7 +108,7 @@ void main() {
       z = Z + dz;
       r2 = dot(z, z);
       if (r2 > BAIL2) { escaped = true; n = i; break; }
-      if (i > 8 && rebases < 2 && j < uRebaseIdx && dot(dz, dz) > dot(Z, Z)) {
+      if (i > uSkip + 8 && rebases < 2 && j < uRebaseIdx && dot(dz, dz) > dot(Z, Z)) {
         dz += (Z + Zl) - (uRebaseHi + uRebaseLo);
         j = uRebaseIdx;
         rebases++;
@@ -204,6 +219,19 @@ export class Fractal2D implements Scene {
   private refIter = 0;
   private perturb = false;
   private refValid = false;
+  private refZx = new Float64Array(MAX_REF);
+  private refZy = new Float64Array(MAX_REF);
+  private saA = new Float64Array(MAX_REF * 2);
+  private saB = new Float64Array(MAX_REF * 2);
+  private saC = new Float64Array(MAX_REF * 2);
+  private saD = new Float64Array(MAX_REF * 2);
+  private skip = 0;
+  saEnabled = true;
+  testMode = false;
+  private sa1: [number, number] = [0, 0];
+  private sa2: [number, number] = [0, 0];
+  private sa3: [number, number] = [0, 0];
+  private sa4: [number, number] = [0, 0];
 
   private dragging = false;
   private lastPx = 0;
@@ -373,6 +401,9 @@ export class Fractal2D implements Scene {
     let n = 0;
     let minMag = Infinity;
     let minIdx = 0;
+    // series coefficients for the perturbation delta:
+    // dz_n ≈ A_n·dc + B_n·dc² + C_n·dc³ + D_n·dc⁴
+    let ax = 0, ay = 0, bx = 0, by = 0, cx2 = 0, cy2 = 0, dx2 = 0, dy2 = 0;
     while (n < iter) {
       const hiX = Math.fround(zx);
       const hiY = Math.fround(zy);
@@ -381,6 +412,15 @@ export class Fractal2D implements Scene {
       data[o + 1] = hiY;
       data[o + 2] = zx - hiX;
       data[o + 3] = zy - hiY;
+      this.refZx[n] = zx;
+      this.refZy[n] = zy;
+      if (!isJulia) {
+        const so = n * 2;
+        this.saA[so] = ax; this.saA[so + 1] = ay;
+        this.saB[so] = bx; this.saB[so + 1] = by;
+        this.saC[so] = cx2; this.saC[so + 1] = cy2;
+        this.saD[so] = dx2; this.saD[so + 1] = dy2;
+      }
       const mag = zx * zx + zy * zy;
       if (n > 8 && mag < minMag) {
         minMag = mag;
@@ -389,6 +429,18 @@ export class Fractal2D implements Scene {
       if (mag > BAIL2 && n > 0) {
         n++;
         break;
+      }
+      // advance the series coefficients with Z_n before stepping the orbit
+      if (!isJulia) {
+        const nax = 2 * (zx * ax - zy * ay) + 1;
+        const nay = 2 * (zx * ay + zy * ax);
+        const nbx = 2 * (zx * bx - zy * by) + (ax * ax - ay * ay);
+        const nby = 2 * (zx * by + zy * bx) + 2 * ax * ay;
+        const ncx = 2 * (zx * cx2 - zy * cy2) + 2 * (ax * bx - ay * by);
+        const ncy = 2 * (zx * cy2 + zy * cx2) + 2 * (ax * by + ay * bx);
+        const ndx = 2 * (zx * dx2 - zy * dy2) + (bx * bx - by * by) + 2 * (ax * cx2 - ay * cy2);
+        const ndy = 2 * (zx * dy2 + zy * dx2) + 2 * bx * by + 2 * (ax * cy2 + ay * cx2);
+        ax = nax; ay = nay; bx = nbx; by = nby; cx2 = ncx; cy2 = ncy; dx2 = ndx; dy2 = ndy;
       }
       const nx = zx * zx - zy * zy + ccx;
       const ny = 2 * zx * zy + ccy;
@@ -407,6 +459,79 @@ export class Fractal2D implements Scene {
     gl.bindTexture(gl.TEXTURE_2D, null);
 
     this.refValid = this.refLen > iter * 0.7;
+    this.skip = 0;
+    if (!isJulia && this.saEnabled && this.refValid && this.refLen > 240) {
+      this.chooseSeriesSkip(iter);
+    }
+  }
+
+  /** Validate a 4th-order series against direct perturbation at the view corners. */
+  private chooseSeriesSkip(iter: number): void {
+    const vh = this.cam.viewHeight;
+    const aspect = this.lastW / Math.max(1, this.lastH);
+    const vw = vh * aspect;
+    const maxSkip = Math.min(this.refLen - 2, Math.floor(iter * 0.26));
+    const cands = [maxSkip, Math.floor(this.refLen * 0.18), Math.floor(this.refLen * 0.1)];
+    const ok = [true, true, true];
+    const dcx: number[] = [];
+    const dcy: number[] = [];
+    for (let iy = 0; iy < 9; iy++) {
+      for (let ix = 0; ix < 9; ix++) {
+        const qx = (ix / 8 - 0.5) * vw;
+        const qy = (iy / 8 - 0.5) * vh;
+        dcx.push(qx - this.refOffset[0]);
+        dcy.push(qy - this.refOffset[1]);
+      }
+    }
+    for (let p = 0; p < dcx.length; p++) {
+      const dcr = dcx[p];
+      const dci = dcy[p];
+      let dzr = 0;
+      let dzi = 0;
+      let escapedAt = -1;
+      for (let n = 0; n <= maxSkip; n++) {
+        for (let c = 0; c < 3; c++) {
+          const S = cands[c];
+          if (!ok[c] || S !== n) continue;
+          const so = S * 2;
+          const A = [this.saA[so], this.saA[so + 1]];
+          const B = [this.saB[so], this.saB[so + 1]];
+          const C = [this.saC[so], this.saC[so + 1]];
+          const D = [this.saD[so], this.saD[so + 1]];
+          const dc2r = dcr * dcr - dci * dci;
+          const dc2i = 2 * dcr * dci;
+          const dc3r = dc2r * dcr - dc2i * dci;
+          const dc3i = dc2r * dci + dc2i * dcr;
+          const dc4r = dc2r * dc2r - dc2i * dc2i;
+          const dc4i = 2 * dc2r * dc2i;
+          const sr = A[0] * dcr - A[1] * dci + B[0] * dc2r - B[1] * dc2i + C[0] * dc3r - C[1] * dc3i + D[0] * dc4r - D[1] * dc4i;
+          const si = A[0] * dci + A[1] * dcr + B[0] * dc2i + B[1] * dc2r + C[0] * dc3i + C[1] * dc3r + D[0] * dc4i + D[1] * dc4r;
+          const err = Math.hypot(sr - dzr, si - dzi) / Math.max(1e-30, Math.hypot(dcr, dci));
+          if (escapedAt >= 0 || err > 1e-6) ok[c] = false;
+        }
+        if (n === maxSkip) break;
+        // step the direct perturbation using the stored reference orbit
+        const zr = this.refZx[n];
+        const zi = this.refZy[n];
+        const nr = 2 * (zr * dzr - zi * dzi) + (dzr * dzr - dzi * dzi) + dcr;
+        const ni = 2 * (zr * dzi + zi * dzr) + 2 * dzr * dzi + dci;
+        dzr = nr;
+        dzi = ni;
+        if (Math.hypot(zr + dzr, zi + dzi) > 256) escapedAt = n;
+      }
+    }
+    for (let c = 0; c < 3; c++) {
+      if (ok[c] && cands[c] > 16) {
+        const S = cands[c];
+        this.skip = S;
+        const so = S * 2;
+        this.sa1 = [this.saA[so], this.saA[so + 1]];
+        this.sa2 = [this.saB[so], this.saB[so + 1]];
+        this.sa3 = [this.saC[so], this.saC[so + 1]];
+        this.sa4 = [this.saD[so], this.saD[so + 1]];
+        break;
+      }
+    }
   }
 
   update(dt: number, _time: number): void {
@@ -479,7 +604,7 @@ export class Fractal2D implements Scene {
       this.lastKey = key;
       this.forceReset = false;
     }
-    if (this.samples >= this.maxSamples) return;
+    if (this.samples >= (this.testMode ? 1 : this.maxSamples)) return;
 
     if (this.samples === 0) {
       dst.bind();
@@ -496,7 +621,7 @@ export class Fractal2D implements Scene {
     const centerHiX = Math.fround(st.x);
     const centerHiY = Math.fround(st.y);
     const pu = paletteUniforms(this.palette);
-    const now = performance.now() * 0.001;
+    const now = this.testMode ? 0 : performance.now() * 0.001;
 
     dst.bind();
     gl.enable(gl.BLEND);
@@ -520,6 +645,11 @@ export class Fractal2D implements Scene {
     p.f2('uRebaseHi', this.rebaseHi[0], this.rebaseHi[1]);
     p.f2('uRebaseLo', this.rebaseLo[0], this.rebaseLo[1]);
     p.f2('uRefOffset', this.refOffset[0], this.refOffset[1]);
+    p.i1('uSkip', this.perturb ? this.skip : 0);
+    p.f2('uSA1', this.sa1[0], this.sa1[1]);
+    p.f2('uSA2', this.sa2[0], this.sa2[1]);
+    p.f2('uSA3', this.sa3[0], this.sa3[1]);
+    p.f2('uSA4', this.sa4[0], this.sa4[1]);
     p.f2('uJitter', jx, jy);
     p.f1('uShift', (this.cfg.mode === 'julia' ? 0.13 : 0.0) + now * 0.0035 + this.colorShift);
     p.f1('uExposure', 1.0);
@@ -542,21 +672,27 @@ export class Fractal2D implements Scene {
       ['zoom', `${st.zoom < 1e4 ? st.zoom.toFixed(1) : st.zoom.toExponential(2)}×`],
       ['precision', this.perturb ? 'perturbation · fp64 ref' : 'fp32 direct'],
       ['reference', this.perturb ? (this.refValid ? 'stable' : 'limited') : '—'],
+      ['series', this.perturb && this.skip > 0 ? `skip ${this.skip} iters` : 'off'],
       ['iterations', `${iter}`],
       ['samples', `${Math.min(this.samples, this.maxSamples)} / ${this.maxSamples}`],
     ];
   }
 
   params(): ParamSpec[] {
-    return [
+    const out: ParamSpec[] = [
       { key: 'iter', label: 'Iterations', min: 0.5, max: 2, step: 0.05, value: this.iterBoost, format: (v) => `${Math.round(v * 100)}%` },
       { key: 'colour', label: 'Colour', min: 0, max: 1, step: 0.01, value: this.colorShift, format: (v) => v.toFixed(2) },
     ];
+    if (this.cfg.mode === 'mandelbrot') {
+      out.push({ key: 'sa', label: 'Series SA', min: 0, max: 1, step: 1, value: this.saEnabled ? 1 : 0, format: (v) => (v > 0.5 ? 'on' : 'off') });
+    }
+    return out;
   }
 
   setParam(key: string, value: number): void {
     if (key === 'iter') this.iterBoost = value;
     else if (key === 'colour') this.colorShift = value;
+    else if (key === 'sa') this.saEnabled = value > 0.5;
     this.forceReset = true;
   }
 

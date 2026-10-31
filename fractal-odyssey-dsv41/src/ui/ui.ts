@@ -27,7 +27,7 @@ export interface UIActions {
 const KEY_HELP: [string, string][] = [
   ['Space', 'play / pause'],
   ['← →', 'previous / next movement'],
-  ['1 – 5', 'jump to a universe'],
+  ['1 – 7', 'jump to a universe'],
   ['P', 'next palette'],
   ['X', 'surprise me'],
   ['R', 'reset the view'],

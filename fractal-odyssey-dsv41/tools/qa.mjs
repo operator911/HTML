@@ -21,7 +21,7 @@ if (await page.evaluate(() => !!document.fullscreenElement)) await page.evaluate
 
 // repeated switching + resource cache
 const sizes = [];
-for (const id of ['julia','bulb','menger','attractor','mandelbrot','julia','bulb']) {
+for (const id of ['julia','bulb','menger','attractor','quaternion','mandelbox','mandelbrot','quaternion','mandelbox']) {
   await page.evaluate((w) => document.querySelector(`.world-tab[data-world="${w}"]`)?.click(), id);
   await pump(500);
   sizes.push(await page.evaluate(() => ({world: window.__odyssey.scene.id, scenes: window.__odyssey.scenes.size})));
