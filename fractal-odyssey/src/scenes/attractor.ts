@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BaseWorld } from '../core/world';
 import { GLSL_COMMON, GLSL_QUAD_VERT } from '../core/shaders';
 import { GLSL_PALETTE, applyPalette } from '../core/palettes';
-import { clamp } from '../core/ease';
+import { clamp, damp } from '../core/ease';
 import type { ControlSpec, FrameState, PointerEventLite, Shot, WheelEventLite, WorldInfo } from '../core/types';
 
 /**
@@ -67,7 +67,7 @@ void main() {
       y = rr * sin(aa);
       z = 0.0;
     } else {
-      x = (rd.x - 0.5) * 32.0; y = (fract(rd.y + 0.37) - 0.5) * 32.0; z = 2.0 + fract(rd.z + 0.71) * 36.0;
+      x = (rd.x - 0.5) * 28.0; y = (fract(rd.y + 0.37) - 0.5) * 28.0; z = 4.0 + fract(rd.z + 0.71) * 32.0;
     }
     age = 0.0;
   }
@@ -84,19 +84,40 @@ uniform float uPoint;
 uniform float uRot;
 uniform vec2 uPan;
 uniform float uSystem;
+uniform float uYaw;
+uniform float uPitch;
+uniform float uCamDist;
 varying float vAge;
 varying float vSeed;
+varying float vDepth;   // 0 far … 1 near (3D systems); 0.55 flat in 2D
 void main() {
   vec4 s = texture2D(uState, aUv);
-  vec2 p = s.xy * uScale;
-  float c = cos(uRot), n = sin(uRot);
-  p = vec2(p.x * c - p.y * n, p.x * n + p.y * c);
-  p += uPan;   // pan in SCREEN space, after rotation — otherwise the slow
-               // auto-rotation drifts the pan axes off the finger by the
-               // rotation angle (the "90° off" swipe feel)
-  if (uSystem > 1.5) { p += (vec2(s.w) - 22.0) * uScale * 0.12; }   // gentle Lorenz parallax
-  gl_Position = vec4(p, 0.0, 1.0);
-  gl_PointSize = uPoint;
+  vec2 p;
+  if (uSystem > 1.5) {
+    // TRUE 3D: Lorenz state (x, y, z) → right/up/depth frame, orbit camera.
+    // The attractor lives around (0, 0, 25); screen-up is its z axis.
+    vec3 q = vec3(s.x, s.w - 20.0, s.y);
+    float cy = cos(uYaw), sy = sin(uYaw);
+    vec3 r1 = vec3(q.x * cy + q.z * sy, q.y, -q.x * sy + q.z * cy);
+    float cp = cos(uPitch), sp = sin(uPitch);
+    vec3 r2 = vec3(r1.x, r1.y * cp - r1.z * sp, r1.y * sp + r1.z * cp);
+    float depth = max(uCamDist - r2.z, 8.0);
+    float persp = uCamDist / depth;
+    p = r2.xy * uScale * persp;
+    vDepth = clamp((persp - 0.55) / 1.05, 0.0, 1.0);
+    gl_Position = vec4(p + uPan, 0.0, 1.0);
+    gl_PointSize = uPoint * (0.65 + 0.9 * vDepth);
+  } else {
+    p = s.xy * uScale;
+    float c = cos(uRot), n = sin(uRot);
+    p = vec2(p.x * c - p.y * n, p.x * n + p.y * c);
+    p += uPan;   // pan in SCREEN space, after rotation — otherwise the slow
+                 // auto-rotation drifts the pan axes off the finger by the
+                 // rotation angle (the "90° off" swipe feel)
+    vDepth = 0.55;
+    gl_Position = vec4(p, 0.0, 1.0);
+    gl_PointSize = uPoint;
+  }
   vAge = s.z;
   vSeed = fract(sin(dot(aUv, vec2(127.1, 311.7))) * 43758.5453);
 }
@@ -108,13 +129,16 @@ ${GLSL_PALETTE}
 uniform float uIntensity;
 varying float vAge;
 varying float vSeed;
+varying float vDepth;
 void main() {
   vec2 d = gl_PointCoord - 0.5;
   float r = length(d);
   float a = smoothstep(0.5, 0.06, r);
   // fade newborns in and the dying out — spawn regions never flash a shape
-  float fade = smoothstep(0.0, 0.30, vAge) * (1.0 - smoothstep(1.55, 1.9, vAge));
-  vec3 col = palette(0.30 + 0.55 * vSeed + uPalShift) * 1.06;
+  float fade = smoothstep(0.0, 0.9, vAge) * (1.0 - smoothstep(1.55, 1.9, vAge));
+  // depth cue in 3D systems: far wing sits visibly behind the near one
+  float depthMix = mix(0.45, 1.25, vDepth);
+  vec3 col = palette(0.30 + 0.55 * vSeed + uPalShift) * 1.06 * depthMix;
   gl_FragColor = vec4(col * a * fade * uIntensity, 1.0);
 }
 `;
@@ -153,7 +177,7 @@ export class AttractorWorld extends BaseWorld {
       { label: 'Drift', desc: 'parameters wander through the chaotic regime' },
       { label: 'Persistence', desc: 'trail memory length' },
       { label: 'Wheel', desc: 'scale the projection' },
-      { label: 'Drag', desc: 'pan and rotate' },
+      { label: 'Drag', desc: 'pan (2-D maps) · orbit the camera (Lorenz 3-D)' },
     ],
   };
 
@@ -175,9 +199,14 @@ export class AttractorWorld extends BaseWorld {
   private params = { a: 1.4, b: -2.4, c: 1.6, d: 0.66 };
   private drift = 0.35;
   private persistence = 0.965;
+  private luminosity = 0.026;   // slider value; 3-D Lorenz gets a gain in update()
   private scale = 0.34;
   private rot = 0;
   private pan = new THREE.Vector2();
+  // orbit camera for the 3D Lorenz system (grab-style, like SphericalCam)
+  private yaw = 0.15; private pitch = 0.2;
+  private yawT = 0.15; private pitchT = 0.2;
+  private velYaw = 0; private velPitch = 0;
   private dragging = false;
   private cssW = 1; private cssH = 1;
   private needsReseed = true;
@@ -232,6 +261,7 @@ export class AttractorWorld extends BaseWorld {
         uState: { value: this.stateA.texture },
         uScale: { value: this.scale }, uPoint: { value: 1.6 }, uRot: { value: 0 },
         uPan: { value: this.pan }, uSystem: { value: 0 },
+        uYaw: { value: 0.45 }, uPitch: { value: 0.32 }, uCamDist: { value: 90 },
         uPalA: { value: new THREE.Vector3() }, uPalB: { value: new THREE.Vector3() },
         uPalC: { value: new THREE.Vector3() }, uPalD: { value: new THREE.Vector3() },
         uInterior: { value: new THREE.Color() }, uSpace: { value: new THREE.Color() },
@@ -247,7 +277,7 @@ export class AttractorWorld extends BaseWorld {
     this.presentMat = this.track(new THREE.ShaderMaterial({
       vertexShader: GLSL_QUAD_VERT, fragmentShader: fragPresent,
       uniforms: {
-        uTex: { value: this.trailA.texture }, uExposure: { value: 0.9 },
+        uTex: { value: this.trailA.texture }, uExposure: { value: 1.05 },
         uResolution: { value: new THREE.Vector2(2, 2) }, uTime: { value: 0 }, uRealTime: { value: 0 },
       },
       depthTest: false, depthWrite: false,
@@ -329,10 +359,10 @@ export class AttractorWorld extends BaseWorld {
     const data = new Float32Array(side * side * 4);
     for (let i = 0; i < side * side; i++) {
       if (this.system === 2) {
-        data[i * 4] = (Math.random() - 0.5) * 32;
-        data[i * 4 + 1] = (Math.random() - 0.5) * 32;
+        data[i * 4] = (Math.random() - 0.5) * 28;
+        data[i * 4 + 1] = (Math.random() - 0.5) * 28;
         data[i * 4 + 2] = Math.random();
-        data[i * 4 + 3] = 2 + Math.random() * 36;
+        data[i * 4 + 3] = 4 + Math.random() * 32;
       } else {
         data[i * 4] = (Math.random() - 0.5) * 1.7;
         data[i * 4 + 1] = (Math.random() - 0.5) * 1.7;
@@ -384,6 +414,7 @@ export class AttractorWorld extends BaseWorld {
     const p = this.presetFor(s);
     this.params = { a: p.a, b: p.b, c: p.c, d: p.d };
     this.scale = p.scale;
+    if (s === 2) { this.yaw = this.yawT = 0.15; this.pitch = this.pitchT = 0.2; this.velYaw = this.velPitch = 0; }
     this.pointMat.uniforms.uSystem.value = s;
     this.simMat.uniforms.uSystem.value = s;
     this.needsReseed = true;
@@ -391,7 +422,7 @@ export class AttractorWorld extends BaseWorld {
   }
 
   status(): string {
-    return `${SYSTEMS[this.system].name} · ${(this.side * this.side / 1000).toFixed(0)}k particles`;
+    return `${SYSTEMS[this.system].name}${this.system === 2 ? ' · 3-D orbit' : ''} · ${(this.side * this.side / 1000).toFixed(0)}k particles`;
   }
   zoomFactor(): number { return this.scale / this.presetFor(this.system).scale; }
 
@@ -404,8 +435,8 @@ export class AttractorWorld extends BaseWorld {
         onInput: v => { this.drift = v; } },
       { kind: 'slider', key: 'persist', label: 'Persistence', min: 0.75, max: 0.995, step: 0.001, value: this.persistence,
         onInput: v => { this.persistence = v; } },
-      { kind: 'slider', key: 'intensity', label: 'Luminosity', min: 0.01, max: 0.16, step: 0.002, value: this.pointMat.uniforms.uIntensity.value as number,
-        onInput: v => { this.pointMat.uniforms.uIntensity.value = v; } },
+      { kind: 'slider', key: 'intensity', label: 'Luminosity', min: 0.01, max: 0.16, step: 0.002, value: this.luminosity,
+        onInput: v => { this.luminosity = v; } },
     ];
   }
 
@@ -438,6 +469,17 @@ export class AttractorWorld extends BaseWorld {
     P.uDt.value = clamp(f.dt, 0.001, 0.09);
     P.uSteps.value = clamp(Math.round(f.dt * 60), 1, 3);
 
+    // orbit-camera physics (Lorenz): fling inertia + damped follow + slow auto-orbit
+    if (this.system === 2) {
+      if (f.playing && !this.dragging) this.yawT += f.dt * 0.03;
+      this.yawT += this.velYaw * 0.35;
+      this.pitchT = clamp(this.pitchT + this.velPitch * 0.35, -1.3, 1.3);
+      this.velYaw *= Math.pow(0.02, f.rawDt);
+      this.velPitch *= Math.pow(0.02, f.rawDt);
+      this.yaw = damp(this.yaw, this.yawT, 0.0002, f.rawDt);
+      this.pitch = damp(this.pitch, this.pitchT, 0.0002, f.rawDt);
+    }
+
     // 2. advance the flow only while the show is playing
     if (f.playing) {
       P.uState.value = this.stateA.texture;
@@ -456,8 +498,12 @@ export class AttractorWorld extends BaseWorld {
       pu.uState.value = this.stateB.texture;
       pu.uScale.value = this.scale;
       pu.uRot.value = this.rot + f.time * 0.008;
+      pu.uYaw.value = this.yaw;
+      pu.uPitch.value = this.pitch;
       pu.uPan.value = this.pan;
       pu.uPoint.value = Math.max(1.2, Math.min(2.2, this.trailW / 900));
+      // the 3-D projection spreads the same particles over more screen area
+      pu.uIntensity.value = this.luminosity * (this.system === 2 ? 3.0 : 1);
       r.setRenderTarget(this.trailB);
       r.autoClear = false;
       r.render(this.pointScene, this.ortho);
@@ -484,7 +530,18 @@ export class AttractorWorld extends BaseWorld {
   pointerDown(e: PointerEventLite): void { this.dragging = true; this.held = false; void e; }
   pointerMove(e: PointerEventLite): void {
     if (!this.dragging) return;
-    if (e.button === 1 || e.shift) this.rot += e.dx * 0.004;
+    const modifier = e.button === 1 || e.shift;
+    if (this.system === 2 && !modifier) {
+      // grab-style orbit (same signs as SphericalCam.drag, which the
+      // on-device check confirmed): content turns with the finger
+      const k = 3.2 / this.cssW;
+      this.yawT += e.dx * k;
+      this.pitchT = clamp(this.pitchT + e.dy * k, -1.3, 1.3);
+      this.velYaw = e.dx * k;
+      this.velPitch = e.dy * k;
+      return;
+    }
+    if (modifier && this.system !== 2) this.rot += e.dx * 0.004;
     else this.pan.set(this.pan.x + 2 * e.dx / this.cssW, this.pan.y - 2 * e.dy / this.cssH);
   }
   pointerUp(): void { this.dragging = false; }
@@ -496,6 +553,8 @@ export class AttractorWorld extends BaseWorld {
   resetView(): void {
     this.scale = this.presetFor(this.system).scale;
     this.rot = 0; this.pan.set(0, 0);
+    this.yaw = this.yawT = 0.15; this.pitch = this.pitchT = 0.2;
+    this.velYaw = this.velPitch = 0;
     this.touch();
   }
 
@@ -503,7 +562,7 @@ export class AttractorWorld extends BaseWorld {
     this.setSystem(Math.floor(rng() * 3));
     this.drift = 0.15 + rng() * 0.7;
     this.persistence = 0.9 + rng() * 0.09;
-    this.pointMat.uniforms.uIntensity.value = 0.02 + rng() * 0.05;
+    this.luminosity = 0.02 + rng() * 0.05;
     this.held = true; this.holdT = 0;
   }
 
@@ -513,7 +572,9 @@ export class AttractorWorld extends BaseWorld {
       { sys: 0, a: -1.7, b: 1.3, vc: -0.1, vd: -1.2, sc: 0.42, rot: 1.2, name: 'Clifford lace', dur: 26 },
       { sys: 1, a: 1.641, b: 1.902, vc: 0.316, vd: 1.525, sc: 0.4, rot: 0.4, name: 'De Jong flower', dur: 26 },
       { sys: 1, a: 2.01, b: -2.53, vc: 1.61, vd: -0.33, sc: 0.36, rot: -0.6, name: 'De Jong nebula', dur: 26 },
-      { sys: 2, a: 10, b: 0, vc: 10, vd: 8 / 3, sc: 0.03, rot: 0, name: 'Lorenz wings', dur: 26 },
+      // for Lorenz views: rot doubles as the orbit pitch target; yaw sweeps live
+      { sys: 2, a: 10, b: 0, vc: 10, vd: 8 / 3, sc: 0.03, rot: 0.2, name: 'Lorenz butterfly', dur: 30 },
+      { sys: 2, a: 10, b: 0, vc: 10, vd: 8 / 3, sc: 0.024, rot: -0.62, name: 'Lorenz updraft', dur: 30 },
     ];
     return views.map((v) => ({
       name: v.name,
@@ -525,9 +586,11 @@ export class AttractorWorld extends BaseWorld {
         this.scale = v.sc;
       },
       apply: (p) => {
-        if (this.held) return;
-        this.rot = v.rot + p * 0.5;
-        this.pointMat.uniforms.uIntensity.value = 0.026 + 0.016 * Math.sin(p * Math.PI);
+        if (this.held || this.dragging) return;   // never fight the user's orbit
+        if (v.sys === 2) this.yawT = p * 2.4 - 0.35;   // sweep front → far side
+        else this.rot = v.rot + p * 0.5;
+        this.pitchT = v.rot;
+        this.luminosity = 0.026 + 0.016 * Math.sin(p * Math.PI);
       },
     }));
   }

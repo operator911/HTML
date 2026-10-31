@@ -1,6 +1,7 @@
 import { Odyssey } from './core/app';
 import { MandelbrotWorld } from './scenes/mandelbrot';
 import { JuliaWorld } from './scenes/julia';
+import { QuatJuliaWorld } from './scenes/quaternion';
 import { BurningShipWorld } from './scenes/burnship';
 import { NewtonWorld } from './scenes/newton';
 import { BuddhaWorld } from './scenes/buddha';
@@ -44,6 +45,7 @@ function boot(): void {
   app.registerWorlds([
     new MandelbrotWorld(),
     new JuliaWorld(),
+    new QuatJuliaWorld(),
     new BurningShipWorld(),
     new NewtonWorld(),
     new BuddhaWorld(),

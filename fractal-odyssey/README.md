@@ -10,7 +10,7 @@ mathematics behind each world.
 ## Run it
 
 **Just open it** — `fractal-odyssey.html` at the playground root is a fully
-self-contained build (engine inlined, ~614 KB): open it directly from disk or
+self-contained build (engine inlined, ~621 KB): open it directly from disk or
 via the link on the shelf `index.html`. Rebuild it after source changes with:
 
 ```bash
@@ -36,19 +36,20 @@ Requires any browser with WebGL 2 (Chrome / Edge / Firefox / Safari 15+) and a
 hardware-accelerated GPU. The renderer adapts its resolution automatically, so
 integrated GPUs and 5K panels are both handled.
 
-## The nine worlds
+## The ten worlds
 
 | # | World | Mathematics | Technique |
 |---|-------|-------------|-----------|
 | 1 | **Mandelbrot Universe** | z ↦ z² + c escape-time set | fp32 shader + **perturbation theory** (fp64 reference orbits, fp32 deltas) for exact deep zoom to ≈10¹⁴×; progressive refinement & temporal AA while idle; Julia companion window (J) samples the current parameter |
 | 2 | **Julia Dreamscape** | z ↦ z² + c with animated c | ten classic parameter structures morphed continuously, escape-time bas-relief shading from the accumulated field gradient, interactive Mandelbrot parameter map |
-| 3 | **Burning Ship** | z ↦ (\|Re z\| + i\|Im z\|)² + c | non-analytic fold rendered in the classic mirrored orientation, fire-on-night banding; direct fp32 with an honest precision report — its deep-zoom limits were established by CPU-verified perturbation experiments (tools/find-ship6-8) |
-| 4 | **Newton Realms** | N(z) = z − (z³−(1+a))/3z² | three attractor basins with live-orbiting parameter a; convergence-speed shading, iteration-keyed seam relief — the first fractal ever drawn (Cayley, 1879) |
-| 5 | **Buddhabrot** | orbit density of escaping z ↦ z² + c | GPGPU orbit particles (up to 4 M) splatted additively into a persistence buffer, Reinhard-composed; the set appears as a masked void painted by its own orbits |
-| 6 | **Strange Attractor Flow** | Clifford / De Jong maps, Lorenz ODE | 65 k–4 M GPGPU particles (RGBA32F state textures), additive persistence trails, parameter drift through the chaotic regime |
-| 7 | **Mandelbulb Cosmos** | 3-D z ↦ zⁿ + c (spherical power) | distance-estimator ray marching with orbit-trap albedo, ambient occlusion, soft shadows, volumetric filament glow, starfield + nebula |
-| 8 | **Mandelbox** | box fold · sphere inversion · scale + c | KIFS distance estimator with Lipschitz bound, Mandel ⇄ Julia morph slider, corridor flights and corner portraits |
-| 9 | **Menger Architecture** | recursive middle-third cross removal | constructive fractal DE (sign-verified against the digit definition), cinematic tunnel flight, depth 1–6 morphing, travelling beacons with shadowed point lights |
+| 3 | **Quaternion Julia** | q ↦ q² + c over the quaternions ℍ | a 4-D Julia set meeting the screen as a rotating 2-plane slice: an orthonormal 2-frame (e₁, e₂) double-rotates through ℍ each frame; six c-presets CPU-verified for structural richness in every slice orientation; dark-crystal interior with orbit-trap skeleton glow |
+| 4 | **Burning Ship** | z ↦ (\|Re z\| + i\|Im z\|)² + c | non-analytic fold rendered in the classic mirrored orientation, fire-on-night banding; direct fp32 with an honest precision report — its deep-zoom limits were established by CPU-verified perturbation experiments (tools/find-ship6-8) |
+| 5 | **Newton Realms** | N(z) = z − (z³−(1+a))/3z² | three attractor basins with live-orbiting parameter a; convergence-speed shading, iteration-keyed seam relief — the first fractal ever drawn (Cayley, 1879) |
+| 6 | **Buddhabrot** | orbit density of escaping z ↦ z² + c | GPGPU orbit particles (up to 4 M) splatted additively into a persistence buffer, Reinhard-composed; the set appears as a masked void painted by its own orbits |
+| 7 | **Strange Attractor Flow** | Clifford / De Jong maps, Lorenz ODE | 65 k–4 M GPGPU particles (RGBA32F state textures), additive persistence trails; Lorenz renders through a true perspective camera — drag orbits it in 3-D with grab inertia |
+| 8 | **Mandelbulb Cosmos** | 3-D z ↦ zⁿ + c (spherical power) | distance-estimator ray marching with orbit-trap albedo, ambient occlusion, soft shadows, volumetric filament glow, starfield + nebula |
+| 9 | **Mandelbox** | box fold · sphere inversion · scale + c | KIFS distance estimator with Lipschitz bound, Mandel ⇄ Julia morph slider, corridor flights and corner portraits |
+| 10 | **Menger Architecture** | recursive middle-third cross removal | constructive fractal DE (sign-verified against the digit definition), cinematic tunnel flight, depth 1–6 morphing, travelling beacons with shadowed point lights |
 
 ## Controls
 
@@ -67,7 +68,7 @@ integrated GPUs and 5K panels are both handled.
 | `Space` | pause / resume | | `S` | save PNG screenshot |
 | `C` | cinematic autoplay | | `F` | fullscreen |
 | `→` | next shot | | `H` | hide UI (screensaver) |
-| `1`–`9` | switch worlds | | `I` | about this world |
+| `1`–`9`, `0` | switch worlds | | `I` | about this world |
 | `P` | cycle palette | | `D` | diagnostics |
 | `R` | reset view | | `K` | control drawer |
 | `X` | surprise me | | `J` | Julia companion |
@@ -82,7 +83,7 @@ the odyssey quietly journeys on to the next universe.
 
 ## URL options
 
-`?world=mandelbrot|julia|burnship|newton|buddha|attractor|mandelbulb|mandelbox|menger` ·
+`?world=mandelbrot|julia|quatjulia|burnship|newton|buddha|attractor|mandelbulb|mandelbox|menger` ·
 `?quality=low|medium|high|cinematic` · `?autoplay=0` · `?scale=0..1` (render scale)
 
 ## Numerical honesty
@@ -149,7 +150,8 @@ tools/
 
 - WebGPU compute path for the attractor GPGPU + tile-based 8K screenshots
 - More worlds: Tricorn, Multibrot power slider, Kleinian (Berserdt) groups,
-  Apollonian gasket lifting, quaternion Julia sets as a stereo pair
+  Apollonian gasket lifting; raymarched 3-D cross-sections of the quaternion
+  Julia (the 2-D slice here is the fast cousin)
 - Buddhabrot zooming (needs per-pixel orbit-history culling or a density
   field re-projection — the current painter covers the whole plane at once)
 - Deep-zoom double-float (df2) shader mode to push past 10¹⁴×
