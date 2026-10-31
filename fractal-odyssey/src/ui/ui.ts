@@ -106,6 +106,12 @@ export class UI {
     const surprise = this.h('<button class="surprise" title="Surprise me! (X)"><span class="glyph">✦</span><span class="label">Surprise</span></button>') as HTMLButtonElement;
     surprise.addEventListener('click', () => { a.surprise(); this.toast('Surprise — a new corner of mathematics'); });
     bar.append(surprise);
+    const aboutBtn = this.h(`<button class="aux" title="Explanation card: the mathematics of this world (I)"><span class="glyph">${ICONS.info}</span><span class="label">About</span></button>`) as HTMLButtonElement;
+    aboutBtn.addEventListener('click', () => this.toggleInfo());
+    bar.append(aboutBtn);
+    const tuneBtn = this.h(`<button class="aux" title="Tunable parameters & equations (K)"><span class="glyph">${ICONS.gear}</span><span class="label">Tune</span></button>`) as HTMLButtonElement;
+    tuneBtn.addEventListener('click', () => this.toggleDrawer());
+    bar.append(tuneBtn);
     this.root.append(bar);
 
     // right rail
@@ -251,8 +257,11 @@ export class UI {
     const w = this.app.active;
     const specs = w.controls();
     this.drawerBody.innerHTML = '';
+    // the defining equation, always visible above the sliders it relates to
+    this.drawerBody.append(this.h(
+      `<div class="eq"><div class="eq-f">${w.info.formula}</div><div class="eq-n">${w.info.formulaNote}</div></div>`));
     for (const s of specs) this.drawerBody.append(this.specEl(s));
-    if (!specs.length) this.drawerBody.innerHTML = '<div class="name" style="opacity:.5">— no extra controls —</div>';
+    if (!specs.length) this.drawerBody.append(this.h('<div class="name" style="opacity:.5">— no extra controls —</div>'));
   }
 
   private specEl(s: ControlSpec): HTMLElement {

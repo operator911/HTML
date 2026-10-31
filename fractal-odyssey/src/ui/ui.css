@@ -54,7 +54,9 @@
   position: absolute; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   display: flex; align-items: center; gap: 6px; padding: 7px 9px; pointer-events: auto;
+  max-width: calc(100vw - 20px); overflow-x: auto; scrollbar-width: none;
 }
+.worldbar::-webkit-scrollbar { display: none; }
 .worldbar button {
   all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 8px 15px 7px; border-radius: 10px; color: var(--ink-dim);
@@ -93,13 +95,13 @@
 
 /* ---------- drawer ---------- */
 .drawer {
-  position: absolute; right: 78px; top: 50%; transform: translateY(-50%) translateX(8px);
-  width: 292px; max-height: 78vh; overflow: hidden auto; padding: 16px 18px 14px;
-  pointer-events: auto; opacity: 0; visibility: hidden;
+  position: absolute; right: 78px; bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+  width: 292px; max-height: min(70vh, 640px); overflow: hidden auto; padding: 16px 18px 14px;
+  pointer-events: auto; opacity: 0; visibility: hidden; transform: translateY(10px);
   transition: opacity .3s ease, transform .3s ease, visibility .3s;
   scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
 }
-.drawer.open { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(0); }
+.drawer.open { opacity: 1; visibility: visible; transform: none; }
 .drawer h3 {
   margin: 0 0 10px; font-size: 10px; font-weight: 600; letter-spacing: .2em;
   text-transform: uppercase; color: var(--accent);
@@ -127,6 +129,12 @@ input[type="range"]::-moz-range-progress { height: 3px; border-radius: 2px; back
 input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: none; border-radius: 50%; background: #f4f1e8; }
 
 .seg { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 2px; }
+.drawer .eq {
+  padding: 9px 11px; margin: 2px 0 12px; border: 1px solid var(--line); border-radius: 9px;
+  background: rgba(255, 255, 255, .045);
+}
+.drawer .eq .eq-f { font-family: var(--serif); font-style: italic; font-size: 13.5px; color: var(--ink); }
+.drawer .eq .eq-n { font-size: 10px; color: var(--ink-faint); margin-top: 3px; }
 .seg button {
   all: unset; cursor: pointer; font-size: 10.5px; letter-spacing: .04em; padding: 5px 9px;
   border-radius: 7px; border: 1px solid var(--line); color: var(--ink-dim); transition: all .2s ease;
@@ -228,8 +236,12 @@ input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: none;
 .help td:first-child { font-family: var(--mono); color: var(--accent); white-space: nowrap; padding-right: 22px; }
 .help .foot { margin-top: 14px; font-size: 10.5px; color: var(--ink-faint); letter-spacing: .08em; }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .drawer { right: 12px; width: min(300px, calc(100vw - 90px)); }
   .worldbar button { min-width: 0; padding: 8px 10px; }
   .worldbar button .label { display: none; }
+}
+@media (max-width: 430px) {
+  /* keep the switcher itself reachable on narrow phones */
+  .worldbar button.aux { display: none; }
 }

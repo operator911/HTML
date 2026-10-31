@@ -15,12 +15,12 @@ const fragUpdate = /* glsl */ `
 precision highp float;
 varying vec2 vUv;
 uniform sampler2D uState;
+uniform sampler2D uSeed;      // CPU-random per-particle seed (RGB), anti-lattice
 uniform vec2 uParams;     // (a, b) or (a, c)
 uniform vec2 uParams2;    // (c, d) or (sigma, beta)
 uniform float uSystem;    // 0 clifford, 1 dejong, 2 lorenz
 uniform float uDt;        // animation seconds this frame
 uniform float uSteps;     // map iterations (frame-rate compensation)
-uniform float uSide;      // grid resolution, for a unique per-particle hash
 uniform float uTime;
 
 float hash21(vec2 p) {
@@ -34,7 +34,6 @@ void main() {
   float x = s.x, y = s.y, z = s.w;   // z stored in .w
   float age = s.z;                    // age stored in .z
   age -= uDt * 0.9;
-
   for (int st = 0; st < 3; st++) {
     if (float(st) >= uSteps) break;
     vec2 n;
@@ -62,14 +61,15 @@ void main() {
 
   bool bad = !(abs(x) < 1e4 && abs(y) < 1e4 && abs(z) < 1e4);
   if (age <= 0.0 || bad) {
-    // respawn with a fresh random age; hash is unique per particle id
-    // (multiplying vUv by uSide gives every cell a distinct half-integer),
-    // so particles never collapse onto shared seed positions
-    vec2 cid = vUv * uSide;
+    // Respawn from a CPU-generated seed texture: one true-random (non-lattice)
+    // triple per particle, rotated by golden-ratio offsets per respawn cohort.
+    // (GPU number "hashes" lose fp32 mantissa precision at the large arguments
+    // unique-per-particle ids demand, which used to imprint a faint grid.)
+    vec3 rd = texture2D(uSeed, vUv).xyz;
     float t1 = floor(uTime * 13.0);
-    float r1 = hash21(cid + t1 * vec2(1.37, 2.71) + vec2(3.1, 7.7));
-    float r2 = hash21(cid * 1.618 + t1 * vec2(2.13, 1.37) + vec2(9.2, 3.3));
-    float r3 = hash21(cid * 0.713 + t1 * vec2(3.71, 2.33) + vec2(5.5, 11.1));
+    float r1 = fract(rd.x + t1 * 0.6180339887);
+    float r2 = fract(rd.y + t1 * 0.7548776664);
+    float r3 = fract(rd.z + t1 * 0.5698402909);
     if (uSystem < 1.5) {
       x = (r1 - 0.5) * 1.7;
       y = (r2 - 0.5) * 1.7;
@@ -97,9 +97,12 @@ varying float vSeed;
 varying float vSpeed;
 void main() {
   vec4 s = texture2D(uState, aUv);
-  vec2 p = s.xy * uScale + uPan;
+  vec2 p = s.xy * uScale;
   float c = cos(uRot), n = sin(uRot);
   p = vec2(p.x * c - p.y * n, p.x * n + p.y * c);
+  p += uPan;   // pan in SCREEN space, after rotation — otherwise the slow
+               // auto-rotation drifts the pan axes off the finger by the
+               // rotation angle (the "90° off" swipe feel)
   if (uSystem > 1.5) { p += (vec2(s.w) - 22.0) * uScale * 0.12; }   // gentle Lorenz parallax
   gl_Position = vec4(p, 0.0, 1.0);
   gl_PointSize = uPoint;
@@ -210,9 +213,9 @@ export class AttractorWorld extends BaseWorld {
     this.simMat = this.track(new THREE.ShaderMaterial({
       vertexShader: GLSL_QUAD_VERT, fragmentShader: fragUpdate,
       uniforms: {
-        uState: { value: null },
+        uState: { value: null }, uSeed: { value: null },
         uParams: { value: new THREE.Vector2() }, uParams2: { value: new THREE.Vector2() },
-        uSystem: { value: 0 }, uDt: { value: 1 }, uTime: { value: 0 }, uSteps: { value: 1 }, uSide: { value: 512 },
+        uSystem: { value: 0 }, uDt: { value: 1 }, uTime: { value: 0 }, uSteps: { value: 1 },
       },
       depthTest: false, depthWrite: false,
     }));
@@ -283,6 +286,7 @@ export class AttractorWorld extends BaseWorld {
     const seedQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.seedMat);
     seedQuad.frustumCulled = false;
     this.seedScene.add(seedQuad);
+    this.makeSeeds(this.side);
   }
 
   /** resize the particle state to the quality preset (side = 2^k) */
@@ -290,6 +294,7 @@ export class AttractorWorld extends BaseWorld {
     this.side = side;
     this.stateA.setSize(side, side);
     this.stateB.setSize(side, side);
+    this.makeSeeds(side);
     const geo = this.points.geometry;
     geo.dispose();
     const uv = new Float32Array(side * side * 2);
@@ -361,6 +366,21 @@ export class AttractorWorld extends BaseWorld {
   private seedMat!: THREE.ShaderMaterial;
   private seedScene = new THREE.Scene();
 
+  /** one true CPU random triple per particle — never a lattice (see fragUpdate) */
+  private makeSeeds(side: number): void {
+    const data = new Float32Array(side * side * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = Math.random(); data[i + 1] = Math.random(); data[i + 2] = Math.random(); data[i + 3] = 1;
+    }
+    const tex = new THREE.DataTexture(data, side, side, THREE.RGBAFormat, THREE.FloatType);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    (this.simMat.uniforms.uSeed.value as THREE.Texture | null)?.dispose();
+    this.simMat.uniforms.uSeed.value = tex;
+  }
+
   private presetFor(sys: number): { a: number; b: number; c: number; d: number; scale: number } {
     if (sys === 0) return { a: 1.4, b: -2.4, c: 1.6, d: 0.66, scale: 0.36 };
     if (sys === 1) return { a: 2.01, b: -2.53, c: 1.61, d: -0.33, scale: 0.36 };
@@ -426,7 +446,6 @@ export class AttractorWorld extends BaseWorld {
     P.uTime.value = f.time;
     P.uDt.value = clamp(f.dt, 0.001, 0.09);
     P.uSteps.value = clamp(Math.round(f.dt * 60), 1, 3);
-    P.uSide.value = this.side;
 
     // 2. advance the flow only while the show is playing
     if (f.playing) {
