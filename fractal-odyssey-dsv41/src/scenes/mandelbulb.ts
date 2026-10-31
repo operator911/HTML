@@ -307,7 +307,7 @@ export class Mandelbulb implements Scene {
       this.cam.pan(dx, dy, e.w, e.h);
     } else {
       const dTheta = -dx * 0.0052;
-      const dPhi = -dy * 0.0042;
+      const dPhi = dy * 0.0042;
       this.cam.orbit(dTheta, dPhi);
       this.spinX = dTheta;
       this.spinY = dPhi;

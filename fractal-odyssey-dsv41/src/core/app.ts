@@ -462,6 +462,11 @@ export class App {
           type: 'up', x: e.clientX, y: e.clientY, dx: 0, dy: 0,
           w: c.clientWidth, h: c.clientHeight, shift: e.shiftKey, alt: e.altKey, button: 0,
         });
+      } else {
+        // keep panning from the remaining finger instead of jumping from the pinch
+        const rest = [...this.pointers.values()][0];
+        this.lastX = rest.x;
+        this.lastY = rest.y;
       }
     };
     c.addEventListener('pointerup', endPointer);
