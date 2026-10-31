@@ -20,9 +20,13 @@ const ICONS: Record<string, string> = {
 const WORLD_GLYPHS: Record<string, string> = {
   mandelbrot: '<svg viewBox="0 0 20 20"><path d="M13.5 10a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0zM10 3a7 7 0 1 0 4.9 12M10 17a7 7 0 0 0-4.6-1.9"/><circle cx="4.4" cy="6.2" r="1.5"/></svg>',
   julia: '<svg viewBox="0 0 20 20"><path d="M10 2c2 3 1 5 3.5 6.5C16 10 15 13 12 13c1 3-2 4.5-4 3s-1-4-3.5-4.5C2 11 3 7.5 6 7.5 5.5 4 8 2.5 10 2z"/></svg>',
-  mandelbulb: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.5 1.5M14.2 14.2l1.5 1.5M15.7 4.3l-1.5 1.5M5.8 14.2l-1.5 1.5"/><circle cx="10" cy="10" r="7.2" stroke-dasharray="2.5 2.2"/></svg>',
-  menger: '<svg viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="5" height="5"/><rect x="12.5" y="2.5" width="5" height="5"/><rect x="2.5" y="12.5" width="5" height="5"/><rect x="12.5" y="12.5" width="5" height="5"/><rect x="7.5" y="7.5" width="5" height="5" opacity=".55"/></svg>',
+  burnship: '<svg viewBox="0 0 20 20"><path d="M10 2c1.6 2.4.6 4 2.3 5.6C14.6 9.4 15 11.3 14 13M10 2c-1.6 2.4-.6 4-2.3 5.6C5.4 9.4 5 11.3 6 13"/><path d="M3.5 16h13L10 11z"/><path d="M10 6.5V16" opacity=".55"/></svg>',
+  newton: '<svg viewBox="0 0 20 20"><path d="M10 3.5 4 14h12zM10 3.5V14M4 14l6-4.5M16 14l-6-4.5" opacity=".9"/><circle cx="10" cy="10.4" r="1.4"/></svg>',
+  buddha: '<svg viewBox="0 0 20 20"><path d="M10 3c4 2 5.5 6.5 3.6 10.4C12.2 15.6 10 17 8 16M10 3C6 5 4.5 9.5 6.4 13.4 7.8 15.6 10 17 12 16"/><path d="M10 3v13" opacity=".5"/><circle cx="10" cy="10" r="2.1"/></svg>',
   attractor: '<svg viewBox="0 0 20 20"><path d="M3 14c4-9 8 7 12-3"/><path d="M4 7c5 6 7-6 13 2" opacity=".65"/></svg>',
+  mandelbulb: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.5 1.5M14.2 14.2l1.5 1.5M15.7 4.3l-1.5 1.5M5.8 14.2l-1.5 1.5"/><circle cx="10" cy="10" r="7.2" stroke-dasharray="2.5 2.2"/></svg>',
+  mandelbox: '<svg viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="15" height="15" rx="1"/><rect x="6" y="6" width="8" height="8"/><rect x="8.6" y="8.6" width="2.8" height="2.8"/><path d="M2.5 2.5 6 6M17.5 2.5 14 6M2.5 17.5 6 14M17.5 17.5 14 14" opacity=".55"/></svg>',
+  menger: '<svg viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="5" height="5"/><rect x="12.5" y="2.5" width="5" height="5"/><rect x="2.5" y="12.5" width="5" height="5"/><rect x="12.5" y="12.5" width="5" height="5"/><rect x="7.5" y="7.5" width="5" height="5" opacity=".55"/></svg>',
 };
 
 function paletteCss(i: number): string {
@@ -170,7 +174,7 @@ export class UI {
           <tr><td>space</td><td>pause / resume all animation</td></tr>
           <tr><td>C</td><td>toggle cinematic autoplay</td></tr>
           <tr><td>→</td><td>next cinematic shot</td></tr>
-          <tr><td>1 – 5</td><td>jump between fractal worlds</td></tr>
+          <tr><td>1 – 9</td><td>jump between fractal worlds</td></tr>
           <tr><td>P</td><td>cycle colour palette</td></tr>
           <tr><td>R</td><td>reset the camera</td></tr>
           <tr><td>S</td><td>save screenshot (PNG)</td></tr>

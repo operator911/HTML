@@ -10,7 +10,7 @@ mathematics behind each world.
 ## Run it
 
 **Just open it** — `fractal-odyssey.html` at the playground root is a fully
-self-contained build (engine inlined, ~581 KB): open it directly from disk or
+self-contained build (engine inlined, ~614 KB): open it directly from disk or
 via the link on the shelf `index.html`. Rebuild it after source changes with:
 
 ```bash
@@ -36,15 +36,19 @@ Requires any browser with WebGL 2 (Chrome / Edge / Firefox / Safari 15+) and a
 hardware-accelerated GPU. The renderer adapts its resolution automatically, so
 integrated GPUs and 5K panels are both handled.
 
-## The five worlds
+## The nine worlds
 
 | # | World | Mathematics | Technique |
 |---|-------|-------------|-----------|
 | 1 | **Mandelbrot Universe** | z ↦ z² + c escape-time set | fp32 shader + **perturbation theory** (fp64 reference orbits, fp32 deltas) for exact deep zoom to ≈10¹⁴×; progressive refinement & temporal AA while idle; Julia companion window (J) samples the current parameter |
 | 2 | **Julia Dreamscape** | z ↦ z² + c with animated c | ten classic parameter structures morphed continuously, escape-time bas-relief shading from the accumulated field gradient, interactive Mandelbrot parameter map |
-| 3 | **Mandelbulb Cosmos** | 3-D z ↦ zⁿ + c (spherical power) | distance-estimator ray marching with orbit-trap albedo, ambient occlusion, soft shadows, volumetric filament glow, starfield + nebula |
-| 4 | **Menger Architecture** | recursive middle-third cross removal | constructive fractal DE (sign-verified against the digit definition), cinematic tunnel flight, depth 1–6 morphing, travelling beacons with shadowed point lights |
-| 5 | **Strange Attractor Flow** | Clifford / De Jong maps, Lorenz ODE | 65 k–4 M GPGPU particles (RGBA32F state textures), additive persistence trails, parameter drift through the chaotic regime |
+| 3 | **Burning Ship** | z ↦ (\|Re z\| + i\|Im z\|)² + c | non-analytic fold rendered in the classic mirrored orientation, fire-on-night banding; direct fp32 with an honest precision report — its deep-zoom limits were established by CPU-verified perturbation experiments (tools/find-ship6-8) |
+| 4 | **Newton Realms** | N(z) = z − (z³−(1+a))/3z² | three attractor basins with live-orbiting parameter a; convergence-speed shading, iteration-keyed seam relief — the first fractal ever drawn (Cayley, 1879) |
+| 5 | **Buddhabrot** | orbit density of escaping z ↦ z² + c | GPGPU orbit particles (up to 4 M) splatted additively into a persistence buffer, Reinhard-composed; the set appears as a masked void painted by its own orbits |
+| 6 | **Strange Attractor Flow** | Clifford / De Jong maps, Lorenz ODE | 65 k–4 M GPGPU particles (RGBA32F state textures), additive persistence trails, parameter drift through the chaotic regime |
+| 7 | **Mandelbulb Cosmos** | 3-D z ↦ zⁿ + c (spherical power) | distance-estimator ray marching with orbit-trap albedo, ambient occlusion, soft shadows, volumetric filament glow, starfield + nebula |
+| 8 | **Mandelbox** | box fold · sphere inversion · scale + c | KIFS distance estimator with Lipschitz bound, Mandel ⇄ Julia morph slider, corridor flights and corner portraits |
+| 9 | **Menger Architecture** | recursive middle-third cross removal | constructive fractal DE (sign-verified against the digit definition), cinematic tunnel flight, depth 1–6 morphing, travelling beacons with shadowed point lights |
 
 ## Controls
 
@@ -63,7 +67,7 @@ integrated GPUs and 5K panels are both handled.
 | `Space` | pause / resume | | `S` | save PNG screenshot |
 | `C` | cinematic autoplay | | `F` | fullscreen |
 | `→` | next shot | | `H` | hide UI (screensaver) |
-| `1`–`5` | switch worlds | | `I` | about this world |
+| `1`–`9` | switch worlds | | `I` | about this world |
 | `P` | cycle palette | | `D` | diagnostics |
 | `R` | reset view | | `K` | control drawer |
 | `X` | surprise me | | `J` | Julia companion |
@@ -78,7 +82,7 @@ the odyssey quietly journeys on to the next universe.
 
 ## URL options
 
-`?world=mandelbrot|julia|mandelbulb|menger|attractor` ·
+`?world=mandelbrot|julia|burnship|newton|buddha|attractor|mandelbulb|mandelbox|menger` ·
 `?quality=low|medium|high|cinematic` · `?autoplay=0` · `?scale=0..1` (render scale)
 
 ## Numerical honesty
@@ -92,6 +96,18 @@ scales with zoom instead of being pinned to float32's 7 digits, preserving
 analytic detail to ≈1.5·10¹⁴ magnification. At the wall the HUD says so — you
 get a report, not noise.
 
+The Burning Ship was the negative result worth having: we built a fold-**exact**
+delta iteration (the sign of each coordinate taken on the pixel's own orbit
+value, with the exact ±4i·|x·y| residual whenever pixel and reference cross a
+fold differently) — a provably stronger scheme than textbook Jacobian
+perturbation. A CPU upper-bound simulation of that exact arithmetic then
+showed it still decorrelates from fp64 truth within tens of iterations at
+every structural window below ~10⁻³: the fold's chaos amplifies even the
+float32 rounding of the *reference orbit itself*. Rather than render pretty
+noise, the ship stays direct-fp32 to ≈10⁴ and reports quantization honestly
+past it. True ship depth is a double-float (df32) project, tracked in
+`tools/find-ship*.mjs`.
+
 ## Development
 
 ```
@@ -104,6 +120,9 @@ tools/
   shots.mjs            headless visual QA → shots/*.png (23 scenarios incl. beauty pass)
   interact.mjs         interaction QA: keys, drag, wheel, resize, precision wall, memory
   find-boundary2.mjs   fp64 escape-time-variance search for dive anchors
+  find-ship*.mjs       fold-exact shadowing verification + Burning Ship waypoints
+  raw-newton-test.mjs  raw-GLSL isolation harness (compiles a world's fragment
+                       shader standalone and probes pixels without three.js)
   probe.mjs            single-page smoke probe
 ```
 
@@ -116,9 +135,10 @@ tools/
 
 - Deep-zoom iteration counts ramp up only while the view is still (progressive
   refinement); fast panning at 10¹⁰× trades detail for responsiveness by design.
-- fp64 reference orbits cap the Mandelbrot at ≈10¹⁴ magnification; beyond that
-  an arbitrary-precision pipeline (double-float emulation or CPU tiles) would
-  be required.
+- fp64 reference orbits cap the Mandelbrot at ≈10¹⁴ magnification. The Burning
+  Ship is iterated directly in fp32 (smooth to ≈10⁴, truthful mosaic to ≈4·10⁶)
+  because its fold chaos defeats fp64-perturbation provably (see above); true
+  ship depth awaits a double-float mode.
 - The Mandelbulb DE is a conservative bound: at very high power values (n > 10)
   with few ray steps, thin filaments can be missed between recursion levels.
 - Attractor trails need a few seconds to reach full density after switching
@@ -128,8 +148,10 @@ tools/
 ## Ideas for future expansion
 
 - WebGPU compute path for the attractor GPGPU + tile-based 8K screenshots
-- More worlds: Mandelbox, Burning Ship (with its sign-flipped Julia twin),
-  Kleinian (Berserdt) groups, quaternion Julia sets as a stereo pair
+- More worlds: Tricorn, Multibrot power slider, Kleinian (Berserdt) groups,
+  Apollonian gasket lifting, quaternion Julia sets as a stereo pair
+- Buddhabrot zooming (needs per-pixel orbit-history culling or a density
+  field re-projection — the current painter covers the whole plane at once)
 - Deep-zoom double-float (df2) shader mode to push past 10¹⁴×
 - Recorded guided tours with voice-over captions; shareable URL state
 - Audio: sonification of the orbit-escape rate as generative ambience

@@ -23,17 +23,12 @@ uniform float uDt;        // animation seconds this frame
 uniform float uSteps;     // map iterations (frame-rate compensation)
 uniform float uTime;
 
-float hash21(vec2 p) {
-  p = fract(p * vec2(233.34, 851.73));
-  p += dot(p, p + 23.45);
-  return fract(p.x * p.y);
-}
-
 void main() {
   vec4 s = texture2D(uState, vUv);
   float x = s.x, y = s.y, z = s.w;   // z stored in .w
-  float age = s.z;                    // age stored in .z
-  age -= uDt * 0.9;
+  float age = s.z;                    // seconds since spawn (counts UP)
+  vec3 rd = texture2D(uSeed, vUv).xyz; // CPU-random per particle (anti-lattice)
+  age += uDt * (0.55 + 0.95 * rd.x);   // per-particle lifetime jitter: cohorts never pulse
   for (int st = 0; st < 3; st++) {
     if (float(st) >= uSteps) break;
     vec2 n;
@@ -60,24 +55,21 @@ void main() {
   }
 
   bool bad = !(abs(x) < 1e4 && abs(y) < 1e4 && abs(z) < 1e4);
-  if (age <= 0.0 || bad) {
-    // Respawn from a CPU-generated seed texture: one true-random (non-lattice)
-    // triple per particle, rotated by golden-ratio offsets per respawn cohort.
-    // (GPU number "hashes" lose fp32 mantissa precision at the large arguments
-    // unique-per-particle ids demand, which used to imprint a faint grid.)
-    vec3 rd = texture2D(uSeed, vUv).xyz;
+  if (age >= 1.9 || bad) {
+    // Re-seed over a DISC at zero age — a square spawn box would fog its own
+    // outline into the sparse background, and bright newborns read as a
+    // rectangular haze (the renderer fades newborns in from alpha 0).
     float t1 = floor(uTime * 13.0);
-    float r1 = fract(rd.x + t1 * 0.6180339887);
-    float r2 = fract(rd.y + t1 * 0.7548776664);
-    float r3 = fract(rd.z + t1 * 0.5698402909);
+    float rr = sqrt(fract(rd.y + t1 * 0.7548776664)) * 0.92;
+    float aa = 6.28318530718 * fract(rd.z + t1 * 0.5698402909);
     if (uSystem < 1.5) {
-      x = (r1 - 0.5) * 1.7;
-      y = (r2 - 0.5) * 1.7;
+      x = rr * cos(aa);
+      y = rr * sin(aa);
       z = 0.0;
     } else {
-      x = (r1 - 0.5) * 32.0; y = (r2 - 0.5) * 32.0; z = 2.0 + r3 * 36.0;
+      x = (rd.x - 0.5) * 32.0; y = (fract(rd.y + 0.37) - 0.5) * 32.0; z = 2.0 + fract(rd.z + 0.71) * 36.0;
     }
-    age = 0.6 + 0.8 * r3;
+    age = 0.0;
   }
   gl_FragColor = vec4(x, y, age, z);
 }
@@ -94,7 +86,6 @@ uniform vec2 uPan;
 uniform float uSystem;
 varying float vAge;
 varying float vSeed;
-varying float vSpeed;
 void main() {
   vec4 s = texture2D(uState, aUv);
   vec2 p = s.xy * uScale;
@@ -108,7 +99,6 @@ void main() {
   gl_PointSize = uPoint;
   vAge = s.z;
   vSeed = fract(sin(dot(aUv, vec2(127.1, 311.7))) * 43758.5453);
-  vSpeed = 0.0;
 }
 `;
 
@@ -122,8 +112,9 @@ void main() {
   vec2 d = gl_PointCoord - 0.5;
   float r = length(d);
   float a = smoothstep(0.5, 0.06, r);
-  float fade = min(vAge * 6.0, 1.0) * (1.0 - vAge * 0.5);
-  vec3 col = palette(0.30 + 0.55 * vSeed + uPalShift) * 1.15 + 0.22;
+  // fade newborns in and the dying out — spawn regions never flash a shape
+  float fade = smoothstep(0.0, 0.30, vAge) * (1.0 - smoothstep(1.55, 1.9, vAge));
+  vec3 col = palette(0.30 + 0.55 * vSeed + uPalShift) * 1.06;
   gl_FragColor = vec4(col * a * fade * uIntensity, 1.0);
 }
 `;

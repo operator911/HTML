@@ -149,7 +149,7 @@ export class Odyssey {
     this.director.setShots(w.shots());
     this.emit({ type: 'world', world: w });
     this.emit({ type: 'controls' });
-    this.transitionStart = this.realTime;
+    this.transitionStart = this.wallSeconds();
     this.dissolve = 0;
     this.touchWorld();
   }
@@ -348,6 +348,9 @@ export class Odyssey {
     }
   }
 
+  /** raw wall clock in seconds — immune to frame-time clamping */
+  private wallSeconds(): number { return performance.now() / 1000; }
+
   start(): void {
     this.lastNow = performance.now();
     const loop = (now: number) => {
@@ -374,7 +377,10 @@ export class Odyssey {
     this.fade = damp(this.fade, 1, 0.02, dtReal);
 
     if (this.transitionStart >= 0) {
-      const t = (this.realTime - this.transitionStart) / 1.1;
+      // wall clock, NOT the frame-clamped animation clock: on slow GPUs a
+      // heavy world's first frames can stretch a dt-clamped transition to
+      // many seconds, silently swallowing world-switch input meanwhile
+      const t = (this.wallSeconds() - this.transitionStart) / 1.1;
       this.dissolve = t >= 1 ? 1 : smootherstep(clamp(t));
       if (t >= 1) this.transitionStart = -1;
     }

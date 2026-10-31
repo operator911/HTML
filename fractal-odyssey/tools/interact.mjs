@@ -34,14 +34,20 @@ const step = async (label, fn) => {
 await page.goto(`http://127.0.0.1:${PORT}/?quality=low&scale=0.35`, { waitUntil: 'load' });
 await page.waitForFunction('window.__odyssey && window.__odyssey.app.frames > 5', { timeout: 40000 });
 
+const worldId = () => page.evaluate('window.__odyssey.app.active.id');
+const want = async (label, id) => {
+  const got = await worldId();
+  console.log(`  ${got === id ? '✓' : '✗'} active world = ${got} (expected ${id}) — ${label}`);
+  return got === id;
+};
 await step('drag pans (mandelbrot)', async () => {
   await page.mouse.move(360, 200); await page.mouse.down();
   for (let i = 0; i < 6; i++) { await page.mouse.move(360 - i * 14, 200 + i * 6); await sleep(40); }
   await page.mouse.up();
 });
 await step('wheel zooms', () => page.mouse.wheel(0, -240));
-await step('key 2 → julia', () => page.keyboard.press('2'));
-await sleep(1500);
+await step('key 2 → julia', async () => { await page.keyboard.press('2'); await sleep(1500); });
+await want('key2', 'julia');
 await step('julia map drag picks c', async () => {
   // map now sits top-left: x0 = 0.034*720 ≈ 24, y0 = 0.21*450 ≈ 94, S ≈ 117
   await page.mouse.move(82, 152); await page.mouse.down();
@@ -50,14 +56,36 @@ await step('julia map drag picks c', async () => {
 });
 const cAfterDrag = await page.evaluate('window.__odyssey.app.active.cBase.x');
 console.log(`  cBase after map drag: ${cAfterDrag.toFixed(3)} (drag worked: ${cAfterDrag < -0.2})`);
-await step('key 3 → bulb + orbit drag', async () => {
+await step('key 3 → burnship + pan', async () => {
   await page.keyboard.press('3'); await sleep(1500);
+  await page.mouse.move(360, 220); await page.mouse.down();
+  await page.mouse.move(400, 190, { steps: 5 }); await page.mouse.up();
+});
+await want('key3', 'burnship');
+const shipPan = await page.evaluate('window.__odyssey.app.active.cam.cy');
+console.log(`  burnship pan changed view (cy=${shipPan.toFixed(3)}), zoom ${await page.evaluate('window.__odyssey.app.active.zoomFactor().toFixed(1)')}`);
+await step('key 4 → newton', async () => { await page.keyboard.press('4'); await sleep(1500); });
+await want('key4', 'newton');
+await step('newton wheel zoom', () => page.mouse.wheel(0, -200));
+await step('key 5 → buddha (painter)', async () => { await page.keyboard.press('5'); await sleep(2200); });
+await want('key5', 'buddha');
+await step('buddha pan', async () => {
+  await page.mouse.move(360, 220); await page.mouse.down();
+  await page.mouse.move(420, 200, { steps: 4 }); await page.mouse.up();
+});
+await step('key 6 → attractor', async () => { await page.keyboard.press('6'); await sleep(1500); });
+await want('key6', 'attractor');
+await step('key 7 → bulb + orbit drag', async () => {
+  await page.keyboard.press('7'); await sleep(1500);
   await page.mouse.move(360, 220); await page.mouse.down();
   await page.mouse.move(430, 240, { steps: 5 }); await page.mouse.up();
 });
+await want('key7', 'mandelbulb');
 await step('bulb wheel dolly', () => page.mouse.wheel(0, -180));
-await step('key 4 → menger', async () => { await page.keyboard.press('4'); await sleep(1500); });
-await step('key 5 → attractor', async () => { await page.keyboard.press('5'); await sleep(1500); });
+await step('key 8 → mandelbox', async () => { await page.keyboard.press('8'); await sleep(1500); });
+await want('key8', 'mandelbox');
+await step('key 9 → menger', async () => { await page.keyboard.press('9'); await sleep(1500); });
+await want('key9', 'menger');
 await step('space pause/resume', async () => {
   await page.keyboard.press('Space');
   const paused = await page.evaluate('window.__odyssey.app.playing');

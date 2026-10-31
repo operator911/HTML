@@ -1,9 +1,13 @@
 import { Odyssey } from './core/app';
 import { MandelbrotWorld } from './scenes/mandelbrot';
 import { JuliaWorld } from './scenes/julia';
-import { MandelbulbWorld } from './scenes/mandelbulb';
-import { MengerWorld } from './scenes/menger';
+import { BurningShipWorld } from './scenes/burnship';
+import { NewtonWorld } from './scenes/newton';
+import { BuddhaWorld } from './scenes/buddha';
 import { AttractorWorld } from './scenes/attractor';
+import { MandelbulbWorld } from './scenes/mandelbulb';
+import { MandelboxWorld } from './scenes/mandelbox';
+import { MengerWorld } from './scenes/menger';
 import { UI } from './ui/ui';
 import type { QualityName } from './core/types';
 import './ui/ui.css';
@@ -40,9 +44,13 @@ function boot(): void {
   app.registerWorlds([
     new MandelbrotWorld(),
     new JuliaWorld(),
-    new MandelbulbWorld(),
-    new MengerWorld(),
+    new BurningShipWorld(),
+    new NewtonWorld(),
+    new BuddhaWorld(),
     new AttractorWorld(),
+    new MandelbulbWorld(),
+    new MandelboxWorld(),
+    new MengerWorld(),
   ]);
 
   if (params.get('paused') === '1') app.setAutoplay(false);
