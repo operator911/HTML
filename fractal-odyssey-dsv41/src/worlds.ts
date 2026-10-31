@@ -111,7 +111,7 @@ export const WORLDS: WorldMeta[] = [
       'Clifford and De Jong maps are discrete iterations in the plane; Lorenz is a continuous flow in three dimensions.',
       'The palette is a map of speed — the fastest particles glow brightest, the slow ones leave embers.',
     ],
-    controls: ['drag — pan (or turn the Lorenz butterfly)', 'scroll / pinch — zoom', 'each movement changes the system and its parameters'],
+    controls: ['drag — pan the map, or turn the Lorenz butterfly in 3D', 'shift + drag — rotate the plane (2D maps)', 'scroll / pinch — zoom toward the cursor', 'each movement changes the system and its parameters'],
     defaultPalette: 'ion',
   },
   {

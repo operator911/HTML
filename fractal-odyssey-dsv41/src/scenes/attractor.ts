@@ -391,20 +391,39 @@ export class Attractor implements Scene {
     if (this.system === 2) {
       this.yaw += dx * 0.006;
       this.pitch = clamp(this.pitch + dy * 0.005, -1.2, 1.2);
+    } else if (e.shift) {
+      this.cam.rot += dx * 0.004;
     } else {
-      const vh = 5.4 / this.cam.zoom;
+      // grab the map: the attractor follows the finger
+      const vh = 6.2 / this.cam.zoom;
       const c = Math.cos(this.cam.rot);
       const s = Math.sin(this.cam.rot);
-      const ox = (-dx / e.h) * vh;
-      const oy = (dy / e.h) * vh;
-      this.cam.x -= ox * c - oy * s;
-      this.cam.y -= ox * s + oy * c;
+      const wx = (dx / e.h) * vh;
+      const wy = (-dy / e.h) * vh;
+      this.cam.x -= wx * c + wy * s;
+      this.cam.y -= -wx * s + wy * c;
     }
   }
 
   onWheel(e: WheelInput): void {
     const factor = Math.exp(clamp(e.delta, -600, 600) * 0.0012);
-    this.cam.zoom = clamp(this.cam.zoom * factor, 0.12, 24);
+    if (this.system === 2) {
+      this.cam.zoom = clamp(this.cam.zoom * factor, 0.12, 24);
+      return;
+    }
+    // zoom toward the cursor in the map
+    const vh = 6.2 / this.cam.zoom;
+    const ox = ((e.x - e.w / 2) / e.h) * vh;
+    const oy = -((e.y - e.h / 2) / e.h) * vh;
+    const c = Math.cos(this.cam.rot);
+    const s = Math.sin(this.cam.rot);
+    const qx = ox * c + oy * s;
+    const qy = -ox * s + oy * c;
+    const target = clamp(this.cam.zoom * factor, 0.12, 24);
+    const ratio = this.cam.zoom / target;
+    this.cam.x += qx * (1 - ratio);
+    this.cam.y += qy * (1 - ratio);
+    this.cam.zoom = target;
   }
 
   private rotationMatrix(): Float32Array {
