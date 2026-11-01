@@ -56,6 +56,13 @@ export class UI {
   private toastEl!: HTMLElement;
   private hintEl!: HTMLElement;
   private playBtn!: HTMLButtonElement;
+  private topctl!: HTMLElement;
+  private rail!: HTMLElement;
+  private drawerOpen = false;
+  private tuneRetire = 0;
+  /** ≥900 CSS px gets the right-hand ribbon; anything narrower opens a bottom
+   *  sheet — a half-width ribbon is useless on a portrait phone */
+  private wide(): boolean { return window.innerWidth >= 900; }
   private worldButtons = new Map<string, HTMLButtonElement>();
   private subtitleEl!: HTMLElement;
   private shotEl!: HTMLElement;
@@ -105,45 +112,56 @@ export class UI {
       this.worldButtons.set(w.id, b);
       bar.append(b);
     }
-    bar.append(this.h('<div class="sep"></div>'));
-    this.playBtn = this.h(`<button class="ctl" title="Play / pause (Space)">${ICONS.pause}</button>`) as HTMLButtonElement;
-    this.playBtn.addEventListener('click', () => a.setPlaying(!a.playing));
-    bar.append(this.playBtn);
-    const next = this.h(`<button class="ctl" title="Next shot (→)">${ICONS.next}</button>`) as HTMLButtonElement;
-    next.addEventListener('click', () => { a.nextShot(); this.toast(`Shot: ${a.director.currentShotName ?? ''}`); });
-    bar.append(next);
-    const surprise = this.h('<button class="surprise" title="Surprise me! (X)"><span class="glyph">✦</span><span class="label">Surprise</span></button>') as HTMLButtonElement;
-    surprise.addEventListener('click', () => { a.surprise(); this.toast('Surprise — a new corner of mathematics'); });
-    bar.append(surprise);
-    const aboutBtn = this.h(`<button class="aux" title="Explanation card: the mathematics of this world (I)"><span class="glyph">${ICONS.info}</span><span class="label">About</span></button>`) as HTMLButtonElement;
-    aboutBtn.addEventListener('click', () => this.toggleInfo());
-    bar.append(aboutBtn);
-    const tuneBtn = this.h(`<button class="aux" title="Tunable parameters & equations (K)"><span class="glyph">${ICONS.gear}</span><span class="label">Tune</span></button>`) as HTMLButtonElement;
-    tuneBtn.addEventListener('click', () => this.toggleDrawer());
-    bar.append(tuneBtn);
+    // the strip is purely worlds now — transport, about and tune floated up
+    // to a command cluster at the top-right (see below)
     this.root.append(bar);
 
-    // right rail
+    // top-right command cluster: play/pause, next, surprise, about, tune
+    const top = this.h('<div class="topctl glass"></div>');
+    this.topctl = top;
+    const mkt = (icon: string, title: string, fn: () => void, cls = ''): HTMLButtonElement => {
+      const b = this.h(`<button${cls ? ` class="${cls}"` : ''} title="${title}">${icon}</button>`) as HTMLButtonElement;
+      b.addEventListener('click', fn);
+      top.append(b);
+      return b;
+    };
+    this.playBtn = mkt(ICONS.pause, 'Play / pause (Space)', () => a.setPlaying(!a.playing));
+    mkt(ICONS.next, 'Next shot (→)', () => { a.nextShot(); this.toast(`Shot: ${a.director.currentShotName ?? ''}`); });
+    mkt('<span class="glyph">✦</span>', 'Surprise me! (X)', () => { a.surprise(); this.toast('Surprise — a new corner of mathematics'); }, 'surprise');
+    top.append(this.h('<div class="vsep"></div>'));
+    const aboutBtn = mkt(ICONS.info, 'Explanation card: the mathematics of this world (I)', () => this.toggleInfo());
+    const tuneBtn = mkt(ICONS.gear, 'Tunable parameters & equations (K)', () => this.toggleDrawer());
+    this.root.append(top);
+
+    // right rail — utilities; slides left when the tune ribbon takes the gutter
     const rail = this.h('<div class="rail glass"></div>');
+    this.rail = rail;
     const mk = (icon: string, title: string, fn: () => void): HTMLButtonElement => {
       const b = this.h(`<button title="${title}">${ICONS[icon]}</button>`) as HTMLButtonElement;
       b.addEventListener('click', fn);
       rail.append(b);
       return b;
     };
-    const gearBtn = mk('gear', 'Controls (K)', () => this.toggleDrawer());
     mk('reset', 'Reset view (R)', () => a.resetView());
     mk('camera', 'Screenshot (S)', () => { a.screenshot(); this.toast('Saved PNG screenshot'); });
     mk('expand', 'Fullscreen (F)', () => a.toggleFullscreen());
-    const infoBtn = mk('info', 'About this world (I)', () => this.toggleInfo());
     const diagBtn = mk('diag', 'Diagnostics (D)', () => this.toggleDiag());
     mk('help', 'Keyboard & mouse (?)', () => this.helpEl.classList.toggle('open'));
     mk('eye', 'Hide interface (H)', () => this.toggleUI());
-    this.railBtns = { gear: gearBtn, info: infoBtn, diag: diagBtn };
+    this.railBtns = { gear: tuneBtn, info: aboutBtn, diag: diagBtn };
+    this.root.append(rail);
 
-    // drawer
-    this.drawer = this.h('<aside class="drawer glass"><h3>Motion</h3><div data-g="motion"></div><h3>Colour</h3><div class="palettes" data-g="pal"></div><h3>Quality</h3><div data-g="qual"></div><h3>This world</h3><div data-g="world"></div></aside>');
+    // tune panel: right-hand ribbon on wide canvases, bottom sheet in portrait
+    // (never an overlay — the fractal reflows around it so controls don't mask the show)
+    this.drawer = this.h(`<aside class="drawer glass">
+      <div class="drawer-head"><span class="dt">Tune</span><span class="grp"></span><span class="close" title="Close (Esc)">✕</span></div>
+      <h3>Motion</h3><div data-g="motion"></div>
+      <h3>Colour</h3><div class="palettes" data-g="pal"></div>
+      <h3>Quality</h3><div data-g="qual"></div>
+      <h3>This world</h3><div data-g="world"></div>
+    </aside>`);
     this.root.append(this.drawer);
+    (this.drawer.querySelector('.close') as HTMLElement).addEventListener('click', () => this.toggleDrawer(false));
     this.buildMotion(this.drawer.querySelector('[data-g="motion"]') as HTMLElement);
     this.buildPalettes(this.drawer.querySelector('[data-g="pal"]') as HTMLElement);
     this.buildQuality(this.drawer.querySelector('[data-g="qual"]') as HTMLElement);
@@ -309,6 +327,8 @@ export class UI {
   private refreshWorld(): void {
     const w = this.app.active;
     this.worldButtons.forEach((b, id) => b.classList.toggle('active', id === w.id));
+    // with the ribbon docked the strip scrolls; keep the current world in view
+    this.worldButtons.get(w.id)?.scrollIntoView({ block: 'nearest', inline: 'center' });
     this.subtitleEl.textContent = `${w.name} — ${w.tagline}`;
     this.renderInfo(w);
     this.refreshControls();
@@ -347,21 +367,43 @@ export class UI {
   }
 
   toggleDrawer(open?: boolean): void {
-    const v = open ?? !this.drawer.classList.contains('open');
+    const v = open ?? !this.drawerOpen;
+    if (v === this.drawerOpen) return;
+    this.drawerOpen = v;
+    const root = document.documentElement.classList;
+    clearTimeout(this.tuneRetire);
     this.drawer.classList.toggle('open', v);
     this.railBtns.gear.classList.toggle('on', v);
+    if (v) {
+      root.toggle('tune-side', this.wide());
+      root.toggle('tune-sheet', !this.wide());
+    } else {
+      // keep the geometry class while the panel slides out, then strip it
+      this.tuneRetire = window.setTimeout(() => {
+        if (!this.drawerOpen) root.remove('tune-side', 'tune-sheet');
+      }, 480);
+    }
+    this.syncChrome();
     this.app.markInteraction();
+  }
+  /** chrome (brand, toast, rail, cluster, worldbar) steps aside for the panel
+   *  on wide screens; the sheet already leaves that space open below */
+  private syncChrome(): void {
+    const side = this.drawerOpen && this.wide();
+    for (const el of [this.rail, this.topctl]) el.classList.toggle('shifted', side);
   }
   toggleInfo(open?: boolean): void {
     const v = open ?? !this.infoEl.classList.contains('open');
     this.infoEl.classList.toggle('open', v);
     this.railBtns.info.classList.toggle('on', v);
+    this.syncChrome();
     this.app.markInteraction();
   }
   toggleDiag(open?: boolean): void {
     const v = open ?? !this.diagEl.classList.contains('open');
     this.diagEl.classList.toggle('open', v);
     this.railBtns.diag.classList.toggle('on', v);
+    this.syncChrome();
   }
   toggleUI(): void {
     this.hiddenAll = !this.hiddenAll;
@@ -400,6 +442,14 @@ export class UI {
     window.addEventListener('pointermove', wake);
     window.addEventListener('pointerdown', wake);
     window.addEventListener('keydown', wake);
+    // portrait ⇄ landscape while the panel is open: re-pick ribbon vs sheet
+    window.addEventListener('resize', () => {
+      if (!this.drawerOpen) return;
+      const root = document.documentElement.classList;
+      root.toggle('tune-side', this.wide());
+      root.toggle('tune-sheet', !this.wide());
+      this.syncChrome();
+    });
     // double-tap to restore the interface on touch devices (no H key available).
     // Compare event.timeStamp — not wall-clock now — so heavy frame renders on a
     // slow device can't stretch the gap between two taps and break detection.
@@ -440,7 +490,7 @@ export class UI {
         case 'ArrowRight': a.nextShot(); break;
         case 'Escape':
           this.helpEl.classList.remove('open');
-          this.drawer.classList.remove('open');
+          this.toggleDrawer(false);
           break;
         default: {
           const handled = a.active.hotkey(e.key);

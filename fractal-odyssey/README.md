@@ -74,7 +74,7 @@ integrated GPUs and 5K panels are both handled.
 | `→` | next shot | | `H` | hide UI (screensaver) |
 | `1`–`9`, `0` / `⇧1–⇧4` | jump worlds 1–14 | | `I` | about this world |
 | `P` | cycle palette | | `D` | diagnostics |
-| `R` | reset view | | `K` | control drawer |
+| `R` | reset view | | `K` | tune panel |
 | `X` | surprise me | | `J` | Julia companion |
 | `?` | help | | `Esc` | close overlays |
 
@@ -135,7 +135,9 @@ src/
   core/    app engine, adaptive resolution, post FX (bloom/tonemap/dissolve),
            director (shot choreography), accumulation buffers, cameras, palettes
   scenes/  one module per world — GLSL shaders, cinematic shots, controls, info text
-  ui/      glass-morphism overlay (world bar, rail, drawer, info, diagnostics, help)
+  ui/      glass-morphism overlay — world strip, top-right command cluster,
+           utility rail, tune panel (side ribbon on wide screens, bottom sheet
+           in portrait — both reflow the canvas, never mask it), info, diagnostics
 tools/
   shots.mjs            headless visual QA → shots/*.png (37 scenarios incl. beauty pass)
   interact.mjs         interaction QA: keys, drag, wheel, resize, precision wall, memory

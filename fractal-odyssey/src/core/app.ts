@@ -103,7 +103,15 @@ export class Odyssey {
     }
     this.bindInput();
     this.onResize();
-    new ResizeObserver(() => this.onResize()).observe(document.body);
+    // observe the canvas, not the body: the tune panel reflows it via CSS
+    // gutters and the render targets must follow its real box. rAF-coalesce
+    // so a burst of ResizeObserver callbacks re-lays out the GPU once.
+    let roPending = false;
+    new ResizeObserver(() => {
+      if (roPending) return;
+      roPending = true;
+      requestAnimationFrame(() => { roPending = false; this.onResize(); });
+    }).observe(this.canvas);
     // re-evaluate when the window moves between displays with different DPR
     const watchDpr = () => {
       const mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
@@ -222,8 +230,9 @@ export class Odyssey {
   }
 
   onResize(): void {
-    const w = Math.max(1, document.documentElement.clientWidth);
-    const h = Math.max(1, document.documentElement.clientHeight);
+    const r = this.canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width));
+    const h = Math.max(1, Math.round(r.height));
     const pr = this.pixelRatio();
     // cap total pixels so 5K/ultrawide panels don't force native raymarching
     const maxPixels = 26e6;
@@ -237,7 +246,8 @@ export class Odyssey {
     if (rw === this.renderW && rh === this.renderH && w === this.cssW && h === this.cssH) return;
     this.cssW = w; this.cssH = h; this.renderW = rw; this.renderH = rh;
     this.renderer.setPixelRatio(rw / w);
-    this.renderer.setSize(w, h);
+    // updateStyle=false: CSS owns the canvas box (the tune gutters live there)
+    this.renderer.setSize(w, h, false);
     this.post.setSize(rw, rh);
     for (const wd of this.worlds) if (wd.built) this.ensureSize(wd);
     this.touchWorld();

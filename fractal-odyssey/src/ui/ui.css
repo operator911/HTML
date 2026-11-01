@@ -12,14 +12,22 @@
   --sans: ui-sans-serif, system-ui, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  /* gutter space the fractal gives up: width for the tune ribbon, height for
+     the portrait sheet. Both are 0 unless html.tune-side / html.tune-sheet. */
+  --ribbon-w: 0px;
+  --sheet-h: 0px;
 }
+html.tune-side { --ribbon-w: 330px; }
+html.tune-sheet { --sheet-h: min(46vh, 430px); }
 
 #ui { position: fixed; inset: 0; pointer-events: none; font-family: var(--sans); color: var(--ink);
   -webkit-user-select: none; user-select: none; transition: opacity .45s ease; }
 #ui.hidden-all { opacity: 0; }
 #ui.hidden-all > * { pointer-events: none; }
-#ui > * { transition: opacity .5s ease; }
-#ui.idle-fade > *:not(.brand) { opacity: 0; pointer-events: none; }
+/* idle fade: an open panel (and anything docked to its side) must never fade —
+   :has is decorative here; if unsupported the fade just behaves the old way */
+#ui.idle-fade > *:not(.brand):not(:has(.open)) { opacity: 0; pointer-events: none; }
 
 .glass {
   background: var(--glass);
@@ -33,6 +41,7 @@
 /* ---------- brand ---------- */
 .brand {
   position: absolute; top: 22px; left: 26px; display: flex; flex-direction: column; gap: 3px;
+  transition: transform .32s ease, opacity .5s ease;
 }
 .brand .title {
   font-size: 12px; letter-spacing: .42em; font-weight: 600; color: var(--ink);
@@ -48,6 +57,8 @@
   font-size: 8.5px; letter-spacing: .22em; text-transform: uppercase;
   color: var(--ink-faint); opacity: .72; margin-top: 1px;
 }
+/* brand and diagnostics are left-anchored — the right ribbon never reaches
+   them, so they must NOT shift (it would push them off-canvas) */
 
 /* ---------- world selector ---------- */
 .worldbar {
@@ -55,6 +66,7 @@
   transform: translateX(-50%);
   display: flex; align-items: center; gap: 6px; padding: 7px 9px; pointer-events: auto;
   max-width: calc(100vw - 20px); overflow-x: auto; scrollbar-width: none;
+  transition: transform .32s ease, opacity .5s ease;
 }
 .worldbar::-webkit-scrollbar { display: none; }
 .worldbar button {
@@ -73,15 +85,44 @@
   background: linear-gradient(160deg, rgba(217, 180, 91, 0.16), rgba(108, 199, 232, 0.10));
   box-shadow: inset 0 0 0 1px rgba(217, 180, 91, 0.35), 0 0 22px rgba(217, 180, 91, 0.10);
 }
-.worldbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 4px 4px; }
-.worldbar button.surprise { min-width: 0; color: var(--accent); }
-.worldbar button.surprise:hover { background: rgba(217, 180, 91, .12); }
+/* docked beside the ribbon: centre over the canvas gutter, not the window */
+html.tune-side .worldbar { transform: translateX(calc(-50% - var(--ribbon-w) / 2)); max-width: calc(100vw - var(--ribbon-w) - 24px); }
+/* docked above the sheet: lift off the keyboard of small screens */
+html.tune-sheet .worldbar { transform: translateX(-50%) translateY(calc(-1 * var(--sheet-h))); }
+
+/* ---------- top-right command cluster ---------- */
+.topctl {
+  position: absolute; top: 22px; right: 26px; display: flex; align-items: center; gap: 3px;
+  padding: 6px 8px; pointer-events: auto;
+  transition: transform .32s ease, opacity .5s ease;
+}
+.topctl button {
+  all: unset; cursor: pointer; width: 38px; height: 34px; border-radius: 9px;
+  display: grid; place-items: center; color: var(--ink-dim);
+  transition: background .2s ease, color .2s ease;
+}
+.topctl button:hover { background: rgba(255, 255, 255, .07); color: var(--ink); }
+.topctl button.on { color: var(--accent); background: rgba(217, 180, 91, .10); }
+.topctl button svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; }
+.topctl button.surprise .glyph { font-size: 15px; line-height: 1; color: var(--accent); }
+.topctl .vsep { width: 1px; align-self: stretch; background: var(--line); margin: 3px 4px; }
+html.tune-side .topctl { transform: translateX(calc(-1 * var(--ribbon-w))); }
 
 /* ---------- right rail ---------- */
 .rail {
-  position: absolute; right: 22px; top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 5px; padding: 8px 7px; pointer-events: auto;
+  position: absolute; right: calc(22px + var(--rail-shift, 0px)); top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 5px; padding: 8px 7px;
+  /* pill chrome floats over the canvas: only the buttons are interactive — the
+     background must not swallow a pinch whose second finger lands beside them */
+  pointer-events: none;
+  --rail-shift: 0px; transition: right .32s ease, opacity .5s ease;
 }
+.rail button { pointer-events: auto; }
+.rail.shifted { --rail-shift: var(--ribbon-w); }
+/* in portrait the visible canvas ends at the sheet — centre the rail in that
+   box, not the window, so it doesn't sink into the sheet */
+html.tune-sheet .rail { top: calc((100% - var(--sheet-h)) / 2); }
 .rail button {
   all: unset; cursor: pointer; width: 38px; height: 36px; border-radius: 9px;
   display: grid; place-items: center; color: var(--ink-dim);
@@ -91,23 +132,45 @@
 .rail button.on { color: var(--accent); background: rgba(217, 180, 91, .10); }
 .rail button svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.5;
   stroke-linecap: round; stroke-linejoin: round; }
-.rail button .kbd { position: absolute; }
 
-/* ---------- drawer ---------- */
+/* ---------- tune panel: side ribbon / bottom sheet ---------- */
 .drawer {
-  position: absolute; right: 78px; bottom: calc(124px + env(safe-area-inset-bottom, 0px));
-  width: 292px; max-height: min(70vh, 640px); overflow: hidden auto; padding: 16px 18px 14px;
-  pointer-events: auto; opacity: 0; visibility: hidden; transform: translateY(10px);
-  transition: opacity .3s ease, transform .3s ease, visibility .3s;
+  box-sizing: border-box; /* the box must match --ribbon-w/--sheet-h exactly: the
+             canvas gutter is sized from those variables and overlap would mask
+             the display again */
+  position: absolute; top: 0; right: 0; bottom: 0; width: var(--ribbon-w, 330px); min-width: 300px;
+  max-width: 88vw; height: auto; border-radius: 16px 0 0 16px;
+  border-top-width: 0; border-right-width: 0; border-bottom-width: 0;
+  padding: 14px 18px 22px; overflow: hidden auto; pointer-events: auto;
+  opacity: 0; visibility: hidden; transform: translateX(104%);
+  transition: transform .36s var(--ease), opacity .3s ease, visibility .36s;
   scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
 }
+html.tune-sheet .drawer {
+  top: auto; left: 0; right: 0; bottom: 0; width: auto; min-width: 0; max-width: none;
+  height: var(--sheet-h); border-radius: 18px 18px 0 0;
+  border-bottom-width: 0; border-left-width: 0; border-right-width: 0;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+html.tune-sheet .drawer:not(.open) { transform: translateY(104%); }
 .drawer.open { opacity: 1; visibility: visible; transform: none; }
+.drawer-head {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 10px;
+  margin: -14px -18px 12px; padding: 13px 18px 10px;
+  background: linear-gradient(rgba(13, 16, 27, .96), rgba(13, 16, 27, .78) 82%, transparent);
+}
+.drawer-head .dt { font-size: 10px; font-weight: 600; letter-spacing: .26em; text-transform: uppercase;
+  color: var(--ink-dim); }
+.drawer-head .grp { flex: 1; }
+.drawer-head .close { cursor: pointer; color: var(--ink-faint); font-size: 14px; line-height: 1;
+  padding: 4px 7px; border-radius: 7px; transition: color .2s ease, background .2s ease; }
+.drawer-head .close:hover { color: var(--ink); background: rgba(255, 255, 255, .07); }
 .drawer h3 {
-  margin: 0 0 10px; font-size: 10px; font-weight: 600; letter-spacing: .2em;
+  margin: 18px 0 10px; font-size: 10px; font-weight: 600; letter-spacing: .2em;
   text-transform: uppercase; color: var(--accent);
 }
-.drawer h3 + .group { margin-bottom: 14px; }
-.drawer .group + h3 { margin-top: 18px; }
+.drawer-head + h3 { margin-top: 0; }
 
 .row { display: grid; grid-template-columns: 96px 1fr 44px; align-items: center; gap: 8px; margin: 9px 0; }
 .row .name { font-size: 11px; color: var(--ink-dim); letter-spacing: .02em; }
@@ -143,6 +206,7 @@ input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: none;
 .seg button.sel { color: #0c0f18; background: linear-gradient(140deg, var(--accent), #e8cd85); border-color: transparent; font-weight: 600; }
 
 .palettes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+html.tune-sheet .palettes { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); }
 .pal {
   cursor: pointer; border-radius: 8px; overflow: hidden; border: 1px solid var(--line);
   transition: border-color .2s ease, transform .2s ease;
@@ -175,6 +239,8 @@ input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: none;
   transition: opacity .35s ease, transform .35s ease, visibility .35s;
 }
 .info.open { opacity: 1; visibility: visible; transform: none; }
+html.tune-side .info { width: min(400px, calc(100vw - var(--ribbon-w) - 60px)); }
+html.tune-sheet .info { bottom: calc(122px + var(--sheet-h)); max-height: min(40vh, 380px); }
 .info .kicker { font-size: 9.5px; letter-spacing: .26em; text-transform: uppercase; color: var(--accent-2); margin-bottom: 5px; }
 .info h2 { margin: 0 0 10px; font-family: var(--serif); font-weight: 600; font-size: 21px; letter-spacing: .01em; }
 .info .formula {
@@ -196,10 +262,12 @@ input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: none;
 .diag {
   position: absolute; left: 26px; top: 50vh; padding: 12px 14px; pointer-events: none;
   font-family: var(--mono); font-size: 10.5px; line-height: 1.75; color: var(--ink-dim);
-  opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s;
+  opacity: 0; visibility: hidden; transition: opacity .3s ease, transform .32s ease, visibility .3s;
   min-width: 250px;
 }
 .diag.open { opacity: 1; visibility: visible; }
+html.tune-side .diag { max-width: calc(100vw - var(--ribbon-w) - 52px); }
+html.tune-sheet .diag { transform: translateY(calc(-1 * var(--sheet-h))); }
 .diag .k { color: var(--ink-faint); display: inline-block; width: 108px; }
 .diag .v { color: var(--accent-2); }
 .diag .gpu { color: var(--ink-faint); font-size: 9px; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -212,14 +280,18 @@ input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: none;
   max-width: 70vw; text-align: center;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+html.tune-side .toast { transform: translate(calc(-50% - var(--ribbon-w) / 2), -12px); }
+html.tune-side .toast.show { transform: translate(calc(-50% - var(--ribbon-w) / 2), 0); }
 
 .hint {
   position: absolute; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
   font-size: 11px; letter-spacing: .12em; color: var(--ink-faint); text-align: center;
-  pointer-events: none; transition: opacity 1.2s ease; white-space: nowrap;
+  pointer-events: none; transition: transform .32s ease, opacity 1.2s ease; white-space: nowrap;
 }
 .hint .key { color: var(--ink-dim); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-size: 10px; }
 .hint.gone { opacity: 0; }
+html.tune-side .hint { transform: translateX(calc(-50% - var(--ribbon-w) / 2)); }
+html.tune-sheet .hint { transform: translateX(-50%) translateY(calc(-1 * var(--sheet-h))); opacity: 0; }
 
 /* ---------- help ---------- */
 .help {
@@ -237,11 +309,14 @@ input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: none;
 .help .foot { margin-top: 14px; font-size: 10.5px; color: var(--ink-faint); letter-spacing: .08em; }
 
 @media (max-width: 900px) {
-  .drawer { right: 12px; width: min(300px, calc(100vw - 90px)); }
   .worldbar button { min-width: 0; padding: 8px 10px; }
   .worldbar button .label { display: none; }
 }
-@media (max-width: 430px) {
-  /* keep the switcher itself reachable on narrow phones */
-  .worldbar button.aux { display: none; }
+@media (max-width: 620px) {
+  .topctl { top: 16px; right: 14px; gap: 0; padding: 5px 6px; }
+  .topctl button { width: 33px; height: 30px; }
+  .topctl button svg { width: 16px; height: 16px; }
+  /* the cluster owns the top-right; let the title ellipsize instead of hide */
+  .brand { right: 216px; }
+  .brand .subtitle, .brand .shotname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
