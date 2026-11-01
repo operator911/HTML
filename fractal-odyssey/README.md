@@ -10,7 +10,7 @@ mathematics behind each world.
 ## Run it
 
 **Just open it** — `fractal-odyssey.html` at the playground root is a fully
-self-contained build (engine inlined, ~621 KB): open it directly from disk or
+self-contained build (engine inlined, ~670 KB): open it directly from disk or
 via the link on the shelf `index.html`. Rebuild it after source changes with:
 
 ```bash
@@ -36,7 +36,7 @@ Requires any browser with WebGL 2 (Chrome / Edge / Firefox / Safari 15+) and a
 hardware-accelerated GPU. The renderer adapts its resolution automatically, so
 integrated GPUs and 5K panels are both handled.
 
-## The ten worlds
+## The fourteen worlds
 
 | # | World | Mathematics | Technique |
 |---|-------|-------------|-----------|
@@ -46,10 +46,14 @@ integrated GPUs and 5K panels are both handled.
 | 4 | **Burning Ship** | z ↦ (\|Re z\| + i\|Im z\|)² + c | non-analytic fold rendered in the classic mirrored orientation, fire-on-night banding; direct fp32 with an honest precision report — its deep-zoom limits were established by CPU-verified perturbation experiments (tools/find-ship6-8) |
 | 5 | **Newton Realms** | N(z) = z − (z³−(1+a))/3z² | three attractor basins with live-orbiting parameter a; convergence-speed shading, iteration-keyed seam relief — the first fractal ever drawn (Cayley, 1879) |
 | 6 | **Buddhabrot** | orbit density of escaping z ↦ z² + c | GPGPU orbit particles (up to 4 M) splatted additively into a persistence buffer, Reinhard-composed; the set appears as a masked void painted by its own orbits |
-| 7 | **Strange Attractor Flow** | Clifford / De Jong maps, Lorenz ODE | 65 k–4 M GPGPU particles (RGBA32F state textures), additive persistence trails; Lorenz renders through a true perspective camera — drag orbits it in 3-D with grab inertia |
+| 7 | **Strange Attractor Flow** | Clifford / De Jong maps; Lorenz, Aizawa, Thomas, Hadley ODEs | 65 k–4 M GPGPU particles (RGBA32F state textures), additive persistence trails; the four 3-D flows render through a true perspective camera (RK4 integration) — drag orbits with grab inertia |
 | 8 | **Mandelbulb Cosmos** | 3-D z ↦ zⁿ + c (spherical power) | distance-estimator ray marching with orbit-trap albedo, ambient occlusion, soft shadows, volumetric filament glow, starfield + nebula |
 | 9 | **Mandelbox** | box fold · sphere inversion · scale + c | KIFS distance estimator with Lipschitz bound, Mandel ⇄ Julia morph slider, corridor flights and corner portraits |
 | 10 | **Menger Architecture** | recursive middle-third cross removal | constructive fractal DE (sign-verified against the digit definition), cinematic tunnel flight, depth 1–6 morphing, travelling beacons with shadowed point lights |
+| 11 | **Kleinian Limit Set** | ⟨A: z↦z+2λ, B: z↦z/(μz+1)⟩ — a Möbius *group* | Jørgensen-type orbit sampled by GPGPU chaos-game walkers, log-density HDR; four CPU-verified (λ, μ) pairs slide through quasifuchsian deformation space |
+| 12 | **Hyperbolic Tilings** | regular {p,q} tessellation of the Poincaré disk | Δ(p,q,2) reflection-group fold per pixel; edges at constant hyperbolic width, Möbius isometry camera walks the horizon; seven tilings + custom p, q (all fold-verified) |
+| 13 | **Lyapunov Domains** | λ = ⟨ln\|rₙ(1−2xₙ)\|⟩ of the 2-period-forced logistic map | the stability map of “biological chaos”: parity-striped order windows in a black chaotic sea; verified against the closed-form period-2 multiplier at r=3.2 |
+| 14 | **Fractal Flame** | p ← vᵢ(Aᵢp + bᵢ) + cᵢ, i random (chaos game) | IFS through nonlinear lens variations, GPGPU samples into an HDR density buffer with log exposure; three CPU-verified coefficient sets |
 
 ## Controls
 
@@ -68,7 +72,7 @@ integrated GPUs and 5K panels are both handled.
 | `Space` | pause / resume | | `S` | save PNG screenshot |
 | `C` | cinematic autoplay | | `F` | fullscreen |
 | `→` | next shot | | `H` | hide UI (screensaver) |
-| `1`–`9`, `0` | switch worlds | | `I` | about this world |
+| `1`–`9`, `0` / `⇧1–⇧4` | jump worlds 1–14 | | `I` | about this world |
 | `P` | cycle palette | | `D` | diagnostics |
 | `R` | reset view | | `K` | control drawer |
 | `X` | surprise me | | `J` | Julia companion |
@@ -83,7 +87,7 @@ the odyssey quietly journeys on to the next universe.
 
 ## URL options
 
-`?world=mandelbrot|julia|quatjulia|burnship|newton|buddha|attractor|mandelbulb|mandelbox|menger` ·
+`?world=mandelbrot|julia|quatjulia|burnship|newton|buddha|attractor|mandelbulb|mandelbox|menger|kleinian|hyperbolic|lyapunov|flame` ·
 `?quality=low|medium|high|cinematic` · `?autoplay=0` · `?scale=0..1` (render scale)
 
 ## Numerical honesty
@@ -109,6 +113,21 @@ noise, the ship stays direct-fp32 to ≈10⁴ and reports quantization honestly
 past it. True ship depth is a double-float (df32) project, tracked in
 `tools/find-ship*.mjs`.
 
+Every new world carries the same discipline. The **Lyapunov** exponent pipeline
+reproduces the closed-form period-2 multiplier at r=3.2 (λ = ½ln(4+2r−r²) =
+−0.916) to the last decimal. The **Hyperbolic** Δ(p,q,2) fold was verified in a
+CPU reference (`tools/hyp-test.mjs`) to converge every interior probe into the
+fundamental triangle (zero fold failures) before a single pixel shipped, and the
+automorphism camera is a true disk isometry so the horizon yields infinitely
+many tiles at constant size. The **Quaternion Julia** c-presets and the
+**Kleinian** (λ, μ) pairs were each screened over multiple slice orientations /
+word samples on the CPU for structural richness (bounded fraction and iteration
+variance in range) rather than eyeballed — the reason the shipped Butterfly
+flame and Jørgensen weave show real form and not a blob. The flame and Kleinian
+chaos games drive their per-step map choice from each walker’s own chaotic
+position (a fixed time-sequence choice converges the whole flock onto periodic
+map-cycles and scars the canvas with resonance circles).
+
 ## Development
 
 ```
@@ -118,10 +137,11 @@ src/
   scenes/  one module per world — GLSL shaders, cinematic shots, controls, info text
   ui/      glass-morphism overlay (world bar, rail, drawer, info, diagnostics, help)
 tools/
-  shots.mjs            headless visual QA → shots/*.png (23 scenarios incl. beauty pass)
+  shots.mjs            headless visual QA → shots/*.png (37 scenarios incl. beauty pass)
   interact.mjs         interaction QA: keys, drag, wheel, resize, precision wall, memory
   find-boundary2.mjs   fp64 escape-time-variance search for dive anchors
   find-ship*.mjs       fold-exact shadowing verification + Burning Ship waypoints
+  hyp-test.mjs         CPU reference for the hyperbolic {p,q} fold (convergence check)
   raw-newton-test.mjs  raw-GLSL isolation harness (compiles a world's fragment
                        shader standalone and probes pixels without three.js)
   probe.mjs            single-page smoke probe
@@ -149,9 +169,9 @@ tools/
 ## Ideas for future expansion
 
 - WebGPU compute path for the attractor GPGPU + tile-based 8K screenshots
-- More worlds: Tricorn, Multibrot power slider, Kleinian (Berserdt) groups,
-  Apollonian gasket lifting; raymarched 3-D cross-sections of the quaternion
-  Julia (the 2-D slice here is the fast cousin)
+- More worlds: Tricorn, Multibrot power slider, Apollonian gasket lifting;
+  raymarched 3-D cross-sections of the quaternion Julia (the 2-D slice here is
+  the fast cousin)
 - Buddhabrot zooming (needs per-pixel orbit-history culling or a density
   field re-projection — the current painter covers the whole plane at once)
 - Deep-zoom double-float (df2) shader mode to push past 10¹⁴×

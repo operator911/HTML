@@ -15,13 +15,43 @@ const fragUpdate = /* glsl */ `
 precision highp float;
 varying vec2 vUv;
 uniform sampler2D uState;
-uniform sampler2D uSeed;      // CPU-random per-particle seed (RGB), anti-lattice
+uniform sampler2D uSeed;      // CPU-random per-particle seed (anti-lattice)
 uniform vec2 uParams;     // (a, b) or (a, c)
 uniform vec2 uParams2;    // (c, d) or (sigma, beta)
-uniform float uSystem;    // 0 clifford, 1 dejong, 2 lorenz
+uniform float uSystem;    // 0 clifford, 1 dejong, 2 lorenz, 3 aizawa, 4 thomas, 5 hadley
 uniform float uDt;        // animation seconds this frame
 uniform float uSteps;     // map iterations (frame-rate compensation)
+uniform float uDtGain;    // time-units per animation second (per system)
+uniform vec3 uV3;         // attractor centre (state space)
+uniform vec3 uV4;         // respawn half-extents (state space)
 uniform float uTime;
+
+// the flow field per system: q = (x, y, z) → dq/dt
+vec3 flow(vec3 q) {
+  float x = q.x, y = q.y, z = q.z;
+  if (uSystem < 2.5) {
+    // Lorenz
+    float sigma = uParams2.x, rho = 28.0, beta = uParams2.y;
+    return vec3(sigma * (y - x), x * (rho - z) - y, x * y - beta * z);
+  }
+  if (uSystem < 3.5) {
+    // Aizawa (a=0.95, b, c=0.6, e=0.25, f=0.1): a sphere pierced by a spike
+    float a = 0.95, bb = uParams.x, c = 0.6, e = 0.25, f = 0.1;
+    return vec3((z - bb) * x - 4.0 * y - c,
+                4.0 * x + (z - bb) * y,
+                c + a * z - z * z * z / 3.0 - (x * x + y * y) * (1.0 + e * z) + f * z * z * z);
+  }
+  if (uSystem < 4.5) {
+    // Thomas (b=0.19): cyclically symmetric wool-loom chaos
+    float bb = uParams.x;
+    return vec3(sin(y) - bb * x, sin(z) - bb * y, sin(x) - bb * z);
+  }
+  // Hadley (F=6.67, G=3.5, a, H=1, b=4): rotating convective chaos
+  float F = 6.67, G = 3.5, aa = uParams.x, H = 1.0, bb = 4.0;
+  return vec3(-y * y - z * z - F * z + G * aa,
+              x * y - x * z - H * y + bb,
+              x * z + x * y - H * z);
+}
 
 void main() {
   vec4 s = texture2D(uState, vUv);
@@ -31,43 +61,49 @@ void main() {
   age += uDt * (0.55 + 0.95 * rd.x);   // per-particle lifetime jitter: cohorts never pulse
   for (int st = 0; st < 3; st++) {
     if (float(st) >= uSteps) break;
-    vec2 n;
-    if (uSystem < 0.5) {
-      // Clifford: x' = sin(a y) + c cos(a x);  y' = sin(b x) + d cos(b y)
-      n = vec2(sin(uParams.x * y) + uParams2.x * cos(uParams.x * x),
-               sin(uParams.y * x) + uParams2.y * cos(uParams.y * y));
-      x = n.x; y = n.y; z = 0.0;
-    } else if (uSystem < 1.5) {
-      // De Jong: x' = sin(a y) - cos(b x);  y' = sin(c x) - cos(d y)
-      n = vec2(sin(uParams.x * y) - cos(uParams.y * x),
-               sin(uParams2.x * x) - cos(uParams2.y * y));
+    if (uSystem < 1.5) {
+      vec2 n;
+      if (uSystem < 0.5) {
+        // Clifford: x' = sin(a y) + c cos(a x);  y' = sin(b x) + d cos(b y)
+        n = vec2(sin(uParams.x * y) + uParams2.x * cos(uParams.x * x),
+                 sin(uParams.y * x) + uParams2.y * cos(uParams.y * y));
+      } else {
+        // De Jong: x' = sin(a y) - cos(b x);  y' = sin(c x) - cos(d y)
+        n = vec2(sin(uParams.x * y) - cos(uParams.y * x),
+                 sin(uParams2.x * x) - cos(uParams2.y * y));
+      }
       x = n.x; y = n.y; z = 0.0;
     } else {
-      // Lorenz: total advance per frame = uDt * 4.2 time-units, split into
-      // stable substeps so behaviour is frame-rate independent
-      float dt = min(uDt, 0.09) * 4.2 / max(uSteps, 1.0);
-      float sigma = uParams2.x, rho = 28.0, beta = uParams2.y;
-      float dx = sigma * (y - x);
-      float dy = x * (rho - z) - y;
-      float dz = x * y - beta * z;
-      x += dx * dt; y += dy * dt; z += dz * dt;
+      // RK4: the 3-D flows are near-conservative rotations; Euler pumps
+      // ~(ω·dt)²/2 energy per step and Aizawa visibly explodes into a
+      // full-screen haze. RK4 at these dt is neutrally stable.
+      float dt = min(uDt, 0.09) * uDtGain / max(uSteps, 1.0);
+      vec3 q = vec3(x, y, z);
+      vec3 k1 = flow(q);
+      vec3 k2 = flow(q + k1 * (dt * 0.5));
+      vec3 k3 = flow(q + k2 * (dt * 0.5));
+      vec3 k4 = flow(q + k3 * dt);
+      q += (k1 + (k2 + k3) * 2.0 + k4) * (dt / 6.0);
+      x = q.x; y = q.y; z = q.z;
     }
   }
 
   bool bad = !(abs(x) < 1e4 && abs(y) < 1e4 && abs(z) < 1e4);
   if (age >= 1.9 || bad) {
-    // Re-seed over a DISC at zero age — a square spawn box would fog its own
-    // outline into the sparse background, and bright newborns read as a
-    // rectangular haze (the renderer fades newborns in from alpha 0).
+    // Re-seed over a DISC (2-D maps) or a centred box hugging the attractor
+    // (3-D flows) at zero age — the renderer fades newborns in from alpha 0,
+    // so spawn volumes never flash their outline as haze.
     float t1 = floor(uTime * 13.0);
-    float rr = sqrt(fract(rd.y + t1 * 0.7548776664)) * 0.92;
-    float aa = 6.28318530718 * fract(rd.z + t1 * 0.5698402909);
     if (uSystem < 1.5) {
+      float rr = sqrt(fract(rd.y + t1 * 0.7548776664)) * 0.92;
+      float aa = 6.28318530718 * fract(rd.z + t1 * 0.5698402909);
       x = rr * cos(aa);
       y = rr * sin(aa);
       z = 0.0;
     } else {
-      x = (rd.x - 0.5) * 28.0; y = (fract(rd.y + 0.37) - 0.5) * 28.0; z = 4.0 + fract(rd.z + 0.71) * 32.0;
+      x = uV3.x + (fract(rd.x + t1 * 0.6180339887) - 0.5) * 2.0 * uV4.x;
+      y = uV3.y + (fract(rd.y + 0.37 + t1 * 0.7548776664) - 0.5) * 2.0 * uV4.y;
+      z = uV3.z + (fract(rd.z + 0.71 + t1 * 0.5698402909) - 0.5) * 2.0 * uV4.z;
     }
     age = 0.0;
   }
@@ -87,6 +123,7 @@ uniform float uSystem;
 uniform float uYaw;
 uniform float uPitch;
 uniform float uCamDist;
+uniform vec3 uV3;          // flow-space centre (x, y-depth, z-vertical)
 varying float vAge;
 varying float vSeed;
 varying float vDepth;   // 0 far … 1 near (3D systems); 0.55 flat in 2D
@@ -94,9 +131,8 @@ void main() {
   vec4 s = texture2D(uState, aUv);
   vec2 p;
   if (uSystem > 1.5) {
-    // TRUE 3D: Lorenz state (x, y, z) → right/up/depth frame, orbit camera.
-    // The attractor lives around (0, 0, 25); screen-up is its z axis.
-    vec3 q = vec3(s.x, s.w - 20.0, s.y);
+    // TRUE 3-D: right, up, depth from the flow's own centroid (uV3)
+    vec3 q = vec3(s.x - uV3.x, s.w - uV3.z, s.y - uV3.y);
     float cy = cos(uYaw), sy = sin(uYaw);
     vec3 r1 = vec3(q.x * cy + q.z * sy, q.y, -q.x * sy + q.z * cy);
     float cp = cos(uPitch), sp = sin(uPitch);
@@ -160,7 +196,19 @@ const SYSTEMS: AttractorSys[] = [
   { name: 'Clifford', id: 0, info: 'xₙ₊₁ = sin(a·yₙ) + c·cos(a·xₙ),  yₙ₊₁ = sin(b·xₙ) + d·cos(b·yₙ)' },
   { name: 'De Jong', id: 1, info: 'xₙ₊₁ = sin(a·yₙ) − cos(b·xₙ),  yₙ₊₁ = sin(c·xₙ) − cos(d·yₙ)' },
   { name: 'Lorenz', id: 2, info: 'ẋ = σ(y − x),  ẏ = x(ρ − z) − y,  ż = xy − βz' },
+  { name: 'Aizawa', id: 3, info: 'ẋ = (z − b)x − 4y − c,  ẏ = 4x + (z − b)y,  ż = c + az − z³/3 − (x²+y²)(1 + ez) + fz³' },
+  { name: 'Thomas', id: 4, info: 'ẋ = sin y − bx,  ẏ = sin z − by,  ż = sin x − bz' },
+  { name: 'Hadley', id: 5, info: 'ẋ = −y² − z² − Fz + Ga,  ẏ = xy − xz − Hy + b,  ż = xz + xy − Hz' },
 ];
+
+/** per-system geometry: ODE param base, dt gain (visual speed), display
+ *  scale, flow-space respawn half-extents and centroid (x, y-depth, z-up) */
+const FLOWS: Record<number, { a: number; b: number; gain: number; scale: number; v3: [number, number, number]; v4: [number, number, number] }> = {
+  2: { a: 10, b: 8 / 3, gain: 4.2, scale: 0.030, v3: [0, 0, 20], v4: [16, 16, 16] },
+  3: { a: 0.7, b: 0, gain: 3.4, scale: 0.62, v3: [0, 0, 0.4], v4: [0.45, 0.45, 0.55] },
+  4: { a: 0.19, b: 0, gain: 2.6, scale: 0.072, v3: [0, 0, 0], v4: [5.0, 5.0, 5.0] },
+  5: { a: 1.0, b: 0, gain: 1.5, scale: 0.050, v3: [0, 0, 0], v4: [9.0, 9.0, 9.0] },
+};
 
 export class AttractorWorld extends BaseWorld {
   readonly id = 'attractor';
@@ -173,11 +221,11 @@ export class AttractorWorld extends BaseWorld {
       'exponentially yet remain confined, weaving a fractal skeleton of infinite folding. Thousands of ' +
       'GPU particles trace the flow with persistent trails — the picture is the orbit density itself.',
     params: [
-      { label: 'System', desc: 'Clifford / De Jong / Lorenz — distinct mathematics, labelled' },
+      { label: 'System', desc: 'six maps & flows, from planar to true 3-D' },
       { label: 'Drift', desc: 'parameters wander through the chaotic regime' },
       { label: 'Persistence', desc: 'trail memory length' },
       { label: 'Wheel', desc: 'scale the projection' },
-      { label: 'Drag', desc: 'pan (2-D maps) · orbit the camera (Lorenz 3-D)' },
+      { label: 'Drag', desc: 'pan (2-D maps) · orbit the camera (3-D flows)' },
     ],
   };
 
@@ -236,6 +284,8 @@ export class AttractorWorld extends BaseWorld {
         uState: { value: null }, uSeed: { value: null },
         uParams: { value: new THREE.Vector2() }, uParams2: { value: new THREE.Vector2() },
         uSystem: { value: 0 }, uDt: { value: 1 }, uTime: { value: 0 }, uSteps: { value: 1 },
+        uDtGain: { value: 4.2 },
+        uV3: { value: new THREE.Vector3(0, 0, 20) }, uV4: { value: new THREE.Vector3(14, 14, 16) },
       },
       depthTest: false, depthWrite: false,
     }));
@@ -262,6 +312,7 @@ export class AttractorWorld extends BaseWorld {
         uScale: { value: this.scale }, uPoint: { value: 1.6 }, uRot: { value: 0 },
         uPan: { value: this.pan }, uSystem: { value: 0 },
         uYaw: { value: 0.45 }, uPitch: { value: 0.32 }, uCamDist: { value: 90 },
+        uV3: { value: new THREE.Vector3(0, 0, 20) },
         uPalA: { value: new THREE.Vector3() }, uPalB: { value: new THREE.Vector3() },
         uPalC: { value: new THREE.Vector3() }, uPalD: { value: new THREE.Vector3() },
         uInterior: { value: new THREE.Color() }, uSpace: { value: new THREE.Color() },
@@ -357,12 +408,15 @@ export class AttractorWorld extends BaseWorld {
   private reseed(): void {
     const side = this.side;
     const data = new Float32Array(side * side * 4);
+    const flow = this.system >= 2 ? FLOWS[this.system] : null;
     for (let i = 0; i < side * side; i++) {
-      if (this.system === 2) {
-        data[i * 4] = (Math.random() - 0.5) * 28;
-        data[i * 4 + 1] = (Math.random() - 0.5) * 28;
-        data[i * 4 + 2] = Math.random();
-        data[i * 4 + 3] = 4 + Math.random() * 32;
+      if (flow) {
+        const [vx, vy, vz] = flow.v3;
+        const [hx, hy, hz] = flow.v4;
+        data[i * 4] = vx + (Math.random() - 0.5) * 2 * hx;
+        data[i * 4 + 1] = vy + (Math.random() - 0.5) * 2 * hy;
+        data[i * 4 + 2] = Math.random();                      // age
+        data[i * 4 + 3] = vz + (Math.random() - 0.5) * 2 * hz;
       } else {
         data[i * 4] = (Math.random() - 0.5) * 1.7;
         data[i * 4 + 1] = (Math.random() - 0.5) * 1.7;
@@ -405,7 +459,9 @@ export class AttractorWorld extends BaseWorld {
   private presetFor(sys: number): { a: number; b: number; c: number; d: number; scale: number } {
     if (sys === 0) return { a: 1.4, b: -2.4, c: 1.6, d: 0.66, scale: 0.36 };
     if (sys === 1) return { a: 2.01, b: -2.53, c: 1.61, d: -0.33, scale: 0.36 };
-    return { a: 10, b: 0, c: 10, d: 8 / 3, scale: 0.028 };
+    const F = FLOWS[sys];
+    if (sys === 2) return { a: 10, b: 0, c: 10, d: 8 / 3, scale: F.scale };
+    return { a: F.a, b: F.b, c: F.a, d: F.b, scale: F.scale };
   }
 
   private setSystem(s: number): void {
@@ -414,7 +470,15 @@ export class AttractorWorld extends BaseWorld {
     const p = this.presetFor(s);
     this.params = { a: p.a, b: p.b, c: p.c, d: p.d };
     this.scale = p.scale;
-    if (s === 2) { this.yaw = this.yawT = 0.15; this.pitch = this.pitchT = 0.2; this.velYaw = this.velPitch = 0; }
+    if (s >= 2) {
+      this.yaw = this.yawT = s === 2 ? 0.15 : s === 3 ? 0.5 : 0.75;
+      this.pitch = this.pitchT = 0.2; this.velYaw = this.velPitch = 0;
+      const F = FLOWS[s];
+      (this.simMat.uniforms.uDtGain as { value: number }).value = F.gain;
+      (this.simMat.uniforms.uV3.value as THREE.Vector3).set(...F.v3);
+      (this.simMat.uniforms.uV4.value as THREE.Vector3).set(...F.v4);
+      (this.pointMat.uniforms.uV3.value as THREE.Vector3).set(...F.v3);
+    }
     this.pointMat.uniforms.uSystem.value = s;
     this.simMat.uniforms.uSystem.value = s;
     this.needsReseed = true;
@@ -422,7 +486,7 @@ export class AttractorWorld extends BaseWorld {
   }
 
   status(): string {
-    return `${SYSTEMS[this.system].name}${this.system === 2 ? ' · 3-D orbit' : ''} · ${(this.side * this.side / 1000).toFixed(0)}k particles`;
+    return `${SYSTEMS[this.system].name}${this.system >= 2 ? ' · 3-D orbit' : ''} · ${(this.side * this.side / 1000).toFixed(0)}k particles`;
   }
   zoomFactor(): number { return this.scale / this.presetFor(this.system).scale; }
 
@@ -462,15 +526,21 @@ export class AttractorWorld extends BaseWorld {
     } else if (this.system === 1) {
       (P.uParams.value as THREE.Vector2).set(base.a + 0.6 * d * Math.sin(t * 0.9), base.b + 0.7 * d * Math.sin(t * 0.7 + 1.1));
       (P.uParams2.value as THREE.Vector2).set(base.c + 0.6 * d * Math.cos(t * 0.55 + 0.7), base.d + 0.55 * d * Math.sin(t * 0.95 + 2.1));
-    } else {
+    } else if (this.system === 2) {
       (P.uParams2.value as THREE.Vector2).set(10 + 0.8 * d * Math.sin(t * 0.4), 8 / 3 + 0.25 * d * Math.sin(t * 0.31 + 1.0));
+    } else {
+      // the single tunable of each bonus flow (Aizawa b, Thomas b, Hadley a)
+      const F = FLOWS[this.system];
+      const amp = this.system === 3 ? 0.1 : this.system === 4 ? 0.045 : 0.3;
+      (P.uParams.value as THREE.Vector2).set(F.a + amp * d * Math.sin(t * 0.5), 0);
+      (P.uParams2.value as THREE.Vector2).set(0, 0);
     }
     P.uTime.value = f.time;
     P.uDt.value = clamp(f.dt, 0.001, 0.09);
     P.uSteps.value = clamp(Math.round(f.dt * 60), 1, 3);
 
-    // orbit-camera physics (Lorenz): fling inertia + damped follow + slow auto-orbit
-    if (this.system === 2) {
+    // orbit-camera physics (3-D flows): fling inertia + damped follow + slow auto-orbit
+    if (this.system >= 2) {
       if (f.playing && !this.dragging) this.yawT += f.dt * 0.03;
       this.yawT += this.velYaw * 0.35;
       this.pitchT = clamp(this.pitchT + this.velPitch * 0.35, -1.3, 1.3);
@@ -503,7 +573,7 @@ export class AttractorWorld extends BaseWorld {
       pu.uPan.value = this.pan;
       pu.uPoint.value = Math.max(1.2, Math.min(2.2, this.trailW / 900));
       // the 3-D projection spreads the same particles over more screen area
-      pu.uIntensity.value = this.luminosity * (this.system === 2 ? 3.0 : 1);
+      pu.uIntensity.value = this.luminosity * (this.system === 2 ? 3.0 : this.system >= 3 ? 1.4 : 1);
       r.setRenderTarget(this.trailB);
       r.autoClear = false;
       r.render(this.pointScene, this.ortho);
@@ -531,7 +601,7 @@ export class AttractorWorld extends BaseWorld {
   pointerMove(e: PointerEventLite): void {
     if (!this.dragging) return;
     const modifier = e.button === 1 || e.shift;
-    if (this.system === 2 && !modifier) {
+    if (this.system >= 2 && !modifier) {
       // grab-style orbit (same signs as SphericalCam.drag, which the
       // on-device check confirmed): content turns with the finger
       const k = 3.2 / this.cssW;
@@ -541,7 +611,7 @@ export class AttractorWorld extends BaseWorld {
       this.velPitch = e.dy * k;
       return;
     }
-    if (modifier && this.system !== 2) this.rot += e.dx * 0.004;
+    if (modifier && this.system < 2) this.rot += e.dx * 0.004;
     else this.pan.set(this.pan.x + 2 * e.dx / this.cssW, this.pan.y - 2 * e.dy / this.cssH);
   }
   pointerUp(): void { this.dragging = false; }
@@ -559,7 +629,7 @@ export class AttractorWorld extends BaseWorld {
   }
 
   surprise(rng: () => number): void {
-    this.setSystem(Math.floor(rng() * 3));
+    this.setSystem(Math.floor(rng() * SYSTEMS.length));
     this.drift = 0.15 + rng() * 0.7;
     this.persistence = 0.9 + rng() * 0.09;
     this.luminosity = 0.02 + rng() * 0.05;
@@ -575,6 +645,9 @@ export class AttractorWorld extends BaseWorld {
       // for Lorenz views: rot doubles as the orbit pitch target; yaw sweeps live
       { sys: 2, a: 10, b: 0, vc: 10, vd: 8 / 3, sc: 0.03, rot: 0.2, name: 'Lorenz butterfly', dur: 30 },
       { sys: 2, a: 10, b: 0, vc: 10, vd: 8 / 3, sc: 0.024, rot: -0.62, name: 'Lorenz updraft', dur: 30 },
+      { sys: 3, a: 0.7, b: 0, vc: 0.7, vd: 0, sc: 0.62, rot: 0.34, name: 'Aizawa sphere', dur: 30 },
+      { sys: 4, a: 0.19, b: 0, vc: 0.19, vd: 0, sc: 0.072, rot: 0.5, name: 'Thomas loom', dur: 30 },
+      { sys: 5, a: 1, b: 0, vc: 1, vd: 0, sc: 0.05, rot: 0.28, name: 'Hadley cyclone', dur: 30 },
     ];
     return views.map((v) => ({
       name: v.name,

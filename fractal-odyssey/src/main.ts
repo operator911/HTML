@@ -9,6 +9,10 @@ import { AttractorWorld } from './scenes/attractor';
 import { MandelbulbWorld } from './scenes/mandelbulb';
 import { MandelboxWorld } from './scenes/mandelbox';
 import { MengerWorld } from './scenes/menger';
+import { KleinianWorld } from './scenes/kleinian';
+import { HyperbolicWorld } from './scenes/hyperbolic';
+import { LyapunovWorld } from './scenes/lyapunov';
+import { FlameWorld } from './scenes/flame';
 import { UI } from './ui/ui';
 import type { QualityName } from './core/types';
 import './ui/ui.css';
@@ -53,6 +57,10 @@ function boot(): void {
     new MandelbulbWorld(),
     new MandelboxWorld(),
     new MengerWorld(),
+    new KleinianWorld(),
+    new HyperbolicWorld(),
+    new LyapunovWorld(),
+    new FlameWorld(),
   ]);
 
   if (params.get('paused') === '1') app.setAutoplay(false);

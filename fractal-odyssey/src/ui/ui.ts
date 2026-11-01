@@ -28,6 +28,10 @@ const WORLD_GLYPHS: Record<string, string> = {
   mandelbulb: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.5 1.5M14.2 14.2l1.5 1.5M15.7 4.3l-1.5 1.5M5.8 14.2l-1.5 1.5"/><circle cx="10" cy="10" r="7.2" stroke-dasharray="2.5 2.2"/></svg>',
   mandelbox: '<svg viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="15" height="15" rx="1"/><rect x="6" y="6" width="8" height="8"/><rect x="8.6" y="8.6" width="2.8" height="2.8"/><path d="M2.5 2.5 6 6M17.5 2.5 14 6M2.5 17.5 6 14M17.5 17.5 14 14" opacity=".55"/></svg>',
   menger: '<svg viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="5" height="5"/><rect x="12.5" y="2.5" width="5" height="5"/><rect x="2.5" y="12.5" width="5" height="5"/><rect x="12.5" y="12.5" width="5" height="5"/><rect x="7.5" y="7.5" width="5" height="5" opacity=".55"/></svg>',
+  kleinian: '<svg viewBox="0 0 20 20"><circle cx="7.2" cy="10" r="4.6"/><circle cx="12.8" cy="10" r="4.6"/><circle cx="10" cy="5.6" r="2.4" opacity=".6"/><circle cx="10" cy="14.4" r="2.4" opacity=".6"/></svg>',
+  hyperbolic: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.6"/><path d="M10 2.4c-2.6 2.2-2.6 4.9 0 7.6 2.6 2.7 2.6 5.4 0 7.6"/><path d="M3.1 7.2c2.9.5 5 2.1 6.9 5.4M16.9 7.2c-2.9.5-5 2.1-6.9 5.4" opacity=".55"/></svg>',
+  lyapunov: '<svg viewBox="0 0 20 20"><path d="M2.5 5.5h15M2.5 8.5h15M2.5 11.5h15M2.5 14.5h15" opacity=".75"/><path d="M2.5 5.5c4 0 5.5 3 8 3s4.5-3 7-3M2.5 11.5c4 0 5.5 3 8 3s4.5-3 7-3" stroke-width="1.8"/></svg>',
+  flame: '<svg viewBox="0 0 20 20"><path d="M10 17.5c-3.6 0-6-2.4-6-5.5 0-4 4-5.5 4-9 2.5 1.5 3.5 3.5 3.5 5.5 1-.7 1.6-1.8 1.6-3 1.7 1.4 2.9 3.7 2.9 6.5 0 3.1-2.4 5.5-6 5.5z"/><path d="M10 17.5c-1.6 0-2.7-1.1-2.7-2.6 0-1.8 1.9-2.5 2.7-4.4.8 1.9 2.7 2.6 2.7 4.4 0 1.5-1.1 2.6-2.7 2.6z" opacity=".5"/></svg>',
 };
 
 function paletteCss(i: number): string {
@@ -175,7 +179,7 @@ export class UI {
           <tr><td>space</td><td>pause / resume all animation</td></tr>
           <tr><td>C</td><td>toggle cinematic autoplay</td></tr>
           <tr><td>→</td><td>next cinematic shot</td></tr>
-          <tr><td>1 – 9 · 0</td><td>jump between the ten fractal worlds</td></tr>
+          <tr><td>1–9, 0 / ⇧1–⇧4</td><td>jump between the fourteen fractal worlds</td></tr>
           <tr><td>P</td><td>cycle colour palette</td></tr>
           <tr><td>R</td><td>reset the camera</td></tr>
           <tr><td>S</td><td>save screenshot (PNG)</td></tr>
@@ -440,10 +444,11 @@ export class UI {
           break;
         default: {
           const handled = a.active.hotkey(e.key);
-          if (!handled && /^[0-9]$/.test(e.key)) {
-            // 1-9 → first nine worlds; 0 → the tenth
-            const idx = e.key === '0' ? 9 : parseInt(e.key, 10) - 1;
-            const w = a.worlds[idx];
+          if (!handled && /^Digit[0-9]$/.test(e.code)) {
+            // 1-9 → worlds 1–9; 0 → tenth; Shift+1..4 → eleventh–fourteenth
+            const num = parseInt(e.code.slice(5), 10);
+            const idx = e.shiftKey ? (num === 0 ? -1 : 9 + num) : (num === 0 ? 9 : num - 1);
+            const w = idx >= 0 ? a.worlds[idx] : undefined;
             if (w) { a.setWorld(w.id); this.hideHint(); }
           }
         }

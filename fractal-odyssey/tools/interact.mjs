@@ -103,6 +103,22 @@ await step('key 9 → mandelbox', async () => { await page.keyboard.press('9'); 
 await want('key9', 'mandelbox');
 await step('key 0 → menger', async () => { await page.keyboard.press('0'); await sleep(1500); });
 await want('key0', 'menger');
+await step('shift+1 → kleinian', async () => { await page.keyboard.press('Shift+Digit1'); await sleep(2200); });
+await want('shift1', 'kleinian');
+await step('shift+2 → hyperbolic + pan', async () => {
+  await page.keyboard.press('Shift+Digit2'); await sleep(2200);
+  await page.mouse.move(360, 220); await page.mouse.down();
+  await page.mouse.move(430, 200, { steps: 5 }); await page.mouse.up();
+});
+await want('shift2', 'hyperbolic');
+const hypPan = await page.evaluate('window.__odyssey.app.active.camTarget.length()');
+console.log(`  hyperbolic cam radius after pan: ${hypPan.toFixed(3)} (moved: ${hypPan > 0})`);
+await step('shift+3 → lyapunov + wheel', async () => {
+  await page.keyboard.press('Shift+Digit3'); await sleep(1800);
+});
+await want('shift3', 'lyapunov');
+await step('shift+4 → flame', async () => { await page.keyboard.press('Shift+Digit4'); await sleep(2200); });
+await want('shift4', 'flame');
 await step('space pause/resume', async () => {
   await page.keyboard.press('Space');
   const paused = await page.evaluate('window.__odyssey.app.playing');
