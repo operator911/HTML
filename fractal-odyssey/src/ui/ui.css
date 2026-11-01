@@ -112,13 +112,9 @@ html.tune-side .topctl { transform: translateX(calc(-1 * var(--ribbon-w))); }
 /* ---------- right rail ---------- */
 .rail {
   position: absolute; right: calc(22px + var(--rail-shift, 0px)); top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 5px; padding: 8px 7px;
-  /* pill chrome floats over the canvas: only the buttons are interactive — the
-     background must not swallow a pinch whose second finger lands beside them */
-  pointer-events: none;
+  display: flex; flex-direction: column; gap: 5px; padding: 8px 7px; pointer-events: auto;
   --rail-shift: 0px; transition: right .32s ease, opacity .5s ease;
 }
-.rail button { pointer-events: auto; }
 .rail.shifted { --rail-shift: var(--ribbon-w); }
 /* in portrait the visible canvas ends at the sheet — centre the rail in that
    box, not the window, so it doesn't sink into the sheet */
@@ -319,4 +315,23 @@ html.tune-sheet .hint { transform: translateX(-50%) translateY(calc(-1 * var(--s
   /* the cluster owns the top-right; let the title ellipsize instead of hide */
   .brand { right: 216px; }
   .brand .subtitle, .brand .shotname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+/* Touch devices: dock the utility rail under the top-right cluster instead of
+   floating mid-screen. The mid-screen pill swallowed the second finger of a
+   pinch (killing it), and while a pointer-events:none parent + auto child
+   works in Chrome, Safari's touch hit-testing on that pattern is not
+   trustworthy — the rail buttons "do nothing" on iOS. Corner-docked keeps
+   normal hit-testing AND stays out of the pinch zone. */
+@media (pointer: coarse) {
+  .rail {
+    top: 78px;
+    transform: none;
+  }
+  .rail button { width: 40px; height: 40px; }
+  .rail.shifted { transform: none; }
+}
+@media (pointer: coarse) and (max-width: 620px) {
+  .rail { top: 62px; }
+  .rail button { width: 34px; height: 32px; }
+  .rail button svg { width: 16px; height: 16px; }
 }

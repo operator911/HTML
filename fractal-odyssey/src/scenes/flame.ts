@@ -21,6 +21,13 @@ precision highp float;
 varying vec2 vUv;
 uniform sampler2D uState;   // x, y, hue, spare
 uniform sampler2D uSeed;
+
+// decorrelating integer-grid hash (same construction as core/shaders hash12)
+float hash12(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
 uniform vec4 uA0[6];        // (a11, a12, a21, a22) per map
 uniform vec2 uB1[6];        // (b1, b2)
 uniform vec2 uC1[6];        // post-affine translate
@@ -49,15 +56,16 @@ void main() {
   vec3 rd = texture2D(uSeed, vUv).xyz;
   for (int st = 0; st < 8; st++) {
     if (float(st) >= uSteps) break;
-    // Per-step map choice, driven by the particle's own chaotic position
-    // (plus per-particle phase). A purely time/particle-based choice makes
-    // every walker iterate a fixed periodic map SEQUENCE — it converges to
-    // a cycle attractor and its spherical-inversion transients scar the
-    // canvas with perfect circles. Orbit-derived choice is ergodic, which is
-    // what the chaos game actually requires.
-    float t1 = floor(uTime * 9.0);
-    float r = fract(dot(p, vec2(12.9898, 78.233)) + rd.x * 13.7 + float(st) * 0.6180339887
-                    + t1 * (0.7548776664 + rd.y * 0.2179));
+    // Chaos-game choice: an INDEPENDENT draw per walker · step · frame.
+    // The convergence theorem requires the map sequence to be independent
+    // of the orbit itself — hashing the walker's own position is Markovian:
+    // orbits lock onto the hash's switching surfaces and scar the canvas
+    // with perfect circles (spherical-inversion transients frozen into rings).
+    // A global time-sequence fails the other way: every walker iterates the
+    // same periodic word. Mixing cell+step+frame in a decorrelating hash is
+    // the standard GPGPU chaos game, and stays deterministic per frame.
+    float frame = floor(uTime * 60.0);
+    float r = hash12(vUv * vec2(991.0, 1231.0) + vec2(float(st) * 71.37, frame * 13.71));
     float mi = floor(r * uMapN);
     vec2 q = variation(uVar[0], p);   // dummy init
     for (int k = 0; k < 6; k++) {
@@ -84,6 +92,7 @@ uniform vec2 uCenter;
 uniform float uSpan;
 uniform float uRot;
 uniform float uAspect;
+uniform float uPoint;
 varying float vHue;
 void main() {
   vec4 s = texture2D(uState, aUv);
@@ -91,7 +100,12 @@ void main() {
   float c = cos(uRot), n = sin(uRot);
   p = vec2(p.x * c - p.y * n, p.x * n + p.y * c);
   gl_Position = vec4(vec2(p.x / uAspect, p.y) * (2.0 / uSpan), 0.0, 1.0);
-  gl_PointSize = 1.0;
+  // NOT 1.0: Apple GPUs (iPadOS Safari) drop hairline point sprites, and a
+  // hard 1px dot also strobes under the log-exposure curve. A soft ~2px
+  // sprite spreads the sample across a few pixels — same look on desktop
+  // (verified in the attractor world, which always did this), visible ink
+  // on iOS.
+  gl_PointSize = uPoint;
   vHue = s.z;
 }
 `;
@@ -103,7 +117,8 @@ uniform float uWeight;
 varying float vHue;
 void main() {
   vec3 c = max(palette(vHue + uPalShift), vec3(0.0));
-  gl_FragColor = vec4(c * uWeight, uWeight);
+  float a = smoothstep(0.5, 0.08, length(gl_PointCoord - 0.5));
+  gl_FragColor = vec4(c * uWeight * a, uWeight * a);
 }
 `;
 
@@ -121,28 +136,35 @@ void main() {
 `;
 
 interface FlameMap { a: [number, number, number, number]; b: [number, number]; c: [number, number]; v: number; col: number; }
-interface FlamePreset { name: string; maps: FlameMap[]; span: number; }
+interface FlamePreset { name: string; maps: FlameMap[]; span: number; center: [number, number] }
 
-/** chaos-game verified presets (bounded, dense, hue-varied) */
+/** CPU-verified (i.i.d. chaos-game Monte Carlo, fp32-faithful): bounded orbit,
+ *  fractal support with real holes. Ordered by legibility — the world opens on
+ *  the fern; Butterfly is kept as the canonical Draves-style finale whose
+ *  delicate inversion arcs reward the longer accumulations a real GPU gives. */
 const PRESETS: FlamePreset[] = [
-  { name: 'Butterfly', span: 3.1, maps: [
-    { v: 0, a: [1, 0, 0, 0.5], b: [0, 0], c: [0, 0], col: 0.02 },
-    { v: 1, a: [0.5, 0, 0.5, 0.5], b: [0, 0], c: [0, 0], col: 0.35 },
-    { v: 2, a: [-0.5, 0, 0.5, 0], b: [0, -0.5], c: [0, 0], col: 0.68 },
-    { v: 0, a: [0, 0, 0.5, 0.5], b: [0.5, 0], c: [0, 0], col: 0.95 },
+  { name: 'Vortex lace', span: 1.5, center: [0.4, 0.2], maps: [
+    { v: 0, a: [0.5, 0.25, -0.25, 0.5], b: [0, 0], c: [0, 0], col: 0.1 },
+    { v: 0, a: [0.5, -0.25, 0.25, 0.5], b: [0.5, 0.3], c: [0, 0], col: 0.45 },
+    { v: 1, a: [0.3, 0, 0, 0.3], b: [0.2, -0.4], c: [0, 0], col: 0.85 },
   ] },
-  { name: 'Ember fern', span: 2.6, maps: [
+  { name: 'Ember fern', span: 3.8, center: [0.35, 0.75], maps: [
     { v: 0, a: [0, 0, 0, -0.5], b: [0, 0], c: [0, 0], col: 0.05 },
     { v: 0, a: [0.85, 0.04, -0.04, 0.85], b: [0, 0], c: [0, 1.6], col: 0.45 },
     { v: 4, a: [0.2, -0.26, 0.23, 0.22], b: [0, 1.6], c: [0, 0], col: 0.8 },
     { v: 3, a: [0.15, 0.15, -0.15, 0.15], b: [0, 0], c: [0, 0.4], col: 0.62 },
   ] },
-  { name: 'Coral lens', span: 2.4, maps: [
-    { v: 2, a: [0.6, 0.2, -0.3, 0.6], b: [0, 0.6], c: [0, 0], col: 0.1 },
-    { v: 1, a: [0.5, -0.2, 0.4, 0.4], b: [0.6, 0], c: [0, 0], col: 0.5 },
-    { v: 0, a: [-0.3, 0.5, -0.4, -0.2], b: [0, 0], c: [0.4, -0.3], col: 0.75 },
-    { v: 4, a: [0.45, 0.1, 0.05, 0.5], b: [-0.4, -0.4], c: [0, 0], col: 0.92 },
-    { v: 3, a: [0.35, -0.3, 0.3, 0.3], b: [0.3, -0.4], c: [0, 0], col: 0.3 },
+  { name: 'Lantern bloom', span: 3.0, center: [0, 0.2], maps: [
+    { v: 1, a: [0.65, 0, 0, 0.65], b: [0, 0], c: [0, 0], col: 0.15 },
+    { v: 2, a: [0.4, 0.2, -0.2, 0.4], b: [0.8, 0.4], c: [0, 0], col: 0.5 },
+    { v: 2, a: [0.4, -0.2, 0.2, 0.4], b: [-0.8, 0.4], c: [0, 0], col: 0.5 },
+    { v: 1, a: [0.25, 0, 0, 0.25], b: [0, -0.9], c: [0, 0], col: 0.88 },
+  ] },
+  { name: 'Butterfly', span: 2.2, center: [0, -0.05], maps: [
+    { v: 1, a: [0.62, 0, 0, 0.62], b: [0, 0], c: [0, 0], col: 0.02 },
+    { v: 1, a: [0.5, 0.3, -0.3, 0.5], b: [0.55, 0.3], c: [0, 0], col: 0.38 },
+    { v: 1, a: [0.5, -0.3, 0.3, 0.5], b: [-0.55, 0.3], c: [0, 0], col: 0.66 },
+    { v: 0, a: [0.3, 0, 0, 0.3], b: [0, -0.55], c: [0, 0], col: 0.95 },
   ] },
 ];
 
@@ -160,7 +182,7 @@ export class FlameWorld extends BaseWorld {
       'thousand jumps the density IS the shape: soft-edged light with fractal detail from core to rim, ' +
       'rendered here with the logarithmic exposure that gives flames their name.',
     params: [
-      { label: 'Preset', desc: 'three CPU-verified IFS coefficient sets' },
+      { label: 'Preset', desc: 'four CPU-verified IFS coefficient sets (vortex, fern, lantern, butterfly)' },
       { label: 'Drift', desc: 'coefficients breathe around the attractor' },
       { label: 'Exposure', desc: 'log-density tone curve' },
       { label: 'Drag', desc: 'pan · shift-drag rotates' },
@@ -189,13 +211,13 @@ export class FlameWorld extends BaseWorld {
   private seedMat!: THREE.ShaderMaterial;
   private ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-  private preset = 0;
+  private preset = 0;               // open on Vortex lace: dense, centered, unmistakably fractal
   private drift = 0.25;
   private persistence = 0.992;
   private exposure = 0.5;
   private weight = 0.009;
-  private center = new THREE.Vector2(-0.75, -0.9);
-  private span = 3.1;
+  private center = new THREE.Vector2(0.4, 0.2);
+  private span = 1.5;
   private rot = 0;
   private dragging = false;
   private cssW = 1; private cssH = 1;
@@ -249,7 +271,7 @@ export class FlameWorld extends BaseWorld {
       uniforms: {
         uState: { value: this.stateA.texture },
         uCenter: { value: this.center }, uSpan: { value: this.span }, uRot: { value: 0 },
-        uWeight: { value: this.weight }, uAspect: { value: 1 },
+        uWeight: { value: this.weight }, uAspect: { value: 1 }, uPoint: { value: 1.9 },
         uPalA: { value: new THREE.Vector3() }, uPalB: { value: new THREE.Vector3() },
         uPalC: { value: new THREE.Vector3() }, uPalD: { value: new THREE.Vector3() },
         uInterior: { value: new THREE.Color() }, uSpace: { value: new THREE.Color() },
@@ -325,6 +347,7 @@ export class FlameWorld extends BaseWorld {
     }
     u.uMapN.value = p.maps.length;
     this.span = p.span;
+    this.center.set(p.center[0], p.center[1]);
     this.needsReseed = true;
     this.touch();
   }
@@ -376,6 +399,7 @@ export class FlameWorld extends BaseWorld {
     this.presentMat.uniforms.uResolution.value.set(rw, rh);
     (this.splatMat.uniforms.uResolution as THREE.IUniform).value?.set?.(rw, rh);
     this.splatMat.uniforms.uAspect.value = rw / rh;
+    (this.splatMat.uniforms.uPoint as THREE.IUniform).value = clamp(rw / 620, 1.4, 2.6);
     this.needsReseed = true;
   }
 
@@ -418,7 +442,11 @@ export class FlameWorld extends BaseWorld {
     }
     const r = this.renderer;
     const u = this.simMat.uniforms;
-    u.uTime.value = f.time;
+    // SIM clock = wall time: the per-frame dice quantum must tick with
+    // RENDERED frames, not the speed-scaled animation clock (at 0.1× the
+    // frame term would repeat ten draws' worth of frames back into a
+    // periodic word — the lock-on this change exists to kill)
+    u.uTime.value = f.real;
     u.uSteps.value = clamp(Math.round(f.dt * 60 * 2.2), 2, 8);
 
     // gentle coefficient breathing (kept contractive: only the translations move)
@@ -484,17 +512,18 @@ export class FlameWorld extends BaseWorld {
   }
 
   resetView(): void {
-    this.center.set(0, 0); this.rot = 0;
-    this.span = PRESETS[this.preset].span;
+    const p = PRESETS[this.preset];
+    this.center.set(p.center[0], p.center[1]); this.rot = 0;
+    this.span = p.span;
     this.touch();
   }
 
   surprise(rng: () => number): void {
     this.preset = Math.floor(rng() * PRESETS.length);
     this.applyPreset();
-    this.exposure = 0.6 + rng() * 1.6;
+    this.exposure = 0.4 + rng() * 1.0;
     this.persistence = 0.96 + rng() * 0.039;
-    this.weight = 0.008 + rng() * 0.03;
+    this.weight = 0.005 + rng() * 0.012;
     this.held = true; this.holdT = 0;
   }
 

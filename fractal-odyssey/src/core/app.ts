@@ -216,13 +216,20 @@ export class Odyssey {
   }
 
   screenshot(): void {
-    // render a fresh frame and grab synchronously (buffer is discarded at swap)
+    // render a fresh frame and grab it — but as a BLOB, not a data: URL:
+    // Safari/iOS refuses programmatic downloads of data: URIs (the button
+    // silently did nothing on iPad). Blob URLs download fine there, and
+    // identically on Chrome/Firefox.
     this.renderFrame(0.016, this.playing ? 0.016 * this.speed : 0);
-    const href = this.canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = href;
-    a.download = `fractal-odyssey-${this.active.id}-${Date.now()}.png`;
-    a.click();
+    this.canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fractal-odyssey-${this.active.id}-${Date.now()}.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }, 'image/png');
   }
 
   private pixelRatio(): number {

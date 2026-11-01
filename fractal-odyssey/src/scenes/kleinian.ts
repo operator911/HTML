@@ -29,7 +29,18 @@ uniform float uTime;
 
 vec2 cadd(vec2 a, vec2 b) { return a + b; }
 vec2 cmul(vec2 a, vec2 b) { return vec2(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x); }
-vec2 cdiv(vec2 n, vec2 d) { return n * (vec2(d.x, -d.y) / max(dot(d, d), 1e-18)); }
+// true complex division. GLSL 'vec2 * vec2' is COMPONENTWISE — the old
+// n * vec2(d.x,-d.y)/|d|² form was not z·conj(d): it pinned y to −y·dy/Q,
+// making the real axis a trap (99% of walkers ended up on it, smearing the
+// limit set into a spine + lens bands instead of the ring chain).
+vec2 cdiv(vec2 n, vec2 d) { return cmul(n, vec2(d.x, -d.y)) / max(dot(d, d), 1e-18); }
+
+// decorrelating integer-grid hash (same construction as core/shaders hash12)
+float hash12(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
 
 void main() {
   vec4 s = texture2D(uState, vUv);
@@ -38,12 +49,13 @@ void main() {
   vec3 rd = texture2D(uSeed, vUv).xyz;
   for (int st = 0; st < 6; st++) {
     if (float(st) >= uSteps) break;
-    // generator choice driven by the walker's own chaotic position (see
-    // flame.ts for why a fixed time-sequence choice scars the canvas)
-    float t1 = floor(uTime * 11.0);
-    float r = fract(dot(p, vec2(12.9898, 78.233)) + rd.x * 7.31 + float(st) * 0.6180339887
-                    + t1 * (0.7548776664 + rd.y * 0.1987)
-                    + floor(uTime * 0.11) * (0.5698402909 + rd.z * 0.1311));
+    // Independent per walker·step·frame generator draw — the chaos game needs
+    // the word sequence INDEPENDENT of the orbit (see flame.ts: position-hashed
+    // choices lock orbits onto the hash's switching surfaces; here the
+    // translation generators would march walkers straight out to the reseed
+    // boundary, fogging vertical streaks into the field).
+    float frame = floor(uTime * 60.0);
+    float r = hash12(vUv * vec2(991.0, 1231.0) + vec2(float(st) * 71.37, frame * 13.71));
     float g = floor(r * 4.0);
     if (g < 0.5)      { p = p + vec2(2.0 * uLam, 0.0);  hue = mix(hue, 0.05, 0.22); }
     else if (g < 1.5) { p = p - vec2(2.0 * uLam, 0.0);  hue = mix(hue, 0.30, 0.22); }
@@ -51,7 +63,7 @@ void main() {
     else              { p = cdiv(p, cadd(cmul(-uMu, p), vec2(1.0, 0.0))); hue = mix(hue, 0.84, 0.22); }
     // occasional reseed from a DISC near the origin (a rectangular spawn box
     // would fog its own outline into the sparse field) keeps every basin explored
-    if (fract(rd.y * 91.7 + float(st) * 1.618 + floor(uTime * 11.0) * 0.35) < 0.0012
+    if (hash12(vUv * vec2(1237.0, 761.0) + vec2(float(st) * 53.3, frame * 29.7 + 7.7)) < 0.0009
         || !(abs(p.x) < 40.0 && abs(p.y) < 40.0)) {
       float rr = sqrt(fract(rd.x + uTime * 0.013)) * 1.6;
       float aa = 6.28318530718 * fract(rd.z * 7.7 + uTime * 0.019);
@@ -70,6 +82,7 @@ uniform sampler2D uState;
 uniform vec2 uCenter;     // world-space pan
 uniform float uScale;     // world→clip
 uniform float uRot;
+uniform float uPoint;
 varying float vHue;
 varying float vIn;
 void main() {
@@ -80,7 +93,9 @@ void main() {
   p *= uScale;
   vIn = step(abs(p.x), 1.05) * step(abs(p.y), 1.05);
   gl_Position = vec4(p, 0.0, 1.0);
-  gl_PointSize = 1.0;
+  // see flame.ts: hairline 1px splats are dropped/rarely rasterized by Apple
+  // GPUs — soft ~2px sprites are the portable choice (attractor world does this)
+  gl_PointSize = uPoint;
   vHue = s.z;
 }
 `;
@@ -93,7 +108,8 @@ varying float vHue;
 varying float vIn;
 void main() {
   vec3 c = max(palette(vHue * 0.55 + uPalShift), vec3(0.0)) + vec3(0.05);
-  gl_FragColor = vec4(c * uWeight * vIn, uWeight * vIn);
+  float a = smoothstep(0.5, 0.08, length(gl_PointCoord - 0.5));
+  gl_FragColor = vec4(c * uWeight * vIn * a, uWeight * vIn * a);
 }
 `;
 
@@ -112,11 +128,15 @@ void main() {
 
 interface KG { name: string; lam: number; mu: [number, number]; }
 /** CPU-verified generator pairs (bounded orbit, 2-D density, λ-periodic) */
+// All four pairs CPU-verified at the shipped framing (±6.2 × ±3.4) by
+// i.i.d. chaos-game Monte Carlo: 45–78% empty window = true fractal support.
+// (The old table mixed in μ with real parts — those groups are NOT discrete
+// and filled the plane with a dull band. Moduli live on the imaginary axis.)
 const PAIRS: KG[] = [
-  { name: 'Jørgensen', lam: 1.0, mu: [0.05, 0.5] },
-  { name: 'Maskit weave', lam: 0.9, mu: [0.16, 0.44] },
-  { name: 'Deep braid', lam: 1.15, mu: [0.02, 0.58] },
-  { name: 'Cantor lace', lam: 1.4, mu: [0.1, 0.4] },
+  { name: 'Jørgensen rings', lam: 1.0, mu: [0, 0.5] },
+  { name: 'Maskit braid', lam: 1.15, mu: [0, 0.55] },
+  { name: 'Ricrac weave', lam: 1.0, mu: [0, 0.62] },
+  { name: 'Bowtie lace', lam: 1.25, mu: [0, 0.65] },
 ];
 
 export class KleinianWorld extends BaseWorld {
@@ -164,10 +184,10 @@ export class KleinianWorld extends BaseWorld {
 
   private pair = 0;
   private lam = 1.0;
-  private mu = new THREE.Vector2(0.05, 0.5);
+  private mu = new THREE.Vector2(0, 0.5);
   private persistence = 0.9965;
-  private exposure = 1.1;
-  private weight = 0.03;
+  private exposure = 0.45;
+  private weight = 0.007;
   private pan = new THREE.Vector2(0, 0);
   private scale = 0.165;   // world→clip (set spans ≈ ±5 × ±3.2)
   private rot = 0;
@@ -220,6 +240,7 @@ export class KleinianWorld extends BaseWorld {
       uniforms: {
         uState: { value: this.stateA.texture },
         uCenter: { value: this.pan }, uScale: { value: this.scale }, uRot: { value: 0 },
+        uPoint: { value: 1.9 },
         uWeight: { value: this.weight },
         uPalA: { value: new THREE.Vector3() }, uPalB: { value: new THREE.Vector3() },
         uPalC: { value: new THREE.Vector3() }, uPalD: { value: new THREE.Vector3() },
@@ -337,6 +358,7 @@ export class KleinianWorld extends BaseWorld {
     this.trailA.setSize(rw, rh);
     this.trailB.setSize(rw, rh);
     this.presentMat.uniforms.uResolution.value.set(rw, rh);
+    (this.splatMat.uniforms.uPoint as THREE.IUniform).value = clamp(rw / 620, 1.4, 2.6);
     this.needsReseed = true;
   }
 
@@ -381,14 +403,17 @@ export class KleinianWorld extends BaseWorld {
     }
     const r = this.renderer;
     const u = this.simMat.uniforms;
-    u.uTime.value = f.time;
+    // SIM clock = wall time (see flame.ts): the dice quantum ticks per frame
+    u.uTime.value = f.real;
     u.uSteps.value = clamp(Math.round(f.dt * 60 * 1.8), 2, 6);
 
-    // slow drift around the verified-good point, unless held by the user
+    // slow drift around the verified-good point, unless held by the user.
+    // Kept on the imaginary axis: CPU scans showed real-part detours land in
+    // the non-discrete region (the walk fills the plane instead of a limit set).
     if (f.playing && !this.dragging && !this.held) {
       const t = f.time * 0.05;
-      this.mu.set(PAIRS[this.pair].mu[0] + 0.04 * Math.sin(t * 0.7),
-                  PAIRS[this.pair].mu[1] + 0.05 * Math.sin(t * 0.43 + 1.2));
+      this.mu.set(PAIRS[this.pair].mu[0],
+                  PAIRS[this.pair].mu[1] + 0.03 * Math.sin(t * 0.43 + 1.2));
       this.rot += f.dt * 0.006;
     }
 
@@ -452,9 +477,9 @@ export class KleinianWorld extends BaseWorld {
   surprise(rng: () => number): void {
     this.pair = Math.floor(rng() * PAIRS.length);
     this.applyPair();
-    this.exposure = 0.7 + rng() * 1.4;
+    this.exposure = 0.3 + rng() * 0.7;
     this.persistence = 0.99 + rng() * 0.0095;
-    this.weight = 0.015 + rng() * 0.03;
+    this.weight = 0.004 + rng() * 0.009;
     this.scale = 0.12 + rng() * 0.22;
     this.rot = (rng() - 0.5) * 0.8;
     this.held = true; this.holdT = 0;

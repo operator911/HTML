@@ -143,8 +143,8 @@ export class UI {
       return b;
     };
     mk('reset', 'Reset view (R)', () => a.resetView());
-    mk('camera', 'Screenshot (S)', () => { a.screenshot(); this.toast('Saved PNG screenshot'); });
-    mk('expand', 'Fullscreen (F)', () => a.toggleFullscreen());
+    mk('camera', 'Screenshot (S)', () => { a.screenshot(); this.toast('Saving PNG screenshot'); });
+    if ('requestFullscreen' in document.documentElement) mk('expand', 'Fullscreen (F)', () => a.toggleFullscreen());
     const diagBtn = mk('diag', 'Diagnostics (D)', () => this.toggleDiag());
     mk('help', 'Keyboard & mouse (?)', () => this.helpEl.classList.toggle('open'));
     mk('eye', 'Hide interface (H)', () => this.toggleUI());
@@ -479,7 +479,7 @@ export class UI {
         case 'c': case 'C': a.setAutoplay(!a.autoplay); this.toast(a.autoplay ? 'Cinematic autoplay on' : 'Cinematic autoplay off'); break;
         case 'p': case 'P': a.cyclePalette(e.shiftKey ? -1 : 1); this.toast(`Palette: ${PALETTES[a.paletteIndex].name}`); break;
         case 'r': case 'R': a.resetView(); this.toast('View reset'); break;
-        case 's': case 'S': a.screenshot(); this.toast('Saved PNG screenshot'); break;
+        case 's': case 'S': a.screenshot(); this.toast('Saving PNG screenshot'); break;
         case 'f': case 'F': a.toggleFullscreen(); break;
         case 'h': case 'H': this.toggleUI(); break;
         case 'i': case 'I': this.toggleInfo(); break;

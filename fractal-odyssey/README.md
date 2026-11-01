@@ -53,7 +53,7 @@ integrated GPUs and 5K panels are both handled.
 | 11 | **Kleinian Limit Set** | ⟨A: z↦z+2λ, B: z↦z/(μz+1)⟩ — a Möbius *group* | Jørgensen-type orbit sampled by GPGPU chaos-game walkers, log-density HDR; four CPU-verified (λ, μ) pairs slide through quasifuchsian deformation space |
 | 12 | **Hyperbolic Tilings** | regular {p,q} tessellation of the Poincaré disk | Δ(p,q,2) reflection-group fold per pixel; edges at constant hyperbolic width, Möbius isometry camera walks the horizon; seven tilings + custom p, q (all fold-verified) |
 | 13 | **Lyapunov Domains** | λ = ⟨ln\|rₙ(1−2xₙ)\|⟩ of the 2-period-forced logistic map | the stability map of “biological chaos”: parity-striped order windows in a black chaotic sea; verified against the closed-form period-2 multiplier at r=3.2 |
-| 14 | **Fractal Flame** | p ← vᵢ(Aᵢp + bᵢ) + cᵢ, i random (chaos game) | IFS through nonlinear lens variations, GPGPU samples into an HDR density buffer with log exposure; three CPU-verified coefficient sets |
+| 14 | **Fractal Flame** | p ← vᵢ(Aᵢp + bᵢ) + cᵢ, i random (chaos game) | IFS through nonlinear lens variations, GPGPU samples into an HDR density buffer with log exposure; four CPU-verified coefficient sets (vortex lace, fern, lantern, butterfly) |
 
 ## Controls
 
@@ -122,11 +122,24 @@ automorphism camera is a true disk isometry so the horizon yields infinitely
 many tiles at constant size. The **Quaternion Julia** c-presets and the
 **Kleinian** (λ, μ) pairs were each screened over multiple slice orientations /
 word samples on the CPU for structural richness (bounded fraction and iteration
-variance in range) rather than eyeballed — the reason the shipped Butterfly
-flame and Jørgensen weave show real form and not a blob. The flame and Kleinian
-chaos games drive their per-step map choice from each walker’s own chaotic
-position (a fixed time-sequence choice converges the whole flock onto periodic
-map-cycles and scars the canvas with resonance circles).
+variance in range) rather than eyeballed.
+
+Two honesty corrections came out of a real-device (iPadOS) pass. First, the
+chaos-game map choice: the textbook requirement is that each walker's map
+sequence be *independent of its own orbit*, but both the flame and Kleinian
+worlds had been hashing the walker's position to pick its next map. That is
+Markovian, not i.i.d. — orbits lock onto the hash's switching surfaces, so the
+flame scarred the canvas with perfect spherical-inversion circles and the
+Kleinian walkers marched out to the reseed boundary. The choice is now a
+per-walker · per-step · per-frame hash (the standard GPGPU chaos game), and
+every preset and (λ, μ) pair was re-screened with an fp32-faithful CPU Monte
+Carlo; the shipped pairs sit on the discrete imaginary axis (a real μ part puts
+the group in the non-discrete region and fills the plane). Second, the Kleinian
+complex division used a GLSL `vec2 * vec2` where it needed a complex multiply —
+componentwise is not complex — which made the real axis a trap pinning ~99% of
+walkers onto a line, so the "limit set" was a bright spine rather than a circle
+packing. A read-back of the live GPU state texture caught it; the same class of
+slip in the hyperbolic automorphism was fixed at the same time.
 
 ## Development
 

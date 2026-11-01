@@ -39,8 +39,10 @@ const float PI = 3.14159265359;
 vec2 cmul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
 vec2 cinv(vec2 a) { return vec2(a.x, -a.y) / max(dot(a, a), 1e-12); }   // true complex reciprocal
 
-// Möbius automorphism of the disk taking 0 → camA
-vec2 autom(vec2 z, vec2 c) { return (z + c) * cinv(vec2(1.0, 0.0) + cmul(vec2(c.x, -c.y), z)); }
+// Möbius automorphism of the disk taking 0 → camA. cmul() — NOT '*':
+// componentwise vec2 multiply is not complex multiply (same trap as
+// kleinian's cdiv; the tiling looked fine but the camera was skewed).
+vec2 autom(vec2 z, vec2 c) { return cmul(z + c, cinv(vec2(1.0, 0.0) + cmul(vec2(c.x, -c.y), z))); }
 
 void main() {
   float aspect = uResolution.x / uResolution.y;
