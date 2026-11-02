@@ -97,8 +97,8 @@ export abstract class PlaneWorld extends World {
 
   logWMin = LOG_START - 30.4; // ~×10^13
   logWMax = LOG_MAX_OUT;
-  deepAt = LOG_START - 12.6;  // switch iteration to df2 below this
-  rotLimit = LOG_START - 9.0; // rotation disabled deeper than this
+  deepAt = LOG_START - 6.9;  // switch iteration to df2 below this (float grid bands beyond ~10^6.9)
+  rotLimit = LOG_START - 6.5; // rotation disabled deeper than this
 
   tourPath: FlyPath = new FlyPath([[LOG_START, -0.55, 0, 0, 0]], [30]);
   tourSpeed = 1;
@@ -287,12 +287,14 @@ export abstract class PlaneWorld extends World {
   }
 
   /**
-   * Iterations scaled with zoom depth: a ×10^d view of the boundary needs
-   * roughly 150·d iterations before filaments stop filling with fake interior.
+   * Iterations scaled with zoom depth: visible filament nu at a view of height
+   * H grows roughly like H^-0.45, so the floor rises ~420 per decade of zoom.
+   * (Floors tuned against rendered frames — low floors produce the
+   * "flat navy mottle" phase in tours.)
    */
-  iterationBudgetZoom(base: number, cap = 1700): number {
+  iterationBudgetZoom(base: number, cap = 6000): number {
     const d10 = Math.max(0, (LOG_START - this.logW)) * 0.4343;
-    const floor = 140 + 210 * d10;
+    const floor = 250 + 550 * d10; // empirical: ×10^d views need ~550·d iterations
     return Math.min(cap, Math.round(Math.max(this.iterationBudget(base), floor)));
   }
 
@@ -338,11 +340,18 @@ export abstract class PlaneWorld extends World {
       const dpx = Math.abs(snap[1] - this.lastSnap[1]) / wpp
         + Math.abs(snap[2] - this.lastSnap[2]) / wpp
         + Math.abs(snap[0] - this.lastSnap[0]) * 14;
-      if (dpx > 0.05) {
+      if (dpx > 0.55) {
         this.accumN = 0;
         this.stillTime = 0;
       } else {
-        this.stillTime += dt;
+        if (dpx > 0.12) {
+          // slow cinematic motion: keep a short temporal window (sub-pixel
+          // motion-averaging) without ever blurring more than ~7 frames
+          this.accumN = Math.min(Math.max(this.accumN, 2) + 1, 6);
+          this.stillTime = 0;
+        } else {
+          this.stillTime += dt;
+        }
       }
     }
     this.lastSnap = snap;

@@ -24,7 +24,8 @@ const ALL = ['mandelbrot', 'julia', 'ship', 'newton', 'bulb', 'menger', 'flame']
 const list = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
 
 // Tour-path offsets (seconds along the FlyPath) chosen for composed frames.
-const TOUR_T = { mandelbrot: 24, julia: 8, ship: 30, newton: 20, bulb: 75, menger: 40, flame: 20 };
+const TOUR_T = { mandelbrot: 40, julia: 60, ship: 12, newton: 20, bulb: 75, menger: 40, flame: 20 };
+if (process.env.TOVER) for (const k of Object.keys(TOUR_T)) TOUR_T[k] = parseInt(process.env.TOVER, 10);
 const MIN_FRAMES = parseInt(process.env.SHOT_FRAMES || '26', 10);
 
 const browser = await puppeteer.launch({
@@ -65,9 +66,16 @@ for (const world of list) {
       window.__odyssey.setAuto(true);
       window.__odyssey.prewarmFlame(700);
     }, TOUR_T[world] ?? 30);
+    // Gate on tour progress (dive must actually reach its dwell), not raw
+    // frame counts — software GL frame times vary 10×.
     await page.waitForFunction(
-      `window.__odyssey.engine.frames > ${MIN_FRAMES}`,
-      { timeout: 900000, polling: 400 }
+      `(() => {
+        const w = window.__odyssey.engine.active;
+        const t = ${TOUR_T[world] ?? 30};
+        const arrived = w.pathT === undefined || w.pathT >= t + 22;
+        return arrived && window.__odyssey.engine.frames > ${MIN_FRAMES};
+      })()`,
+      { timeout: 1200000, polling: 800 }
     );
     await new Promise((r) => setTimeout(r, 1500));
     await page.screenshot({ path: path.join(OUT, world + '.png') });

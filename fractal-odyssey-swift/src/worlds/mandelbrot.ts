@@ -60,8 +60,8 @@ void main() {
   vec3 col;
   if (inside) {
     float tr = sqrt(max(minTrap, 0.0));
-    col = palette(0.60) * (0.016 + 0.11 * exp(-tr * 2.6)) * uGlow;
-    col += palette(0.04 + uColorShift * 0.25) * 0.010;
+    col = palette(0.60) * (0.05 + 0.16 * exp(-tr * 2.6)) * uGlow;
+    col += palette(0.04 + uColorShift * 0.25) * 0.022;
   } else {
     float t = sqrt(nu) * 0.075 + uColorShift + uZoomCyc * 0.011;
     float edge = exp(-nu * 0.06) + 0.45 * exp(-nu * 0.016);
@@ -74,18 +74,25 @@ void main() {
 `;
 
 const K = LOG_START;
-// Choreography using visually-verified destinations: establishing wide view →
-// long graceful dive into the golden spiral (float-pair mode, exact math) →
-// dwell while progressive refinement sharpens it → return. Every beat was
-// checked frame-by-frame in the QA harness.
+// Choreography built from rendered-frame scans of every candidate view. Two
+// hero destinations, both verified frame-by-frame:
+//   ×1800 seahorse valley  (-0.74392, 0.1109)  — golden seahorses with
+//     spiral eyes hanging from the boundary; and
+//   ×10^9.5 golden spiral  (-0.235125, 0.827215) — float-pair corridor.
+// Routes pass through the ray bands (structured), never across empty sea, and
+// dwell phases sit in the verified gold/teal palette window (cs ≈ 0.62–0.80).
 const TOUR = new FlyPath(
   [
-    [K,        -0.55,      0.0,        0, 0.00],
-    [K - 13.4, -0.235125,  0.827215,   0, 0.50],
-    [K - 13.4, -0.235125,  0.827215,   0, 0.78],
-    [K,        -0.55,      0.0,        0, 0.0],
+    [K,        -0.55,      0.0,        0, 0.64],
+    [K - 1.8,  -0.62,      0.045,      0, 0.64],
+    [K - 7.5,  -0.74392,   0.1109,     0, 0.66],   // golden seahorses, ×1800
+    [K - 7.5,  -0.74392,   0.1109,     0, 0.68],   // dwell + refinement
+    [K,        -0.55,      0.0,        0, 0.64],
+    [K - 13.4, -0.235125,  0.827215,   0, 0.68],   // spiral corridor (float-pair)
+    [K - 13.4, -0.235125,  0.827215,   0, 0.70],   // dwell
+    [K + 0.4,  -0.55,      0.0,        0, 0.64],
   ],
-  [10, 26, 22, 12]
+  [14, 16, 30, 24, 14, 30, 24, 14]
 );
 
 export class MandelbrotWorld extends PlaneWorld {
@@ -100,9 +107,9 @@ export class MandelbrotWorld extends PlaneWorld {
     params: 'Iterations, glow, colour cycling. Press J for the Julia set of the parameter at screen center; wheel zooms toward the cursor; drag pans.',
   };
 
-  private iterBase = 420;
+  private iterBase = 520;
   private glow = 1.0;
-  private colorCycle = 0.045;
+  private colorCycle = 0.004;
   private juliaMode = false;
   private juliaC = new THREE.Vector4(-0.8, 0.156, 0, 0);
   private savedCam: number[] | null = null;
@@ -129,13 +136,16 @@ export class MandelbrotWorld extends PlaneWorld {
     if (!e) return;
     const u = this.mat.uniforms;
     const deep = this.logW < this.deepAt;
-    const deepCap = Math.round(250 + 2350 * e.detailScale());
-    const budget = this.iterationBudgetZoom(this.iterBase, deep ? deepCap : 1700);
+    // Float-pair iteration cost is ~40× float — and the deep corridor's gold
+    // band lands near the frontier of ~2000 df iterations at ×10^9.5 depths,
+    // so the cap scales with quality between ~1200 and 3600.
+    const deepCap = Math.min(3600, Math.round(400 + 3800 * e.detailScale()));
+    const budget = this.iterationBudgetZoom(this.iterBase, deep ? deepCap : 6000);
     u.uMaxIter.value = budget;
     u.uJulia.value = this.juliaMode ? 1 : 0;
     u.uJuliaC.value.copy(this.juliaC);
     u.uGlow.value = this.glow;
-    u.uColorShift.value = this.colorShift + e.time * this.colorCycle;
+    u.uColorShift.value = (this.colorShift + e.time * this.colorCycle) % 1;
     u.uZoomCyc.value = (K - this.logW) * 0.434;
   }
 

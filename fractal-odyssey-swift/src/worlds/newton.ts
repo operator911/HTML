@@ -69,7 +69,7 @@ void main() {
     float t = base + uColorShift + nu * 0.016;
     float b = 0.42 + 0.62 * exp(-nu * 0.055) + 0.28 * exp(-nu * 0.6);
     col = palette(t) * b;
-    col += palette(t + 0.5) * exp(-nu * 1.6) * 0.35 * uGlow;
+    col += palette(t + 0.5) * exp(-nu * 0.32) * 0.55 * uGlow;
     col *= 0.75 + 0.5 * uGlow;
   }
   gl_FragColor = vec4(max(col, vec3(0.0)), 1.0);
@@ -78,14 +78,15 @@ void main() {
 
 const TOUR = new FlyPath(
   [
-    [K + 0.35, 0.0, 0.0, 0, 0.0],
-    [K - 1.2, 0.0, 0.0, 0, 0.25],
-    [K - 2.6, 0.42, -0.33, 0, 0.5],
-    [K - 2.2, -0.3, 0.5, 0, 0.72],
-    [K - 1.0, 0.1, 0.15, 0, 0.4],
-    [K + 0.2, 0.0, 0.0, 0, 0.05],
+    [K + 0.35, 0.0, 0.0, 0, 0.50],
+    [K - 1.4, -0.72, 0.52, 0, 0.46],
+    [K - 4.6, -0.72, 0.52, 0, 0.50],   // in the triple-point whirl (self-similar)
+    [K - 0.6, 0.0, 0.0, 0, 0.52],
+    [K - 1.4, 0.15, -0.90, 0, 0.50],
+    [K - 4.4, 0.15, -0.90, 0, 0.54],   // the other whirl
+    [K + 0.2, 0.0, 0.0, 0, 0.50],
   ],
-  [16, 22, 22, 22, 18, 14]
+  [16, 14, 20, 12, 14, 20, 14]
 );
 
 export class NewtonWorld extends PlaneWorld {
@@ -105,7 +106,7 @@ export class NewtonWorld extends PlaneWorld {
   private iterBase = 96;
   private twist = 0.045;
   private glow = 1.0;
-  private colorCycle = 0.03;
+  private colorCycle = 0.004;
 
   constructor() {
     super();
@@ -146,7 +147,7 @@ export class NewtonWorld extends PlaneWorld {
     }
     u.uTwist.value = this.twist;
     u.uGlow.value = this.glow;
-    u.uColorShift.value = this.colorShift + e.time * this.colorCycle;
+    u.uColorShift.value = (this.colorShift + e.time * this.colorCycle) % 1;
   }
 
   override resetView(): void {

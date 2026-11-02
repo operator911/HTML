@@ -54,10 +54,11 @@ void main() {
   vec3 col;
   if (inside) {
     float tr = sqrt(max(minTrap, 0.0));
-    col = palette(0.62) * (0.015 + 0.12 * exp(-tr * 2.4)) * uGlow;
+    col = palette(0.62) * (0.06 + 0.15 * exp(-tr * 1.4)) * uGlow;
+    col += palette(0.30) * 0.022;
   } else {
     float t = sqrt(nu) * 0.085 + uColorShift;
-    float edge = exp(-nu * 0.055) + 0.45 * exp(-nu * 0.015);
+    float edge = exp(-nu * 0.055) + 0.5 * exp(-nu * 0.010);
     col = palette(t) * (0.4 + 0.9 * edge) + palette(t + 0.07) * edge * 0.6 * uGlow;
     col *= 1.0 + 0.45 * exp(-nu * 0.28);
   }
@@ -76,6 +77,9 @@ export const JULIA_PRESETS: JuliaPreset[] = [
   { name: 'Julia Dust',    c: [0.7885, 0.0935],  logW: LOG_START - 0.1, rot: 0, pal: 6 },
 ];
 
+// Breathing baseline for the view that frames the whole shape
+const K0 = LOG_START;
+
 // Closed choreography through parameter space (loops the classic cardioid neighborhood).
 const C_PATH = new FlyPath(
   [
@@ -86,8 +90,7 @@ const C_PATH = new FlyPath(
   [9, 9, 9, 9, 9, 9, 9, 9, 9]
 );
 
-export class JuliaWorld extends PlaneWorld {
-  readonly info: WorldInfo = {
+export class JuliaWorld extends PlaneWorld {  readonly info: WorldInfo = {
     id: 'julia',
     title: 'Julia Dreamscape',
     tag: '2D · animated z² + c',
@@ -105,7 +108,7 @@ export class JuliaWorld extends PlaneWorld {
   private rotSpeed = 0.05;
   private pulse = 1;
   private glow = 1;
-  private iterBase = 380;
+  private iterBase = 620;
   private cPathT = 0;
   private cFrom: [number, number] | null = null;
   private cTarget: [number, number] | null = null;
@@ -113,11 +116,11 @@ export class JuliaWorld extends PlaneWorld {
   private pathAnim = true;
   override tourPath = new FlyPath(
     [
-      [LOG_START - 0.1, 0, 0, 0, 0.0],
-      [LOG_START - 1.4, 0.32, 0.06, 0.5, 0.22],
-      [LOG_START - 0.4, -0.2, -0.1, -0.7, 0.5],
-      [LOG_START - 2.6, 0.0, 0.0, 1.2, 0.75],
-      [LOG_START - 0.7, 0.1, 0.2, -0.4, 0.35],
+      [K0 + 0.35, 0, 0, 0, 0.62],
+      [K0 - 0.55, 0.20, 0.08, 0.55, 0.66],
+      [K0 - 0.25, -0.18, -0.10, -0.8, 0.70],
+      [K0 - 0.95, 0.02, 0.02, 1.25, 0.74],
+      [K0 - 0.35, 0.12, 0.18, -0.45, 0.66],
     ],
     [16, 16, 16, 16, 16]
   );
@@ -125,9 +128,10 @@ export class JuliaWorld extends PlaneWorld {
   constructor() {
     super();
     this.cx = 0; this.cy = 0; this.logW = LOG_START - 0.1;
+    this.deepAt = LOG_START - 7.0; // |c|≤1.2: float grid clean to ~10^7
     this.colorShift = 0;
     this.initFractal(BODY, {
-      uMaxIter: { value: 380 },
+      uMaxIter: { value: 620 },
       uC: { value: new THREE.Vector4(-0.8, 0.156, 0, 0) },
       uGlow: { value: 1 },
       uColorShift: { value: 0 },
@@ -150,14 +154,14 @@ export class JuliaWorld extends PlaneWorld {
     }
     // Gentle idle rotation + breathing zoom, driven by tour state.
     const u = this.mat.uniforms;
-    const budget = this.iterationBudgetZoom(this.iterBase, 900);
+    const budget = this.iterationBudgetZoom(this.iterBase, 2600);
     u.uMaxIter.value = budget;
     const hx = Math.fround(this.cRe); const lx = Math.fround(this.cRe - hx);
     const hy = Math.fround(this.cIm); const ly = Math.fround(this.cIm - hy);
     (u.uC.value as THREE.Vector4).set(hx, hy, lx, ly);
     u.uGlow.value = this.glow;
     const e = this.engine;
-    u.uColorShift.value = this.colorShift + (e ? e.time * this.rotSpeed * 0.35 : 0);
+    u.uColorShift.value = (this.colorShift + (e ? e.time * this.rotSpeed * 0.35 : 0)) % 1;
     this.rot += dt * this.rotSpeed * (this.logW > this.rotLimit ? 1 : 0);
     // breathing zoom pulse
     if (e && this.pulse > 0) {

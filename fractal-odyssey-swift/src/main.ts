@@ -64,6 +64,7 @@ if (hash.get('auto') === '0') engine.autoplay = false;
 if (hash.get('time') !== null) engine.time = parseFloat(hash.get('time') as string) || 0;
 
 const startWorld = hash.get('world') || 'mandelbrot';
+engine.setPalette(hash.get('pal') !== null ? parseInt(hash.get('pal') as string, 10) : 0);
 engine.switchTo(startWorld);
 overlay.refreshWorld();
 if (hash.get('ui') === '0') overlay.setHidden(true);
@@ -268,7 +269,7 @@ window.__odyssey = {
   setAuto: (v: boolean) => { engine.autoplay = v; },
   setTourTime: (t: number) => {
     const w = engine.active as unknown as { pathT?: number };
-    if (w) w.pathT = t;
+    if (w && 'pathT' in w) w.pathT = t;
   },
   prewarmFlame: (n: number) => flame.prewarm(n),
   stats: () => engine.stats(),

@@ -58,7 +58,7 @@ void main() {
   vec3 col;
   if (inside) {
     float tr = sqrt(max(minTrap, 0.0));
-    col = palette(0.58) * (0.016 + 0.11 * exp(-tr * 2.0)) * uGlow;
+    col = palette(0.58) * (0.05 + 0.15 * exp(-tr * 2.0)) * uGlow;
   } else {
     float t = sqrt(nu) * 0.07 + uColorShift + uZoomCyc * 0.013;
     float edge = exp(-nu * 0.05) + 0.45 * exp(-nu * 0.014);
@@ -71,16 +71,16 @@ void main() {
 
 const TOUR = new FlyPath(
   [
-    [K - 0.9,  -1.766,   -0.038, 0, 0.0],
-    [K - 4.6,  -1.7255,   0.0275, 0, 0.18],
-    [K - 4.6,  -1.7255,   0.0275, 0, 0.32],
-    [K - 0.9,  -1.766,   -0.038, 0, 0.36],
-    [K - 7.6,  -1.77166548, -0.0021572, 0, 0.52],
-    [K - 7.6,  -1.77166548, -0.0021572, 0, 0.66],
-    [K - 0.9,  -1.766,   -0.038, 0, 0.7],
-    [K - 12.4, -1.768778833, -0.001738885, 0, 0.84],
-    [K - 12.4, -1.768778833, -0.001738885, 0, 0.96],
-    [K - 0.9,  -1.766,   -0.038, 0, 0.0],
+    [K - 0.9,  -1.766,   -0.038, 0, 0.60],
+    [K - 4.6,  -1.7255,   0.0275, 0, 0.64],
+    [K - 4.6,  -1.7255,   0.0275, 0, 0.68],
+    [K - 0.9,  -1.766,   -0.038, 0, 0.55],
+    [K - 7.6,  -1.77166548, -0.0021572, 0, 0.70],
+    [K - 7.6,  -1.77166548, -0.0021572, 0, 0.74],
+    [K - 0.9,  -1.766,   -0.038, 0, 0.58],
+    [K - 11.0, -1.76878328, -0.00173778, 0, 0.72],
+    [K - 11.0, -1.76878328, -0.00173778, 0, 0.72],
+    [K - 0.9,  -1.766,   -0.038, 0, 0.60],
   ],
   [8, 13, 16, 7, 13, 16, 7, 16, 16, 9]
 );
@@ -101,11 +101,12 @@ export class BurningShipWorld extends PlaneWorld {
 
   private iterBase = 340;
   private glow = 1.1;
-  private colorCycle = 0.05;
+  private colorCycle = 0.010;
 
   constructor() {
     super();
     this.cx = -1.766; this.cy = -0.038; this.logW = LOG_START - 1.6;
+    this.deepAt = LOG_START - 8.5;
     this.initFractal(BODY, {
       uMaxIter: { value: 340 },
       uGlow: { value: 1.1 },
@@ -120,10 +121,11 @@ export class BurningShipWorld extends PlaneWorld {
     if (!e) return;
     const u = this.mat.uniforms;
     const deep = this.logW < this.deepAt;
-    const budget = this.iterationBudgetZoom(this.iterBase, deep ? 880 : 1600);
+    const deepCap = Math.round(300 + 2400 * e.detailScale());
+    const budget = this.iterationBudgetZoom(this.iterBase, deep ? deepCap : 6000);
     u.uMaxIter.value = budget;
     u.uGlow.value = this.glow;
-    u.uColorShift.value = this.colorShift + e.time * this.colorCycle;
+    u.uColorShift.value = (this.colorShift + e.time * this.colorCycle) % 1;
     u.uZoomCyc.value = (LOG_START - this.logW) * 0.434;
   }
 
