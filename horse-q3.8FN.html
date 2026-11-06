@@ -358,7 +358,7 @@ function buildMaterials() {
   MAT.points = std(c.points, 0.72);
   MAT.mane = std(c.mane, 0.66); MAT.mane.side = THREE.DoubleSide;
   MAT.hoof = std(c.hoof, 0.42, 0.04);
-  MAT.skin = std(0x4a3230, 0.7);       // muzzle, inner ear, eye ring
+  MAT.skin = std(0x5c3c39, 0.72);      // muzzle, inner ear, eye ring — dark, but not a hole in the face
   MAT.eye = std(0x0d0908, 0.22, 0.12);
   MAT.glint = std(0xffffff, 0.4);      // catch-light
   MAT.brush = std(c.mane, 0.7); MAT.brush.side = THREE.DoubleSide;  // fetlock feathering
@@ -638,25 +638,28 @@ function buildHorse(opts = {}) {
     [1.160, 1.754, 1.670, 0.057, 0.053, 2.3],
   ]), MAT.coat, { seed: 40, grad: .21 });
   const muzzle = bone('muzzle', head, P.muzzle[0], P.muzzle[1]);
-  H(muzzle, localRings(muzzle, [          // nostril flare, then a blunt lip
-    [1.156, 1.756, 1.670, 0.056, 0.052, 2.3],
-    [1.216, 1.716, 1.656, 0.050, 0.047, 2.1],
-    [1.262, 1.686, 1.640, 0.042, 0.041, 2.0],
+  /* Nostril flare, then a blunt cut. A last ring that keeps tapering reads as a
+     beak, and a beak in profile is the dark blade that used to lie over the face. */
+  H(muzzle, localRings(muzzle, [
+    [1.156, 1.750, 1.668, 0.060, 0.056, 2.4],
+    [1.200, 1.724, 1.648, 0.072, 0.066, 2.2],
+    [1.234, 1.708, 1.628, 0.068, 0.062, 2.0],
   ]), MAT.skin, { seed: 41, grad: .09 });
   if (detail) {
     for (const z of [1, -1]) ball(head, 0, sc(42, .15), MAT.coat, [-0.030, -0.030, z * 0.060], [0.19, 0.17, 0.09]);
-    H(head, localRings(head, [[0.815, 1.794, 1.754, 0.054, 0.048], [0.905, 1.790, 1.762, 0.046, 0.040]]), MAT.belly, { seed: 43, grad: .03, sides: 6 });
-    for (const z of [1, -1]) mesh(muzzle, GEO.box(0.018, 0.026, 0.010, sc(45, .05)), MAT.points,
-      [-0.040, 0.030, z * 0.046], [0, 0, -0.34]);
+    /* No separate jaw: the head loft's own underside is the cheek line, and a
+       second loft there always reads as a plank hung under the throat. */
+    for (const z of [1, -1]) mesh(muzzle, GEO.box(0.016, 0.030, 0.016, sc(45, .05)), MAT.points,
+      [-0.006, 0.012, z * 0.062], [z * -0.26, 0, -0.40]);
   }
   for (const z of [1, -1]) {          // ears
     const ear = bone('ear' + (z > 0 ? 'L' : 'R'), head, 0.858, 1.948, z * 0.048);
     mesh(ear, GEO.cone(0.040, 0.145, 4, sc(46, .17)), MAT.coat, [0.002, 0.058, 0], [z * -0.20, 0, z * 0.22], [1, 1, 0.5]);
     if (detail) mesh(ear, GEO.cone(0.021, 0.082, 4, sc(47, .10)), MAT.skin, [0.012, 0.048, z * 0.006], [z * -0.20, 0, z * 0.22], [1, 1, 0.4]);
   }
-  for (const z of [1, -1]) {          // eyes + catch-light
-    mesh(head, GEO.ico(0.030, 0, 0), MAT.eye, [-0.062, 0.032, z * 0.070], [0, 0, 0], [1, 1.15, 0.5], false);
-    if (detail) mesh(head, GEO.ico(0.008, 0, 0), MAT.glint, [-0.050, 0.044, z * 0.086], [0, 0, 0], [1, 1, 0.5], false);
+  for (const z of [1, -1]) {          // eyes: the globe must break the surface, or only its catch-light shows
+    mesh(head, GEO.ico(0.030, 0, 0), MAT.eye, [-0.062, 0.032, z * 0.084], [0, 0, 0], [0.86, 1.05, 0.62], false);
+    if (detail) mesh(head, GEO.ico(0.008, 0, 0), MAT.glint, [-0.048, 0.042, z * 0.098], [0, 0, 0], [1, 1, 0.5], false);
   }
 
   /* ---- mane: a comb lofted along the crest, plus strands that stream back.
@@ -677,15 +680,25 @@ function buildHorse(opts = {}) {
   const maneN = detail ? 8 : 3;
   for (let i = 0; i < maneN; i++) {
     const u = i / (maneN - 1);
-    const wx = lerp(0.46, 0.86, u), wy = lerp(1.690, 1.935, u) + 0.052;
+    /* roots ON the crest line (NK's own top edge), not 9 cm above it: floating
+       blades let the sky through and read as a second mane */
+    const wx = lerp(0.46, 0.86, u), wy = lerp(1.652, 1.905, u) + 0.008;
     const b = bone('mane' + i, u < 0.34 ? neckA : u < 0.72 ? neckB : neckC, wx, wy);
     const len = lerp(0.16, 0.10, u);
-    mesh(b, GEO.quad(0.05, len, { grad: .30, jitter: .12, taper: 0.05 }), MAT.mane, [0, 0, 0.003], [0, 0, -0.80 - u * 0.35]);
+    /* alternating dihedral: edge-on to the plate they still read as blades, and
+       from the front the crest fans into clumps instead of vanishing */
+    mesh(b, GEO.quad(0.05, len, { grad: .30, jitter: .12, taper: 0.05 }), MAT.mane, [0, 0, 0.003],
+      [(i % 2 ? 1 : -1) * 0.42, 0, -0.86 - u * 0.30]);
     maneBones.push(b);
   }
-  const forelock = bone('forelock', head, 0.900, 1.900, 0);
-  mesh(forelock, GEO.quad(0.075, 0.115, { grad: .24, jitter: .10, taper: 0.25 }), MAT.mane, [0.010, 0, 0], [0, 0, 0.30]);
-  mesh(forelock, GEO.quad(0.055, 0.09, { grad: .24, jitter: .10, taper: 0.25 }), MAT.mane, [0.024, -0.004, 0.022], [0, 0, 0.46]);
+  /* Forelock: a short peak at the poll. Lengthened down the face it is exactly
+     the black blade that spoilt the profile at the plate camera. */
+  const forelock = bone('forelock', head, 0.872, 1.948, 0);
+  H(forelock, localRings(forelock, [
+    [0.826, 1.968, 1.918, 0.022, 0.018],
+    [0.868, 1.992, 1.936, 0.018, 0.014],
+    [0.906, 1.974, 1.922, 0.011, 0.009],
+  ]), MAT.mane, { seed: 44, grad: .28, sides: 4, jit: .08, noBreath: true });
 
   /* ---- tail: bone chain to the hock, hair hanging below it ----------- */
   const tailBones = [];
@@ -702,22 +715,24 @@ function buildHorse(opts = {}) {
     /* The dock keeps its bone; from the third joint the hair takes over, and
        every ribbon is long enough to reach the tip, so the tail reads as one
        brush rather than a staircase of slabs. */
-    /* Hair: a lofted brush along the dock, widening below the point of the
-       buttock and closing to a point at the tip. Overlapping ribbons read as a
-       fan of blades; one loft per joint cannot, and it flexes with the chain. */
+    /* Hair: a loft per joint, but every ring takes its radius from one envelope
+       along the whole dock — narrow at the set, fullest two thirds down, closing
+       to a point past the tip. A flat 0.145 half-width to the end is a paddle. */
     if (i >= 1) {
       const nr = P.tail[Math.min(i + 1, P.tail.length - 1)];
       const dx = nr[0] - wx, dy = nr[1] - wy, seg = Math.hypot(dx, dy) || 0.1;
-      const u = (i - 1) / (P.tail.length - 2);
-      const rA = lerp(0.085, 0.145, Math.min(1, u * 1.9));
-      const rB = lerp(0.085, 0.145, Math.min(1, (u + 1 / (P.tail.length - 2)) * 1.9)) * (i === P.tail.length - 2 ? 0.42 : 1);
-      const brush = hull([[0, rA, -rA, rA * 0.62, rA * 0.62, 2.1], [seg, rB, -rB, rB * 0.62, rB * 0.62, 2.1]], { sides: 7, caps: true });
+      const last = P.tail.length - 1;
+      const env = j => 0.050 + 0.088 * Math.sin(Math.PI * Math.min(1, (j - 1) / (last - 1) * 0.94));
+      const rA = env(i);
+      const rB = i >= last - 1 ? env(i) * 0.30 : env(i + 1);
+      const brush = hull([[0, rA, -rA, rA * 0.58, rA * 0.58, 2.1], [seg, rB, -rB, rB * 0.58, rB * 0.58, 2.1]],
+        { sides: 7, caps: true });
       mesh(b, facet(brush, { seed: 90 + i, grad: .22, jitter: .12 }), MAT.brush,
         [0, 0, 0], [0, 0, Math.atan2(dy, dx)], [1, 1, 1]);
-      if (!light && i >= 2)       // a few strands at the tip, so it is not a sausage
+      if (!light && i >= 2 && i <= P.tail.length - 2)   // loose hair running on past the dock
         for (const z of [1, -1])
-          mesh(b, GEO.quad(0.05, seg * 1.5, { grad: .26, jitter: .14, taper: 0.05 }), MAT.brush,
-            [0, 0.01, z * rA * 0.5], [0, z * 0.1, Math.atan2(dy, dx) - 1.5708]);
+          mesh(b, GEO.quad(0.045, seg * 1.45, { grad: .26, jitter: .14, taper: 0.06 }), MAT.brush,
+            [seg * 0.25, 0, z * rA * 0.34], [0, z * 0.13, aimZ(dx, dy)]);
     }
     tailBones.push(b); tpar = b;
   }
@@ -1262,8 +1277,9 @@ function poseHorse(h, g, p, mp, diag) {
     b.rotation.x = wind * 5 * DEG * Math.sin(TAU * (p - 0.07 * i) + 2.4) + 0.10 * DEG * slow2;
     b.rotation.y = 0;
   }
-  B.forelock.rotation.z = -0.16 - 0.30 * wind * (0.6 + 0.4 * Math.sin(TAU * (p - 0.1) + 1.8));
-  B.forelock.rotation.x = 0.12 * Math.sin(TAU * (p - 0.13) + 0.6);
+  /* the forelock lies flat at rest and lifts off the forehead as speed blows it back */
+  B.forelock.rotation.z = 0.06 + 0.42 * wind * (0.6 + 0.4 * Math.sin(TAU * (p - 0.1) + 1.8));
+  B.forelock.rotation.x = 0.12 * wind * Math.sin(TAU * (p - 0.13) + 0.6);
 
   /* tail: lifted and streamed by the gait, with a wave running down it and a
      slower swish folded in at the master-loop rate (so it still loops)      */
@@ -1422,22 +1438,22 @@ const LOOKS = {
   dawn: {
     name: 'Livery dawn', sun: [-.62, .18, .76], sunColor: 0xffb582, sunInt: 2.8, sky: 0x9fb6d4, skyInt: .9,
     ground: 0x4a4230, zenith: '#1d2c4a', skyMid: '#4c6b90', horizon: '#c8a287', haze: '#e3c3a4',
-    groundTint: 0xa89377, fog: 0xc8a888, fogNear: 20, fogFar: 250, exposure: 1.05,
+    groundTint: 0xa89377, fog: 0xc8a888, fogNear: 20, fogFar: 250, exposure: 1.05, fill: .56,
   },
   golden: {
     name: 'Golden hour', sun: [-.74, .26, .62], sunColor: 0xffc07a, sunInt: 3.6, sky: 0x8fb4dc, skyInt: .8,
     ground: 0x6b5a3c, zenith: '#182a4c', skyMid: '#47699a', horizon: '#dfae82', haze: '#eec494',
-    groundTint: 0xd2ab78, fog: 0xdfae82, fogNear: 24, fogFar: 265, exposure: 1.07,
+    groundTint: 0xd2ab78, fog: 0xdfae82, fogNear: 24, fogFar: 265, exposure: 1.07, fill: .66,
   },
   noon: {
     name: 'High noon', sun: [-.26, .94, .26], sunColor: 0xfff4e2, sunInt: 3.3, sky: 0xa9c8e8, skyInt: .95,
     ground: 0x736c4c, zenith: '#163a64', skyMid: '#3f74ac', horizon: '#aec8dd', haze: '#d3e2ea',
-    groundTint: 0xefe6d2, fog: 0xaec8dd, fogNear: 40, fogFar: 330, exposure: 1.0,
+    groundTint: 0xefe6d2, fog: 0xaec8dd, fogNear: 40, fogFar: 330, exposure: 1.0, fill: .34,
   },
   dusk: {
     name: 'Dusk track', sun: [.5, .10, -.86], sunColor: 0xff9a6a, sunInt: 1.9, sky: 0x7d8fb5, skyInt: .8,
     ground: 0x33322e, zenith: '#0e1730', skyMid: '#28395a', horizon: '#8a5f63', haze: '#b3745c',
-    groundTint: 0x8d6f5e, fog: 0x8a5f63, fogNear: 14, fogFar: 210, exposure: 1.16,
+    groundTint: 0x8d6f5e, fog: 0x8a5f63, fogNear: 14, fogFar: 210, exposure: 1.16, fill: .74,
   },
 };
 let lookKey = 'golden';
@@ -1450,6 +1466,11 @@ keyLight.shadow.bias = -0.0008; keyLight.shadow.normalBias = 0.022;
 scene.add(keyLight, keyLight.target);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1); scene.add(hemi);
 const rim = new THREE.DirectionalLight(0xffffff, .6); scene.add(rim);
+/* A sun that rakes from behind leaves the face's upper front in shadow, and a
+   near-black nose bridge reads as a blade laid over the muzzle. This is the
+   studio's fill: fixed, weak, never casts. */
+const fill = new THREE.DirectionalLight(0xfff3e6, .5);
+fill.position.set(6.8, 6.4, 5.2); scene.add(fill);   // above the nose line, so the bridge reads
 const amb = new THREE.AmbientLight(0xffffff, .13); scene.add(amb);
 const skyGroup = new THREE.Group(); scene.add(skyGroup);
 const sunDisc = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
@@ -1630,7 +1651,7 @@ function bakeLayer(items, opts = {}) {
     }
   }
   items.length = 0;
-  sc.layers.push({ meshes, per, k: opts.k ?? 1 });
+  sc.layers.push({ meshes, per, k: opts.k ?? 1, off: false });
 }
 function bakeScenery() {
   bakeLayer(sc.items, { shadow: true });
@@ -1730,6 +1751,7 @@ function applyLook(key) {
   hemi.color.setHex(l.sky); hemi.groundColor.setHex(l.ground); hemi.intensity = l.skyInt;
   rim.color.setHex(l.horizon); rim.intensity = 0.5;
   rim.position.set(-l.sun[0] * 12, 4.5, -l.sun[2] * 12);
+  fill.intensity = l.fill ?? .5;
   groundMat.color.setHex(l.groundTint);
   scene.fog = new THREE.Fog(l.fog, l.fogNear, l.fogFar);
   renderer.toneMappingExposure = l.exposure;
@@ -1865,7 +1887,8 @@ function updateCamera(dt, g, p, mp) {
   skyGroup.position.copy(cam.position);
   /* The Muybridge plate is a studio, not a landscape: the props drop out and
      the backdrop goes flat, exactly as the zoetrope plates were. */
-  skyGroup.visible = true;
+  skyGroup.visible = !hidden.has('sky');
+  sunDisc.visible = !hidden.has('sun');
   hills.position.set(0, 0, 0);
 }
 
@@ -1977,6 +2000,9 @@ function applyTile() {          // ground tile snapped to a whole number per loo
   const t = 620 / tileWorld;
   gTex.map.repeat.set(t, t); gTex.normalMap.repeat.set(t, t);
 }
+/* scenery layers switched off by #hide= stay off: updateWorld re-asserts
+   visibility every frame, so the debug switch needs a flag of its own.        */
+const hidden = new Set();
 const state = {
   gait: 'gallop', playing: true, rate: 0.72, mstr: 0, p: 0, travel: 0,
   dust: true, prints: true, scenery: true, shadow: true,
@@ -1987,14 +2013,17 @@ Object.defineProperty(state, 'g', { get() { return GAITS[this.gait]; } });
 
 /* ground scroll, dust, prints — all pure functions of the master phase */
 function setSceneryVisible(v) {
-  hills.visible = v;
-  for (const l of sc.layers) for (const m of l.meshes) m.visible = v;
+  hills.visible = v && !hidden.has('hills');
+  for (const l of sc.layers) for (const m of l.meshes) m.visible = v && !l.off;
 }
 function updateWorld(g, p, mp, dt) {
   const travel = MD * mp;
   state.travel = travel;
   const off = travel / tileWorld;
-  gTex.map.offset.x = -off; gTex.normalMap.offset.x = -off;
+  /* Raising texture.offset.x slides the picture toward −x, so a *positive* offset
+     is what carries the ground backwards, matching the props' −travel. A minus
+     sign here makes the turf crawl forward under the horse instead of beneath it. */
+  gTex.map.offset.x = off; gTex.normalMap.offset.x = off;
   if (state.scenery) {
     /* three tiles per layer, wrapped by a period that is a whole multiple of
        this gait's travel per master loop → the world closes on itself */
@@ -2006,12 +2035,12 @@ function updateWorld(g, p, mp, dt) {
     MAT.grass.userData.uWind.value = mp;
     MAT.streak.opacity = 0.015 + 0.075 * clamp01((g.speed - 1.4) / 6.6);
   }
-  dustPts.visible = state.dust && !g.rest && g.speed > 2.2;
-  motePts.visible = state.dust && !g.rest;
+  dustPts.visible = state.dust && !g.rest && g.speed > 2.2 && !hidden.has('dust');
+  motePts.visible = state.dust && !g.rest && !hidden.has('motes');
   setSceneryVisible(state.scenery && !(camState.ortho && !camState.free));   // the plate shoots against a plain backdrop
-  for (const m of prints) if (!state.dust || g.rest) m.visible = false;
   if (dustPts.visible) updateDust(g, p, mp, travel);
-  if (g.rest || !state.prints) { for (const m of prints) m.visible = false; } else updatePrints(g, p, mp);
+  if (g.rest || !state.prints || hidden.has('prints')) { for (const m of prints) m.visible = false; }
+  else updatePrints(g, p, mp);
 }
 const _land = {};
 function landSpots(g) {                     // where each hoof first touches, in the horse's frame
@@ -2065,7 +2094,7 @@ function updatePrints(g, p, mp) {
     for (let c = 0; c < life; c++) {
       const m = prints[li * life + c];
       if (!m) continue;
-      if (!state.dust || !state.scenery) { m.visible = false; continue; }
+      if (!state.scenery || hidden.has('prints')) { m.visible = false; continue; }
       const age = wrap01(p - g.beats[def.id]) + (life - 1 - c);   // strides since that landing
       const t = age / life;
       m.visible = t < 0.995;
@@ -2471,16 +2500,13 @@ if (freezeP !== null) { state.p = clamp01(+freezeP / 100); state.mstr = wrap01(s
 if (qp('ghost') === '1') $('#t-ghost').click();
 if (qp('rig') === '1') $('#t-rig').click();
 /* #hide=items,fence,tufts,clouds,streaks,dust,motes,prints,hills,sky,sun
-   switches scenery layers off — used for sculpt review and by the harness.   */
+   switches scenery layers off for good — the per-frame world update respects
+   the flag, so this survives into the animation. Used for sculpt review and
+   by the headless harness.                                                   */
 if (qp('hide')) for (const k of qp('hide').split(',')) {
   const want = { items: 0, fence: 1, tufts: 2, clouds: 3, streaks: 4 }[k];
-  if (want !== undefined) for (const m of sc.layers[want].meshes) m.visible = false;
-  if (k === 'dust') dustPts.visible = false;
-  if (k === 'motes') motePts.visible = false;
-  if (k === 'prints') for (const m of prints) m.visible = false;
-  if (k === 'hills') hills.visible = false;
-  if (k === 'sky' && skyMesh) skyMesh.visible = false;
-  if (k === 'sun') sunDisc.visible = false;
+  if (want !== undefined) sc.layers[want].off = true;
+  else hidden.add(k);
   if (k === 'ui') document.body.classList.add('bare');
 }
 renderer.compile(scene, camPersp);
