@@ -1,0 +1,2653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Equus · a procedural low-poly gallop</title>
+<meta name="description" content="A low-poly 3D horse built entirely from primitive geometry in Three.js, running a seamless loop: hooves placed analytically so they never slip, a ballistic torso, articulated spine, neck, head, mane and tail, five gaits.">
+<style>
+:root{
+  --bg:#0b1020; --panel:#141b2dee; --panel-2:#1a2338; --line:#2a3550;
+  --ink:#e9e4d6; --ink-dim:#a7adc0; --ink-faint:#6d7590;
+  --gold:#d4a94f; --amber:#e0954a; --rust:#c96a3c; --sage:#8fe8c9;
+  --sans:"Inter","Inter var","Helvetica Neue",Arial,sans-serif;
+  --serif:"EB Garamond",Georgia,"Times New Roman",serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:12px; --sh:0 12px 34px rgba(0,0,0,.46);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;-webkit-tap-highlight-color:transparent}
+canvas#view{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none}
+/* ---- atmosphere overlays (free: no post-processing pass needed) ---- */
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:2;
+  background:radial-gradient(120% 90% at 50% 45%,transparent 42%,rgba(6,8,16,.30) 78%,rgba(4,6,12,.62) 100%)}
+#grain{position:fixed;inset:-50%;pointer-events:none;z-index:3;opacity:.055;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+  animation:grain 1.1s steps(3) infinite}
+@keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-2%,1.5%)}66%{transform:translate(1.5%,-1%)}100%{transform:translate(0,0)}}
+#bars{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .5s ease;
+  background:linear-gradient(#000 0,transparent 8.5%,transparent 91.5%,#000 100%)}
+body.cinema #bars{opacity:1}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+
+/* ---- chrome scaffolding ---- */
+#ui{position:fixed;inset:0;z-index:6;pointer-events:none;transition:opacity .35s ease}
+body.bare #ui{opacity:0;pointer-events:none!important}
+#ui > *{pointer-events:auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);backdrop-filter:blur(11px) saturate(1.2);-webkit-backdrop-filter:blur(11px) saturate(1.2)}
+.lab{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.sub{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+
+/* ---- title card ---- */
+#card{position:absolute;left:18px;top:16px;max-width:min(44ch,52vw);transition:opacity .6s ease,transform .6s ease}
+#card h1{margin:0;font-family:var(--serif);font-weight:600;font-size:clamp(1.35rem,3.1vw,2rem);letter-spacing:.01em;line-height:1.06}
+#card h1 em{font-style:normal;color:var(--gold)}
+#card .lat{font-family:var(--serif);font-style:italic;color:var(--ink-dim);font-size:.95rem;margin:.3rem 0 0}
+#card .meta{margin:.5rem 0 0;display:flex;flex-wrap:wrap;gap:.3rem .45rem;font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+#card .meta b{color:var(--amber);font-weight:600}
+#card.dim{opacity:.24;transform:translateY(-2px)}
+#card.dim:hover{opacity:1}
+
+/* ---- right rail ---- */
+#rail{position:absolute;right:16px;top:16px;width:246px;max-height:calc(100dvh - 176px);overflow:auto;padding:.7rem .78rem .75rem;display:flex;flex-direction:column;gap:.55rem;scrollbar-width:thin}
+#rail::-webkit-scrollbar{width:8px}
+#rail::-webkit-scrollbar-thumb{background:#2d3a5c;border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+.grp{display:flex;flex-direction:column;gap:.3rem;flex:0 0 auto}
+.grp > .lab{display:flex;justify-content:space-between;align-items:baseline;gap:.4rem}
+.seg{display:flex;gap:.28rem;flex-wrap:wrap}
+.seg button{flex:1 1 auto;min-width:0;padding:.36rem .42rem;border:1px solid var(--line);background:#111a2c;border-radius:8px;font-size:.7rem;letter-spacing:.04em;color:var(--ink-dim);cursor:pointer;transition:background .14s,color .14s,border-color .14s,transform .1s;white-space:nowrap}
+.seg button:hover{border-color:#3d4c74;color:var(--ink)}
+.seg button:active{transform:translateY(1px)}
+.seg button[aria-pressed=true]{background:linear-gradient(180deg,#2a3450,#202a44);border-color:var(--gold);color:#fff;box-shadow:inset 0 0 0 1px rgba(212,169,79,.22)}
+.togs{display:grid;grid-template-columns:1fr 1fr;gap:.06rem .7rem}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:.4rem;font-size:.72rem;color:var(--ink-dim);cursor:pointer;user-select:none;padding:.1rem 0}
+.tog input{appearance:none;-webkit-appearance:none;margin:0;width:2rem;height:1.05rem;border-radius:99px;background:#232c46;border:1px solid var(--line);position:relative;cursor:pointer;flex:none;transition:background .16s}
+.tog input::after{content:"";position:absolute;top:1px;left:1px;width:calc(.525rem - 1px);height:calc(1.05rem - 3px);aspect-ratio:1;border-radius:50%;background:var(--ink-faint);transition:transform .16s,background .16s}
+.tog input:checked{background:rgba(212,169,79,.26);border-color:var(--gold)}
+.tog input:checked::after{transform:translateX(.94rem);background:var(--gold)}
+.row{display:flex;align-items:center;gap:.5rem}
+input[type=range]{appearance:none;-webkit-appearance:none;flex:1;min-width:0;height:1.1rem;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:99px;background:linear-gradient(90deg,var(--gold) var(--p,50%),#28324e var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:.82rem;height:.82rem;border-radius:50%;background:var(--ink);border:1px solid #0b1020;margin-top:-.31rem;box-shadow:0 1px 5px rgba(0,0,0,.6)}
+input[type=range]::-moz-range-track{height:3px;border-radius:99px;background:#28324e}
+input[type=range]::-moz-range-progress{height:3px;border-radius:99px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:.78rem;height:.78rem;border:1px solid #0b1020;border-radius:50%;background:var(--ink)}
+.val{font-family:var(--mono);font-size:.68rem;color:var(--amber);min-width:3.6em;text-align:right;flex:none}
+#readout{flex:0 0 auto;font-family:var(--mono);font-size:.6rem;line-height:1.55;color:var(--ink-faint);border-top:1px solid var(--line);padding-top:.45rem;margin-top:.05rem;white-space:pre-wrap;word-break:break-word}
+.pick{flex:1;min-width:0;background:#111a2c;border:1px solid var(--line);border-radius:7px;padding:.24rem .3rem;font-size:.72rem;color:var(--ink)}
+#readout b{color:var(--ink-dim);font-weight:500}
+#readout .ok{color:var(--sage)}
+#readout .warn{color:var(--rust)}
+
+/* ---- transport (bottom) ---- */
+#transport{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;width:min(760px,calc(100vw - 32px));padding:.6rem .8rem .5rem;display:flex;flex-direction:column;gap:.45rem}
+#tp-top{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+#play{width:2rem;height:2rem;flex:none;border-radius:50%;border:1px solid var(--gold);background:rgba(212,169,79,.14);color:var(--gold);cursor:pointer;display:grid;place-items:center;padding:0;transition:background .15s}
+#play:hover{background:rgba(212,169,79,.3)}
+#play svg{width:.85rem;height:.85rem;fill:currentColor}
+.gaits{display:flex;gap:.28rem}
+.gaits button{padding:.3rem .6rem;border:1px solid var(--line);background:#111a2c;border-radius:99px;font-size:.7rem;letter-spacing:.05em;color:var(--ink-dim);cursor:pointer;transition:.14s}
+.gaits button:hover{color:var(--ink);border-color:#3d4c74}
+.gaits button[aria-pressed=true]{background:linear-gradient(180deg,rgba(224,149,74,.26),rgba(224,149,74,.1));border-color:var(--amber);color:#fff}
+#tp-top .spacer{flex:1}
+.kbd{font-family:var(--mono);font-size:.6rem;color:var(--ink-faint);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:.05rem .3rem;background:#111a2c}
+#hint{font-size:.68rem;color:var(--ink-faint)}
+#lanes{display:block;width:100%;height:56px;border-radius:7px;background:#0e1524;border:1px solid #202b45}
+#tp-bot{display:flex;align-items:center;gap:.6rem;font-size:.66rem;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase}
+#tp-bot .sub{font-size:.66rem}
+
+/* ---- help ---- */
+#help{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,9,18,.72);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .22s ease;z-index:8}
+#help.on{opacity:1;pointer-events:auto}
+#help .box{width:min(660px,92vw);max-height:86dvh;overflow:auto;padding:1.2rem 1.4rem 1.3rem}
+#help h2{margin:.1rem 0 .1rem;font-family:var(--serif);font-size:1.35rem;font-weight:600}
+#help p.lead{margin:.1rem 0 1rem;font-family:var(--serif);font-style:italic;color:var(--ink-dim)}
+#help .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem 1.5rem}
+#help h4{margin:.2rem 0 .35rem;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+#help dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:.24rem .6rem;font-size:.76rem}
+#help dt{font-family:var(--mono);font-size:.68rem;color:var(--amber);white-space:nowrap}
+#help dd{margin:0;color:var(--ink-dim)}
+#help .close{position:absolute;right:.9rem;top:.8rem}
+#help .foot{margin-top:1rem;padding-top:.7rem;border-top:1px solid var(--line);font-size:.7rem;color:var(--ink-faint);font-family:var(--serif);font-style:italic}
+
+/* ---- boot / fail ---- */
+#boot{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:radial-gradient(900px 500px at 50% 30%,#16203a,#0a0f1c 70%);transition:opacity .5s ease}
+#boot.gone{opacity:0;pointer-events:none}
+#boot .in{text-align:center;padding:1.4rem;max-width:38ch}
+#boot .ring{width:34px;height:34px;margin:0 auto .85rem;border-radius:50%;border:2px solid #2a3550;border-top-color:var(--gold);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(1turn)}}
+#boot h3{margin:0 0 .3rem;font-family:var(--serif);font-weight:600;font-size:1.15rem;letter-spacing:.03em}
+#boot p{margin:0;font-size:.76rem;color:var(--ink-faint);line-height:1.6}
+#boot code{font-family:var(--mono);font-size:.72rem;color:var(--amber)}
+#boot.err .ring{display:none}
+@media (max-width:1020px){
+  #rail{width:200px;max-height:calc(100dvh - 216px);font-size:13px}
+  #card{max-width:44vw}
+}
+@media (max-width:720px){
+  #rail{display:none}
+  #card h1{font-size:1.15rem}#card .meta{display:none}
+  #transport{bottom:8px;padding:.5rem .55rem}
+  #hint{display:none}
+  #lanes{height:48px}
+}
+@media (prefers-reduced-motion:reduce){#grain{animation:none;opacity:.03}}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="vignette"></div>
+<div id="grain"></div>
+<div id="bars"></div>
+
+<div id="ui">
+  <header id="card">
+    <h1><em>Equus</em> — a procedural gallop</h1>
+    <p class="lat">every bone generated from primitives · every stride a seamless loop</p>
+    <div class="meta">
+      <span>Three.js <b id="m-rev">—</b></span><span>WebGL</span>
+      <span>parts <b id="m-bones">—</b></span><span>tri <b id="m-tri">—</b></span>
+      <span id="m-fpsw">fps <b id="m-fps">—</b></span>
+    </div>
+  </header>
+
+  <aside id="rail" class="panel">
+    <div class="grp">
+      <div class="lab">Camera <span class="sub" id="camname">side track</span></div>
+      <div class="seg" id="cams">
+        <button data-cam="side" aria-pressed="true">Side</button>
+        <button data-cam="hero">Hero</button>
+        <button data-cam="low">Low</button>
+        <button data-cam="front">Head-on</button>
+        <button data-cam="chase">Chase</button>
+        <button data-cam="plate">Plate</button>
+        <button data-cam="auto">Auto</button>
+      </div>
+      <div class="row"><span class="sub" style="min-width:3.9em">lens</span><input id="fov" type="range" min="18" max="70" step="1" value="34"><span class="val" id="fov-v">34°</span></div>
+    </div>
+
+    <div class="grp">
+      <div class="lab">Scene</div>
+      <div class="togs">
+        <label class="tog">Scenery<input id="t-scenery" type="checkbox" checked></label>
+        <label class="tog">Shadows<input id="t-shadow" type="checkbox" checked></label>
+        <label class="tog">Dust<span class="sw"></span><input id="t-dust" type="checkbox" checked></label>
+        <label class="tog">Prints<input id="t-prints" type="checkbox" checked></label>
+        <label class="tog">Ghosts<input id="t-ghost" type="checkbox"></label>
+        <label class="tog">Wire<input id="t-wire" type="checkbox"></label>
+        <label class="tog">Skeleton<input id="t-rig" type="checkbox"></label>
+        <label class="tog">Audio<input id="t-audio" type="checkbox"></label>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="lab">Horse &amp; light</div>
+      <div class="row"><span class="sub" style="min-width:3.9em">coat</span><select id="coat" class="pick"></select><select id="look" class="pick" style="max-width:6.6rem"></select></div>
+      <div class="row"><span class="sub" style="min-width:3.9em">crest</span><input id="neckpitch" type="range" min="-26" max="26" step="1" value="0"><span class="val" id="neckpitch-v">0°</span></div>
+      <div class="row"><span class="sub" style="min-width:3.9em">head</span><input id="headtilt" type="range" min="-24" max="24" step="1" value="0"><span class="val" id="headtilt-v">0°</span></div>
+      <div class="row"><span class="sub" style="min-width:3.9em">tail</span><input id="taillift" type="range" min="-40" max="45" step="1" value="0"><span class="val" id="taillift-v">0°</span></div>
+      <div class="row"><span class="sub" style="min-width:3.9em">bend</span><input id="bend" type="range" min="-16" max="16" step="1" value="0"><span class="val" id="bend-v">0°</span></div>
+    </div>
+
+    <div id="readout">booting…</div>
+  </aside>
+
+  <div id="transport" class="panel">
+    <div id="tp-top">
+      <button id="play" aria-label="Play or pause"><svg viewBox="0 0 16 16" aria-hidden="true"><path id="playicon" d="M3 2.5h3.2v11H3zM9.8 2.5H13v11H9.8z"/></svg></button>
+      <div class="gaits" id="gaitbtns"></div>
+      <div class="spacer"></div>
+      <span id="hint"><span class="kbd">space</span> play · <span class="kbd">g</span> gait · <span class="kbd">c</span> camera · <span class="kbd">←→</span> step · <span class="kbd">?</span> keys</span>
+    </div>
+    <canvas id="lanes" width="1400" height="112" aria-label="Footfall timeline: one row per limb, shaded bars show the stance phase"></canvas>
+    <div id="tp-bot">
+      <span class="sub" id="phaselab">stride 1/1</span>
+      <input id="rate" type="range" min="5" max="160" step="1" value="72" aria-label="Playback rate" style="max-width:180px">
+      <span class="val" id="rate-v">0.72×</span>
+      <span class="spacer" style="flex:1"></span>
+      <span class="sub"><b id="spd" style="color:var(--amber)">—</b> m/s · stride <b id="st" style="color:var(--amber)">—</b> m</span>
+    </div>
+  </div>
+</div>
+
+<div id="help">
+  <div class="box panel" role="dialog" aria-modal="true" aria-label="Help">
+    <button class="seg close" style="flex:none;padding:.24rem .5rem" id="helpx">close · esc</button>
+    <h2>How this is made</h2>
+    <p class="lead">No model file, no animation clip, no build step — the horse is sculpted from boxes, prisms and icosahedra, and every frame is solved from a single cycle parameter.</p>
+    <div class="cols">
+      <div>
+        <h4>Transport</h4>
+        <dl>
+          <dt>space</dt><dd>play / pause</dd>
+          <dt>← →</dt><dd>step one frame / hold <b>shift</b> for a whole stride</dd>
+          <dt>1–5</dt><dd>rest · walk · trot · canter · gallop</dd>
+          <dt>g</dt><dd>chronophotography: six exposures of one stride</dd>
+          <dt>v</dt><dd>contact sheet of the whole loop (a digital Muybridge plate)</dd>
+          <dt>[ ]</dt><dd>slower / faster</dd>
+          <dt>0</dt><dd>reset rate &amp; pose dials</dd>
+          <dt>Shift+scroll</dt><dd>raise or lower the camera</dd>
+        </dl>
+        <h4>View</h4>
+        <dl>
+          <dt>c</dt><dd>next camera</dd>
+          <dt>drag</dt><dd>orbit</dd>
+          <dt>wheel</dt><dd>zoom · <b>shift</b> dolly height</dd>
+          <dt>f</dt><dd>cinematic bars + auto-cam</dd>
+        </dl>
+      </div>
+      <div>
+        <h4>Rig &amp; world</h4>
+        <dl>
+          <dt>g</dt><dd>chronophotography ghosts (a Muybridge plate)</dd>
+          <dt>w</dt><dd>facet wireframe</dd>
+          <dt>r</dt><dd>skeleton + solved foot paths</dd>
+          <dt>d</dt><dd>hoof dust</dd>
+          <dt>t</dt><dd>track &amp; scenery</dd>
+          <dt>s</dt><dd>hoof audio on/off</dd>
+          <dt>x</dt><dd>hide all interface (screenshot)</dd>
+          <dt>p</dt><dd>save PNG of this frame</dd>
+          <dt>h ?</dt><dd>this panel</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="foot">The gait engine places each hoof on a stride path locked to ground speed, then solves a three-bone limb analytically — so the feet never slip. Body, spine, neck, head, mane and tail are all periodic functions of one phase, which is why the loop has no seam; the readout on the right measures that seam every stride.</div>
+  </div>
+</div>
+
+<div id="boot">
+  <div class="in">
+    <div class="ring"></div>
+    <h3 id="boot-t">Harnessing the horse</h3>
+    <p id="boot-p">Fetching three.js from a CDN, then sculpting every part from primitives.</p>
+  </div>
+</div>
+
+<script type="module">
+'use strict';
+/* ============================================================================
+   EQUUS — a procedural low-poly gallop
+   ----------------------------------------------------------------------------
+   Everything below is generated at runtime: no model files, no animation
+   clips, no textures fetched. The horse is sculpted from lofts, prisms, boxes
+   and icosahedra; the gait is solved from one phase variable every frame, so
+   the loop is seamless by construction — and measured, not asserted (seamReport).
+
+   Layout of this file
+     1  boot          resilient three.js load (four CDNs)
+     2  math          prng, curve samplers, damping
+     3  materials     facet-tinted low-poly coat colours
+     4  sculpt        the animal: lofted torso, neck, head; four IK limbs
+     5  gait data     five gaits, measured timing, authored limb folds
+     6  solver        stride path, exact 4-link hoof placement, body drivers
+     7  world         sky, sun, ground, ridges, props, dust, hoofprints
+     8  cameras       six looks, orbit controls, auto cinema, contact sheet
+     9  interface     panels, keyboard, footfall timeline, audio
+    10  diagnostics   the loop-seam measurement and the live readout
+    11  loop          one clock, everything derived from it
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 1. boot */
+const CDN = [
+  'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js',
+  'https://unpkg.com/three@0.187.0/build/three.module.js',
+  'https://esm.sh/three@0.187.0',
+  'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js',
+];
+const bootEl = document.getElementById('boot');
+let THREE = null, loadErr = '';
+for (const url of CDN) {
+  try { THREE = await import(/* @vite-ignore */ url); break; }
+  catch (e) { loadErr = e && e.message ? e.message : String(e); }
+}
+if (!THREE || !THREE.WebGLRenderer) {
+  bootEl.classList.add('err');
+  document.getElementById('boot-t').textContent = 'Could not reach three.js';
+  document.getElementById('boot-p').innerHTML =
+    'This page needs one CDN. Try a connection, or drop <code>three.module.js</code> beside the file and reload.' +
+    '<br><code style="opacity:.6">' + loadErr.slice(0, 160) + '</code>';
+  throw new Error('three.js unavailable: ' + loadErr);
+}
+THREE.ColorManagement.enabled = true;
+
+/* ---------------------------------------------------------------- 2. math */
+const TAU = Math.PI * 2, D2R = Math.PI / 180;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const clamp01 = v => clamp(v, 0, 1);
+const lerp = (a, b, t) => a + (b - a) * t;
+const wrap01 = u => { u %= 1; return u < 0 ? u + 1 : u; };
+const ease = t => t * t * (3 - 2 * t);
+const smooth01 = t => { t = clamp01(t); return t * t * (3 - 2 * t); };
+/** frame-rate independent damping */
+const damp = (cur, target, lambda, dt) => cur + (target - cur) * (1 - Math.exp(-lambda * dt));
+/** deterministic prng so dust & facet tints are identical every stride */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+const tmpA = V3(), tmpB = V3(), tmpC = V3(), tmpQ = new THREE.Quaternion(), tmpQ2 = new THREE.Quaternion();
+const DOWN = V3(0, -1, 0);
+
+/* ---------------------------------------------------------- 3. materials */
+/* A bay horse, plus a few classic colours. `coat` is the mass, `points` the
+   mane/tail/lower limbs, `belly` the shaded underside. */
+const COATS = {
+  bay:        { name: 'Bay',         coat: 0x8a4525, points: 0x211613, belly: 0x5d2f1c, mane: 0x1c1310, hoof: 0x4a3a2c },
+  'dark bay': { name: 'Dark bay',    coat: 0x54301f, points: 0x170f0d, belly: 0x3a2115, mane: 0x140e0b, hoof: 0x3b2f24 },
+  chestnut:   { name: 'Chestnut',    coat: 0xa9531f, points: 0x6d3418, belly: 0x74361a, mane: 0x8a4620, hoof: 0x6b4a30 },
+  black:      { name: 'Black',       coat: 0x2b2622, points: 0x121110, belly: 0x1d1a18, mane: 0x0e0d0c, hoof: 0x2a2624 },
+  'dun':      { name: 'Grullo dun',  coat: 0xa99672, points: 0x3a3128, belly: 0x7d6f56, mane: 0x4a4036, hoof: 0x5b5044 },
+  'grey':     { name: 'Grey',        coat: 0x9aa0a6, points: 0x6f757b, belly: 0x7c8288, mane: 0xc3c8cc, hoof: 0x5a5d60 },
+  'palomino': { name: 'Palomino',    coat: 0xd0a55c, points: 0x7a5c31, belly: 0xa8834a, mane: 0xf0ead8, hoof: 0x8a7048 },
+};
+let coatKey = 'bay';
+const MAT = {};
+function buildMaterials() {
+  const c = COATS[coatKey];
+  const std = (color, rough, metal = 0) => new THREE.MeshStandardMaterial({
+    color, roughness: rough, metalness: metal, flatShading: true, vertexColors: true,
+  });
+  MAT.coat = std(c.coat, 0.82);
+  MAT.belly = std(c.belly, 0.88);
+  MAT.points = std(c.points, 0.72);
+  MAT.mane = std(c.mane, 0.66); MAT.mane.side = THREE.DoubleSide;
+  MAT.hoof = std(c.hoof, 0.42, 0.04);
+  MAT.skin = std(0x4a3230, 0.7);       // muzzle, inner ear, eye ring
+  MAT.eye = std(0x0d0908, 0.22, 0.12);
+  MAT.glint = std(0xffffff, 0.4);      // catch-light
+  MAT.brush = std(c.mane, 0.7); MAT.brush.side = THREE.DoubleSide;  // fetlock feathering
+}
+/**
+ * Per-facet luminance jitter + a vertical gradient baked into vertex colours:
+ * the painterly look that makes flat-shaded low-poly read as sculpture.
+ * The gradient spans each mesh's own bounding box in bone-local space, so it
+ * rides the limb and needs no per-part tuning.
+ */
+function facet(geo, { seed = 1, jitter = 0.055, grad = 0.13, tint = null } = {}) {
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  g.deleteAttribute('uv'); g.deleteAttribute('uv1');
+  const pos = g.attributes.position, n = pos.count;
+  g.computeBoundingBox();
+  const bb = g.boundingBox, span = Math.max(1e-4, bb.max.y - bb.min.y);
+  const col = new Float32Array(n * 3), rnd = mulberry32((seed | 0) * 7919 + n);
+  const c = new THREE.Color(), v = new THREE.Vector3();
+  const dark = tint ? new THREE.Color(tint) : null;
+  for (let f = 0; f < n; f += 3) {
+    const j = 1 + (rnd() * 2 - 1) * jitter;
+    for (let k = 0; k < 3; k++) {
+      const i = f + k;
+      v.fromBufferAttribute(pos, i);
+      const t = clamp01((v.y - bb.min.y) / span);
+      const m = j * lerp(1 - grad, 1 + grad * 0.8, t);
+      if (dark) c.copy(dark).lerp(WHITE, t).multiplyScalar(m);
+      else c.setRGB(m, m, m);
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return g;
+}
+const WHITE = new THREE.Color(0xffffff);
+
+/* ------------------------------------------------------------ geometry kit
+   Primitives only, each cached by key. Bone-local convention: a limb segment
+   starts at its joint (origin) and runs down −Y for its length.            */
+const geoCache = new Map();
+function cached(key, make) {
+  let g = geoCache.get(key);
+  if (!g) { g = make(); geoCache.set(key, g); }
+  return g;
+}
+let gseed = 1;
+const nextSeed = () => gseed++ * 13;
+const GEO = {
+  box: (w, h, d, o = {}) => cached(`b${w},${h},${d},${JSON.stringify(o)}`,
+    () => facet(new THREE.BoxGeometry(w, h, d), { seed: nextSeed(), ...o })),
+  ico: (r, det, o = {}) => cached(`i${r},${det},${JSON.stringify(o)}`,
+    () => facet(new THREE.IcosahedronGeometry(r, det), { seed: nextSeed(), ...o })),
+  /** tapered prism with n sides (4 = chunky wedge, 6 = limb) */
+  pris: (rt, rb, h, n, o = {}) => cached(`p${rt},${rb},${h},${n},${JSON.stringify(o)}`,
+    () => facet(new THREE.CylinderGeometry(rt, rb, h, n), { seed: nextSeed(), ...o })),
+  cone: (r, h, n, o = {}) => cached(`c${r},${h},${n},${JSON.stringify(o)}`,
+    () => facet(new THREE.ConeGeometry(r, h, n), { seed: nextSeed(), ...o })),
+  /** limb segment: runs down −Y from its joint */
+  seg: (rt, rb, len, n, o = {}) => cached(`s${rt},${rb},${len},${n},${JSON.stringify(o)}`, () => {
+    const g = new THREE.CylinderGeometry(rt, rb, len, n);
+    g.translate(0, -len / 2, 0);
+    return facet(g, { seed: nextSeed(), ...o });
+  }),
+  /** flat hair ribbon, hanging from its top edge; `taper` narrows it to a point
+      at the far end, which is what makes a grass blade or mane strand read */
+  quad: (w, h, o = {}) => cached(`q${w},${h},${JSON.stringify(o)}`, () => {
+    const g = new THREE.PlaneGeometry(w, h, 1, 2);
+    const tp = o.taper === undefined ? 1 : o.taper;
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) if (p.getY(i) < -h * 0.25 - 1e-6) p.setX(i, p.getX(i) * tp);
+    g.translate(0, -h / 2, 0);
+    delete o.taper;
+    return facet(g, { seed: nextSeed(), jitter: 0.1, ...o });
+  }),
+};
+
+/* ------------------------------------------------------------ 4. the sculpt */
+/* Proportions of a 16.1-hand bay: withers 1.60 m, nose ≈ +1.28, tail root
+   −1.00. Joint heights follow real equine anatomy (carpus 0.62, fetlock 0.22,
+   elbow 1.05) so the limb IK in section 6 gets honest numbers to work with.
+   The body is lofted, not assembled from spheres: a topline and an underside
+   per ring, which is what makes low-poly read as anatomy rather than a pile. */
+const P = {
+  withers: 1.60,
+  /* lengthened trunk: a horse's brisket-to-buttock span is about its withers
+     height, and a shorter back is what makes a low-poly quadruped read as a
+     giraffe */
+  spine: [[-0.75, 1.46], [-0.28, 1.42], [0.26, 1.47], [0.56, 1.42]],
+  neck: [[0.54, 1.52], [0.65, 1.63], [0.76, 1.74], [0.87, 1.86]],
+  poll: [0.89, 1.88],
+  head: [1.03, 1.79],
+  muzzle: [1.21, 1.68],
+  fore: { root: [0.44, 1.26, 0.146], len: [0.35, 0.44, 0.40, 0.24] },
+  hind: { root: [-0.61, 1.30, 0.166], len: [0.40, 0.42, 0.43, 0.26] },
+  tail: [[-1.12, 1.500], [-1.215, 1.412], [-1.29, 1.292], [-1.345, 1.148], [-1.385, 0.992], [-1.412, 0.842]],
+};
+/* left is +Z; LH/RH = hind, LF/RF = fore */
+const LIMB_DEFS = [
+  { id: 'LH', kind: 'hind', side: 1 },
+  { id: 'RH', kind: 'hind', side: -1 },
+  { id: 'LF', kind: 'fore', side: 1 },
+  { id: 'RF', kind: 'fore', side: -1 },
+];
+const LIMB_IDS = ['LH', 'RH', 'LF', 'RF'];
+
+/**
+ * Loft a generalized prism along a polyline in the X-Y plane: a stack of
+ * superellipse rings given as [x, top, bot, wTop, wBot, k] where top/bot are
+ * the topline and the underside. Workhorse of the sculpt — barrel, neck, throat
+ * and head are each one loft.
+ */
+function hull(rings, { sides = 8, caps = true } = {}) {
+  const R = [];
+  for (const [x, top, bot, wT, wB, k] of rings) {
+    const cy = (top + bot) / 2, hh = Math.max(0.022, (top - bot) / 2), kk = k || 2.3;
+    const rr = [];
+    for (let j = 0; j < sides; j++) {
+      const a = j / sides * TAU, ca = Math.cos(a), sa = Math.sin(a);
+      const sy = Math.sign(ca) * Math.pow(Math.abs(ca), 2 / kk);
+      const sz = Math.sign(sa) * Math.pow(Math.abs(sa), 2 / kk);
+      const w = sz > 0 ? wT : (wB === undefined ? wT : wB);
+      rr.push([x, cy + hh * sy, w * sz]);
+    }
+    R.push(rr);
+  }
+  const pos = [];
+  for (let i = 0; i < R.length - 1; i++)
+    for (let j = 0; j < sides; j++) {
+      const a = R[i][j], b = R[i][(j + 1) % sides], c = R[i + 1][(j + 1) % sides], d = R[i + 1][j];
+      pos.push(...a, ...b, ...c, ...a, ...c, ...d);
+    }
+  if (caps) for (const [ri, s] of [[0, -1], [R.length - 1, 1]]) {
+    const ring = R[ri];
+    const cen = [ring.reduce((t, q) => t + q[0], 0) / sides, ring.reduce((t, q) => t + q[1], 0) / sides, 0];
+    for (let j = 0; j < sides; j++) {
+      const a = ring[j], b = ring[(j + 1) % sides];
+      if (s < 0) pos.push(...cen, ...b, ...a); else pos.push(...cen, ...a, ...b);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
+/** rings authored in world space, emitted in the bone's own frame */
+function localRings(b, rows) {
+  const wx = b.userData.wx, wy = b.userData.wy;
+  return rows.map(r => [r[0] - wx, r[1] - wy, r[2] - wy, r[3], r[4], r[5]]);
+}
+
+/** Build the whole animal: bones by name, plus every mesh. */
+function buildHorse(opts = {}) {
+  const detail = opts.detail !== false;      // ghosts drop the small parts
+  const light = !!opts.ghost;                    // silhouettes drop the doubled hair too
+  const rig = {};
+  const meshes = [];
+  const root = new THREE.Group(); root.name = opts.name || 'horse';
+  const level = new THREE.Group(); root.add(level);      // yaw only
+  const body = new THREE.Group(); level.add(body);       // heave, pitch, roll
+
+  function bone(name, parent, wx, wy, wz = 0) {
+    const g = new THREE.Group(); g.name = name;
+    g.position.set(wx - (parent.userData.wx ?? 0), wy - (parent.userData.wy ?? 0), wz - (parent.userData.wz ?? 0));
+    g.userData.wx = wx; g.userData.wy = wy; g.userData.wz = wz;
+    parent.add(g); rig[name] = g;
+    return g;
+  }
+  function mesh(b, geo, mat, p = [0, 0, 0], r = [0, 0, 0], s = [1, 1, 1], cast = true) {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(p[0], p[1], p[2]);
+    m.rotation.set(r[0], r[1], r[2]);
+    m.scale.set(s[0], s[1], s[2]);
+    m.castShadow = cast; m.receiveShadow = cast;
+    m.userData.baseScale = m.scale.clone();
+    b.add(m); meshes.push(m);
+    return m;
+  }
+  const sc = (seed, grad = 0.13, jit = 0.05) => ({ seed: (seed * 131 + 7) | 0, grad, jitter: jit });
+  const hulls = { pelvis: [], barrel: [], withers: [], chest: [] };   // flesh, for breathing
+  const H = (b, rows, mat, o = {}) => {
+    const m = mesh(b, facet(hull(rows, o), { seed: o.seed || 3, grad: o.grad ?? 0.15, jitter: o.jit ?? 0.04 }), mat, o.p, o.r, o.s);
+    if (hulls[b.name] && !o.noBreath) hulls[b.name].push(m);
+    return m;
+  };
+  const ball = (b, det, fo, mat, p, ext, rot) => mesh(b, GEO.ico(0.5, det, fo), mat, p, rot, ext);
+  const aimZ = (dx, dy) => Math.atan2(dx, -dy);     // rotate a −Y prism onto (dx,dy)
+
+  /* ---- spine: pelvis → barrel → withers → chest ---------------------- */
+  const [S0, S1, S2, S3] = P.spine;
+  const pelvis = bone('pelvis', body, S0[0], S0[1]);
+  const barrel = bone('barrel', pelvis, S1[0], S1[1]);
+  const withers = bone('withers', barrel, S2[0], S2[1]);
+  const chest = bone('chest', withers, S3[0], S3[1]);
+
+  /* The topline runs croup → loin → back → withers → shoulder, nearly level
+     with one rise at the withers; the underside is deepest at the heart girth,
+     two thirds of the way forward. Segments overlap one ring each so flexing
+     never opens a seam.                                                    */
+  const R_ = {
+    tail: [-1.18, 1.512, 1.322, 0.152, 0.122],
+    croup: [-1.06, 1.568, 1.258, 0.244, 0.198],
+    hip: [-0.87, 1.580, 1.158, 0.310, 0.250],
+    flank: [-0.66, 1.568, 1.042, 0.268, 0.218],
+    loin: [-0.44, 1.560, 0.986, 0.288, 0.238],
+    girth: [-0.16, 1.556, 0.928, 0.324, 0.264],
+    rib: [0.08, 1.574, 0.948, 0.326, 0.256],
+    wither: [0.32, 1.620, 1.016, 0.298, 0.222],
+    shoulder: [0.45, 1.590, 1.012, 0.282, 0.210],
+    breast: [0.57, 1.542, 1.028, 0.262, 0.198],
+    brisket: [0.76, 1.452, 1.112, 0.174, 0.132],
+  };
+  H(pelvis, localRings(pelvis, [R_.tail, R_.croup, R_.hip, R_.flank]), MAT.coat, { seed: 11, grad: .19 });
+  H(barrel, localRings(barrel, [R_.hip, R_.flank, R_.loin, R_.girth]), MAT.coat, { seed: 12, grad: .20 });
+  H(withers, localRings(withers, [R_.loin, R_.girth, R_.rib, R_.wither]), MAT.coat, { seed: 13, grad: .21 });
+  H(chest, localRings(chest, [R_.wither, R_.shoulder, R_.breast, R_.brisket]), MAT.coat, { seed: 14, grad: .19 });
+  hulls.pelvis.length = 0;                          // the rump does not breathe
+  for (const m of hulls.withers) { hulls.barrel.push(m); hulls.chest.push(m); }
+  hulls.withers.length = 0;
+  if (detail) {          // shaded belly, tucked just inside the loft
+    const und = rows => rows.map(r => [r[0], r[2] + 0.055, r[2] - 0.014, r[3] * 1.012, r[4] * 1.006]);
+    H(barrel, localRings(barrel, und([R_.flank, R_.loin, R_.girth])), MAT.belly, { seed: 15, grad: .07 });
+    H(withers, localRings(withers, und([R_.loin, R_.girth, R_.rib])), MAT.belly, { seed: 16, grad: .07 });
+  }
+  /* hindquarters: two haunch masses, the point of the hip and of the buttock,
+     and the dock — the silhouette of a limb that drives from behind */
+  for (const z of [1, -1]) {
+    /* the gluteal mass: broad across the top, sunk under the topline */
+    ball(pelvis, 1, sc(20, .16), MAT.coat, [-0.085, -0.100, z * 0.098], [0.44, 0.38, 0.30]);
+    if (detail) {
+      /* point of the hip and point of the buttock as ridges, not spheres, so
+         they read as bone under skin instead of a second pair of cheeks */
+      mesh(pelvis, GEO.ico(0.5, 0, sc(22, .11)), MAT.coat,
+        [-0.300, -0.020, z * 0.150], [0, 0, z * 0.4], [0.16, 0.19, 0.10]);
+    }
+  }
+  /* one slab across both quarters keeps the rump reading as a single surface */
+  ball(pelvis, 1, sc(24, .13), MAT.coat, [-0.230, -0.105, 0], [0.28, 0.26, 0.38]);
+  H(pelvis, localRings(pelvis, [[-1.10, 1.512, 1.372, 0.150, 0.118], [-1.22, 1.480, 1.356, 0.115, 0.092], [-1.31, 1.436, 1.344, 0.086, 0.070]]), MAT.coat, { seed: 23, grad: .16, sides: 6 });
+  /* the withers' peak is the loft's own ring; a ridge prism here only ever
+     read as a spike through the topline */
+  /* neck root: muscling bridging withers to crest, so flexing never opens a
+     step at the junction */
+  ball(withers, 1, sc(28, .13), MAT.coat, [0.055, -0.055, 0], [0.28, 0.205, 0.31]);
+  /* forehand: the barrel's shoulder cover and the points of the shoulders */
+  ball(chest, 1, sc(25, .14), MAT.coat, [-0.030, -0.045, 0], [0.34, 0.25, 0.37]);
+  for (const z of [1, -1]) ball(chest, 0, sc(26, .12), MAT.coat, [0.050, -0.060, z * 0.155], [0.22, 0.25, 0.13]);
+
+  /* ---- neck: one loft per bone, crest above, throat below -------------
+     Carried at ~38° from horizontal, thick at the chest, lean at the poll.  */
+  const [N0, N1, N2, N3] = P.neck;
+  const neckA = bone('neckA', chest, N0[0], N0[1]);
+  const neckB = bone('neckB', neckA, N1[0], N1[1]);
+  const neckC = bone('neckC', neckB, N2[0], N2[1]);
+  const poll = bone('poll', neckC, N3[0], N3[1]);
+  const NK = [
+    [0.30, 1.585, 1.240, 0.234, 0.200],
+    [0.40, 1.620, 1.268, 0.222, 0.186],
+    [0.49, 1.668, 1.318, 0.206, 0.164],
+    [0.60, 1.742, 1.402, 0.188, 0.142],
+    [0.71, 1.815, 1.488, 0.166, 0.120],
+    [0.82, 1.884, 1.574, 0.142, 0.100],
+    [0.90, 1.930, 1.650, 0.124, 0.088],
+  ];
+  H(neckA, localRings(neckA, NK.slice(0, 4)), MAT.coat, { seed: 30, grad: .22 });
+  H(neckB, localRings(neckB, NK.slice(1, 5)), MAT.coat, { seed: 31, grad: .22 });
+  H(neckC, localRings(neckC, NK.slice(3, 6)), MAT.coat, { seed: 32, grad: .21 });
+  /* The throat needs no extra shell: the neck's own underside line carries it,
+     and a separate loft there always reads as a second jaw. */
+
+  /* ---- head: a wedge dropping ~40° from the poll to the nose ---------- */
+  const head = bone('head', poll, P.head[0], P.head[1]);
+  H(head, localRings(head, [          // poll → eye → cheek → face → nose
+    [0.845, 1.952, 1.828, 0.098, 0.086, 2.5],
+    [0.930, 1.912, 1.772, 0.096, 0.084, 2.6],
+    [1.010, 1.862, 1.692, 0.086, 0.078, 2.9],
+    [1.090, 1.806, 1.680, 0.070, 0.064, 2.8],
+    [1.160, 1.754, 1.670, 0.057, 0.053, 2.3],
+  ]), MAT.coat, { seed: 40, grad: .21 });
+  const muzzle = bone('muzzle', head, P.muzzle[0], P.muzzle[1]);
+  H(muzzle, localRings(muzzle, [          // nostril flare, then a blunt lip
+    [1.156, 1.756, 1.670, 0.056, 0.052, 2.3],
+    [1.216, 1.716, 1.656, 0.050, 0.047, 2.1],
+    [1.262, 1.686, 1.640, 0.042, 0.041, 2.0],
+  ]), MAT.skin, { seed: 41, grad: .09 });
+  if (detail) {
+    for (const z of [1, -1]) ball(head, 0, sc(42, .15), MAT.coat, [-0.030, -0.030, z * 0.060], [0.19, 0.17, 0.09]);
+    H(head, localRings(head, [[0.815, 1.794, 1.754, 0.054, 0.048], [0.905, 1.790, 1.762, 0.046, 0.040]]), MAT.belly, { seed: 43, grad: .03, sides: 6 });
+    for (const z of [1, -1]) mesh(muzzle, GEO.box(0.018, 0.026, 0.010, sc(45, .05)), MAT.points,
+      [-0.040, 0.030, z * 0.046], [0, 0, -0.34]);
+  }
+  for (const z of [1, -1]) {          // ears
+    const ear = bone('ear' + (z > 0 ? 'L' : 'R'), head, 0.858, 1.948, z * 0.048);
+    mesh(ear, GEO.cone(0.040, 0.145, 4, sc(46, .17)), MAT.coat, [0.002, 0.058, 0], [z * -0.20, 0, z * 0.22], [1, 1, 0.5]);
+    if (detail) mesh(ear, GEO.cone(0.021, 0.082, 4, sc(47, .10)), MAT.skin, [0.012, 0.048, z * 0.006], [z * -0.20, 0, z * 0.22], [1, 1, 0.4]);
+  }
+  for (const z of [1, -1]) {          // eyes + catch-light
+    mesh(head, GEO.ico(0.030, 0, 0), MAT.eye, [-0.062, 0.032, z * 0.070], [0, 0, 0], [1, 1.15, 0.5], false);
+    if (detail) mesh(head, GEO.ico(0.008, 0, 0), MAT.glint, [-0.050, 0.044, z * 0.086], [0, 0, 0], [1, 1, 0.5], false);
+  }
+
+  /* ---- mane: a comb lofted along the crest, plus strands that stream back.
+     Separate ribbons on a curving neck stick out like a saw blade, so the
+     volume is a loft that follows the crest ring for ring; only the hair
+     hanging off it is free to sway.                                        */
+  const crestComb = rows => rows.map(r => {
+    const u = clamp01((r[0] - 0.30) / 0.62);
+    /* most of the comb hides inside the crest: only 3-6 cm shows above it, which
+       is a mane, not a mohawk */
+    return [r[0], r[1] + lerp(0.030, 0.062, u), r[1] - 0.070, lerp(0.040, 0.028, u), lerp(0.034, 0.022, u), 2.0];
+  });
+  H(neckA, localRings(neckA, crestComb(NK.slice(0, 3))), MAT.mane, { seed: 34, grad: .34, sides: 4, jit: .10, noBreath: true });
+  H(neckB, localRings(neckB, crestComb(NK.slice(2, 5))), MAT.mane, { seed: 35, grad: .34, sides: 4, jit: .10, noBreath: true });
+  /* the comb stops short of the poll on purpose: run it past the joint and the
+     first nod of the head exposes its tip as a spike along the face */
+  const maneBones = [];
+  const maneN = detail ? 8 : 3;
+  for (let i = 0; i < maneN; i++) {
+    const u = i / (maneN - 1);
+    const wx = lerp(0.46, 0.86, u), wy = lerp(1.690, 1.935, u) + 0.052;
+    const b = bone('mane' + i, u < 0.34 ? neckA : u < 0.72 ? neckB : neckC, wx, wy);
+    const len = lerp(0.16, 0.10, u);
+    mesh(b, GEO.quad(0.05, len, { grad: .30, jitter: .12, taper: 0.05 }), MAT.mane, [0, 0, 0.003], [0, 0, -0.80 - u * 0.35]);
+    maneBones.push(b);
+  }
+  const forelock = bone('forelock', head, 0.900, 1.900, 0);
+  mesh(forelock, GEO.quad(0.075, 0.115, { grad: .24, jitter: .10, taper: 0.25 }), MAT.mane, [0.010, 0, 0], [0, 0, 0.30]);
+  mesh(forelock, GEO.quad(0.055, 0.09, { grad: .24, jitter: .10, taper: 0.25 }), MAT.mane, [0.024, -0.004, 0.022], [0, 0, 0.46]);
+
+  /* ---- tail: bone chain to the hock, hair hanging below it ----------- */
+  const tailBones = [];
+  let tpar = pelvis;
+  for (let i = 0; i < P.tail.length; i++) {
+    const [wx, wy] = P.tail[i];
+    const b = bone('tail' + i, tpar, wx, wy, 0);
+    const nxt = P.tail[Math.min(i + 1, P.tail.length - 1)];
+    const prev = P.tail[Math.max(i - 1, 0)];
+    const L = i < P.tail.length - 1 ? Math.hypot(nxt[0] - wx, nxt[1] - wy) : 0.14;
+    const r1 = lerp(0.062, 0.020, i / (P.tail.length - 1));
+    const r2 = lerp(0.052, 0.014, i / (P.tail.length - 1));
+    mesh(b, GEO.pris(r2, r1, L * 1.08, 5, sc(80 + i, .16)), MAT.points, [0, -L / 2, 0], [0, 0, aimZ(wx - prev[0], wy - prev[1])], [1, 1, 0.8]);
+    /* The dock keeps its bone; from the third joint the hair takes over, and
+       every ribbon is long enough to reach the tip, so the tail reads as one
+       brush rather than a staircase of slabs. */
+    /* Hair: a lofted brush along the dock, widening below the point of the
+       buttock and closing to a point at the tip. Overlapping ribbons read as a
+       fan of blades; one loft per joint cannot, and it flexes with the chain. */
+    if (i >= 1) {
+      const nr = P.tail[Math.min(i + 1, P.tail.length - 1)];
+      const dx = nr[0] - wx, dy = nr[1] - wy, seg = Math.hypot(dx, dy) || 0.1;
+      const u = (i - 1) / (P.tail.length - 2);
+      const rA = lerp(0.085, 0.145, Math.min(1, u * 1.9));
+      const rB = lerp(0.085, 0.145, Math.min(1, (u + 1 / (P.tail.length - 2)) * 1.9)) * (i === P.tail.length - 2 ? 0.42 : 1);
+      const brush = hull([[0, rA, -rA, rA * 0.62, rA * 0.62, 2.1], [seg, rB, -rB, rB * 0.62, rB * 0.62, 2.1]], { sides: 7, caps: true });
+      mesh(b, facet(brush, { seed: 90 + i, grad: .22, jitter: .12 }), MAT.brush,
+        [0, 0, 0], [0, 0, Math.atan2(dy, dx)], [1, 1, 1]);
+      if (!light && i >= 2)       // a few strands at the tip, so it is not a sausage
+        for (const z of [1, -1])
+          mesh(b, GEO.quad(0.05, seg * 1.5, { grad: .26, jitter: .14, taper: 0.05 }), MAT.brush,
+            [0, 0.01, z * rA * 0.5], [0, z * 0.1, Math.atan2(dy, dx) - 1.5708]);
+    }
+    tailBones.push(b); tpar = b;
+  }
+  ball(tailBones[tailBones.length - 1], 0, sc(99, .18), MAT.brush, [0.004, -0.05, 0], [0.08, 0.13, 0.062]);
+
+  /* ---- limbs --------------------------------------------------------- */
+  function limb(id, side, kind) {
+    const L = P[kind].len;
+    const z = P[kind].root[2] * side;
+    const parent = kind === 'fore' ? chest : pelvis;
+    const [rx, ry] = P[kind].root;
+    const j0 = bone('sh' + id, parent, rx, ry, z);
+    const j1 = bone('el' + id, j0, rx, ry - L[0], z);
+    const j2 = bone('kn' + id, j1, rx, ry - L[0] - L[1], z);
+    const j3 = bone('fe' + id, j2, rx, ry - L[0] - L[1] - L[2], z);
+    const dark = MAT.points;
+    let scap = null;
+    if (kind === 'fore') {
+      /* The scapula is a trunk bone gliding on the ribcage: it turns through
+         only about a third of the humerus' arc, so it gets its own bone, driven
+         from the solved shoulder angle in section 6. */
+      /* The blade itself lies under the coat of the barrel — modelling it there
+         only ever pokes a slab through the flank. What shows at the surface is
+         the point of the shoulder, a knob at the front of the limb root. */
+      scap = bone('scap' + id, chest, rx, ry, side * 0.020);
+      mesh(scap, GEO.ico(0.5, 1, sc(109, .10)), MAT.coat, [0.040, -0.030, side * 0.140], [0, 0, -0.30], [0.17, 0.20, 0.12]);
+      mesh(j0, GEO.seg(0.112, 0.132, L[0], 5, sc(111, .13)), MAT.coat, [0, 0, 0], [0, 0, 0], [1, 1, 1.06]);
+      mesh(j1, GEO.seg(0.132, 0.080, L[1], 6, sc(112, .16)), MAT.coat, [0.018, 0, 0], [0, 0, 0.06], [1, 1, 0.98]);
+      mesh(j1, GEO.ico(0.5, 0, sc(113, .11)), MAT.coat, [-0.030, -0.018, 0], [0, 0, 0], [0.19, 0.17, 0.20]);
+      mesh(j2, GEO.seg(0.058, 0.076, L[2], 6, sc(114, .15)), dark, [0, 0, 0], [0, 0, 0], [1, 1, 1.0]);
+      mesh(j2, GEO.ico(0.5, 0, sc(115, .10)), dark, [0, -0.004, 0], [0, 0, 0], [0.135, 0.125, 0.15]);
+    } else {
+      mesh(j0, GEO.seg(0.142, 0.106, L[0], 6, sc(120, .18)), MAT.coat, [0.015, 0, 0], [0, 0, -0.10], [1, 1, 1.06]);
+      mesh(j0, GEO.ico(0.5, 1, sc(121, .16)), MAT.coat, [0.030, -0.050, side * 0.012], [0, 0, -0.16], [0.42, 0.52, 0.18]);
+      mesh(j1, GEO.seg(0.106, 0.060, L[1], 6, sc(122, .16)), MAT.coat, [0.014, 0, 0], [0, 0, 0.04], [1, 1, 1.0]);
+      mesh(j1, GEO.ico(0.5, 0, sc(123, .12)), MAT.coat, [-0.034, -L[1] * 0.40, side * 0.012], [0, 0, -0.28], [0.16, 0.34, 0.19]);
+      mesh(j2, GEO.seg(0.054, 0.070, L[2], 6, sc(124, .16)), dark, [0, 0, 0], [0, 0, 0], [1, 1, 1.0]);
+      mesh(j2, GEO.cone(0.072, 0.20, 4, sc(125, .13)), dark, [-0.052, 0.018, 0], [0, 0.72, 2.66], [1, 1, 0.5]);
+    }
+    /* fetlock → pastern → hoof; link 4 ends at the toe so the planted hoof
+       pivots about it at breakover */
+    mesh(j3, GEO.ico(0.5, 0, sc(130, .10)), dark, [0, 0.006, 0], [0, 0, 0], [0.128, 0.132, 0.145]);
+    if (detail) mesh(j3, GEO.quad(0.062, 0.11, sc(131, .22)), MAT.brush, [-0.026, -0.048, side * 0.026], [0, 0, 0.22]);
+    mesh(j3, GEO.seg(0.056, 0.064, L[3] * 0.66, 6, sc(132, .12)), dark, [0.008, -0.020, 0], [0, 0, -0.14], [1, 1, 1]);
+    /* the sole sits ON the ground: link 4 ends at the toe, so the wall and the
+       ground surface are stacked above it, not straddling it */
+    mesh(j3, GEO.pris(0.090, 0.076, 0.100, 6, sc(140, .06)), MAT.hoof, [0.040, -L[3] + 0.076, 0], [0, 0, -0.50], [1, 1, 1.04]);
+    mesh(j3, GEO.box(0.142, 0.054, 0.148, sc(141, .04)), MAT.hoof, [0.052, -L[3] + 0.027, 0], [0, 0, 0.05]);
+    return { id, kind, side, j0, j1, j2, j3, scap, bind: j0.position.clone(), L, reach: L[0] + L[1] + L[2] + L[3] };
+  }
+  const limbs = {};
+  for (const d of LIMB_DEFS) limbs[d.id] = limb(d.id, d.side, d.kind);
+
+  rig.__all = Object.values(rig);
+  return {
+    root, level, body, rig, meshes, limbs, hulls, forward: V3(1, 0, 0), lateral: V3(0, 0, 1),
+    bones: { pelvis, barrel, withers, chest, neckA, neckB, neckC, poll, head, muzzle, forelock, maneBones, tailBones },
+    name: opts.name || 'horse',
+  };
+}
+/* ------------------------------------------------------------ 5. gait data */
+/* Authored limb folds, in radians of *magnitude*; the solver applies each
+   joint's anatomical bend direction. st = stance progress u, sw = swing w.
+   Endpoints are matched across touchdown / toe-off so nothing pops.        */
+const FLEX = {
+  fore: {
+    sign: { k2: -1, k3: -1, k4: +1 },          // elbow back, carpus palmar, toe forward
+    mMax: 1.50,                                // 86° of carpus flexion
+    k3st: [0.06, 0.21, 0.14, 0.03, 0.10, 0.40],
+    k3sw: [0.40, 1.00, 1.36, 1.16, 0.72, 0.34, 0.11, 0.05],
+    k4st: [0.10, 0.22, 0.33, 0.48, 0.54],
+    k4sw: [0.54, 0.44, 0.28, 0.14, 0.06, 0.04, 0.08, 0.11],
+    glide: [0.09, 0.02, -0.05, -0.01, 0.07],   // scapula sliding along the barrel
+    glideY: [-0.02, 0.01, 0.03, 0.01, -0.02],
+  },
+  hind: {
+    sign: { k2: +1, k3: +1, k4: +1 },          // stifle forward, hock dorsal, toe forward
+    mMax: 1.95,                                // 112° of hock flexion
+    k3st: [0.60, 0.48, 0.32, 0.14, 0.03],
+    k3sw: [0.03, 0.46, 0.86, 1.02, 0.92, 0.76, 0.66, 0.61],
+    k4st: [0.16, 0.26, 0.34, 0.46, 0.52],
+    k4sw: [0.52, 0.40, 0.24, 0.14, 0.10, 0.12, 0.16, 0.17],
+    glide: [-0.03, 0.02, 0.04, 0.01, -0.03],
+    glideY: [0.02, 0.00, -0.02, 0.00, 0.02],
+  },
+};
+/** Catmull-Rom through evenly spaced samples on [0,1], ends clamped */
+function openCurve(arr) {
+  const n = arr.length;
+  return t => {
+    t = clamp01(t) * (n - 1);
+    const i = Math.min(Math.floor(t), n - 2), s = t - i;
+    const p0 = arr[Math.max(i - 1, 0)], p1 = arr[i], p2 = arr[i + 1], p3 = arr[Math.min(i + 2, n - 1)];
+    const s2 = s * s, s3 = s2 * s;
+    return 0.5 * (2 * p1 + (-p0 + p2) * s + (2 * p0 - 5 * p1 + 4 * p2 - p3) * s2 + (-p0 + 3 * p1 - 3 * p2 + p3) * s3);
+  };
+}
+/* The fold curves meet twice per cycle — at touchdown and at toe-off. Pin the
+   raw samples together FIRST, so no step can open in the limb, then wrap them
+   in samplers. (After wrapping, FLEX.k is a function: writing [0] on it would
+   silently do nothing.) */
+for (const k of ['fore', 'hind']) {
+  const F = FLEX[k];
+  F.k3sw[0] = F.k3st[F.k3st.length - 1]; F.k3st[0] = F.k3sw[F.k3sw.length - 1];
+  F.k4sw[0] = F.k4st[F.k4st.length - 1]; F.k4st[0] = F.k4sw[F.k4sw.length - 1];
+  for (const f of ['k3st', 'k3sw', 'k4st', 'k4sw', 'glide', 'glideY']) F[f] = openCurve(F[f]);
+}
+
+/* Footfall timing. `beats` are strike instants as fractions of one stride
+   cycle; `stance` is the fraction of the cycle that hoof stays on the ground.
+     walk   4-beat lateral sequence, always at least two feet down
+     trot   2-beat, diagonal pairs, springy flight phase
+     canter 3-beat, near-diagonal hind pair then the fore pair
+     gallop 4-beat rotary: hind pair, fore pair, then real flight           */
+const GAITS = {
+  /* standing still: the same rig with all four hooves planted, driven only by
+     breath, an ear flick and a tail swish — the loop still closes exactly. */
+  rest: {
+    label: 'Rest', stride: 0.0002, speed: 0.0002, loop: 4, breathN: 4, fold: 0.34, lift: 0, trail: 0,
+    beats: { LH: 0.00, RH: 0.00, LF: 0.00, RF: 0.00 },
+    stance: { LH: 1.0, RH: 1.0, LF: 1.0, RF: 1.0 },
+    x0: { LH: -0.05, RH: -0.10, LF: 0.09, RF: 0.04 },
+    amp: { heave: 0.004, pitch: 0.25, spine: 0.25, neck: 0.5, head: 0.3, roll: 0.15, yaw: 0.2, tail: 2.2, mane: 0.06, zconv: 0.0 },
+    tailBase: 6, glideScale: 0, rest: true,
+    pose: { k3: { fore: 0.14, hind: 0.62 }, k4: { fore: 0.30, hind: 0.30 } },
+  },
+  walk: {
+    label: 'Walk', stride: 1.60, speed: 1.45, loop: 9, breathN: 3, fold: 0.5, lift: 0.08, trail: 0.02,
+    beats: { LH: 0.000, LF: 0.243, RH: 0.508, RF: 0.772 },   // lateral sequence, measured intervals
+    stance: { LH: 0.720, RH: 0.720, LF: 0.681, RF: 0.681 },   // duty factor, fore & hind
+    /* x0 is measured from the limb root: the girth ring sits ~0.5 m behind the
+       shoulder and ~0.4 m ahead of the hip, so these values are the *ground*
+       offsets relative to the fore and hind assemblies, not absolutes. */
+    x0: { LH: 0.03, RH: -0.01, LF: 0.10, RF: 0.07 },
+    glideScale: 2.0,
+    amp: { heave: 0.015, pitch: 1.0, spine: 1.7, neck: 2.2, head: 1.0, roll: 1.3, yaw: 1.0, tail: 3.5, mane: 0.25, zconv: 0.06 },
+    tailBase: 4,
+  },
+  trot: {
+    label: 'Trot', stride: 2.40, speed: 4.00, loop: 6, breathN: 2, fold: 0.82, lift: 0.185, trail: 0.10,
+    beats: { LH: 0.000, RF: 0.000, RH: 0.500, LF: 0.500 },   // diagonal pairs, symmetric
+    stance: { LH: 0.401, RH: 0.401, LF: 0.374, RF: 0.374 },
+    x0: { LH: -0.02, RH: -0.03, LF: 0.05, RF: 0.04 },
+    glideScale: 1.5,
+    amp: { heave: 0.030, pitch: 1.6, spine: 3.2, neck: 3.0, head: 1.2, roll: 1.0, yaw: 0.9, tail: 5, mane: 0.5, zconv: 0.18 },
+    tailBase: 10,
+  },
+  canter: {
+    label: 'Canter', stride: 2.40, speed: 6.30, loop: 6, breathN: 2, fold: 1.0, lift: 0.22, trail: 0.24,
+    /* left lead: outside hind, then the near-diagonal pair, then the leading
+       fore, then suspension — a true three-beat gait */
+    beats: { LH: 0.047, RH: 0.000, RF: 0.288, LF: 0.570 },   // measured normalised canter
+    stance: { LH: 0.32, RH: 0.32, LF: 0.24, RF: 0.30 },
+    x0: { LH: 0.06, RH: 0.02, LF: 0.07, RF: 0.00 },
+    glideScale: 1.15,
+    amp: { heave: 0.042, pitch: 2.6, spine: 6.0, neck: 5.0, head: 1.6, roll: 1.8, yaw: 1.2, tail: 8, mane: 0.75, zconv: 0.30 },
+    tailBase: 18,
+  },
+  gallop: {
+    label: 'Gallop', stride: 3.60, speed: 8.0, loop: 4, breathN: 1, fold: 1.22, lift: 0.24, trail: 0.34,
+    /* transverse gallop: the hind pair gathers and drives, the fore pair lands
+       and vaults, and the long flight after the fore push-off is the running
+       bind. Duty factors and stride are the measured ones (Froude ≈ 3.3), so
+       the reach tuner below has nothing left to trim. */
+    beats: { LH: 0.000, RH: 0.070, LF: 0.400, RF: 0.435 },   // pairs close within, far between
+    stance: { LH: 0.28, RH: 0.28, LF: 0.235, RF: 0.235 },
+    x0: { LH: 0.10, RH: 0.05, LF: 0.06, RF: 0.02 },  // the leading fore lands furthest forward
+    glideScale: 1.0,
+    amp: { heave: 0.055, pitch: 4.4, spine: 10.5, neck: 7.5, head: 2.4, roll: 2.6, yaw: 1.6, tail: 13, mane: 1.0, zconv: 0.38 },
+    tailBase: 26,
+  },
+};
+const GAIT_IDS = ['rest', 'walk', 'trot', 'canter', 'gallop'];
+const LIMB_DEF = {}; LIMB_DEFS.forEach((d, i) => LIMB_DEF[d.id] = d);
+/* Geometry-aware stance limit: a planted hoof can only slide as far as the
+   limb can reach, so an over-long stance is trimmed into a flight phase —
+   which is exactly what happens to a real horse as it lengthens its stride. */
+for (const gid of GAIT_IDS) {
+  const g = GAITS[gid];
+  g.T = g.rest ? 4.2 : g.stride / g.speed;
+  g.slide = {};
+  for (const id of LIMB_IDS) {
+    const kind = LIMB_DEF[id].kind;
+    const total = P[kind].len.reduce((a, b) => a + b);
+    const rootY = P[kind].root[1];
+    /* Half of the stance slide must fit inside the limb's reach on BOTH sides
+       of the strike centre, with margin for the pitch and heave of the trunk
+       that move the joint while the hoof stays put. */
+    const maxTx = Math.sqrt(Math.max(0.04, (total * 0.984) ** 2 - rootY * rootY));
+    if (g.rest) { g.slide[id] = 0; g.stance[id] = 1; continue; }
+    const cap = 2 * Math.min(maxTx - g.x0[id], maxTx + g.x0[id]);
+    g.slide[id] = Math.min(g.stride * g.stance[id], cap);
+    g.stance[id] = g.slide[id] / g.stride;
+  }
+  g.MD = g.rest ? 0 : g.stride * g.loop;      // world travel per master loop
+}
+
+/* ---- ballistic body shape ----------------------------------------------
+   A running horse is a mass on springs: it sinks while a limb is loading, is
+   thrown upward at push-off and then falls freely through the flight phase.
+   Mapping "support → height" gets that backwards, so the vertical and pitching
+   motion here is derived instead: take the ground-reaction proxy over the
+   stride, subtract its mean (that is the *net* force, since the mean reaction
+   carries the weight), and integrate twice harmonic by harmonic. Dividing each
+   Fourier term by −ω² is an exact periodic double integral, so the waveform
+   closes on itself and the loop cannot seam. Reference: the withers dip ~2 cm
+   below mid-height as the hind limbs push off and the CoM minimum falls in the
+   second half of fore-limb stance, at ±8.8 cm peak-to-trough per stride.     */
+function ballisticShape(raw, T, harmonics = 12) {
+  const N = raw.length;
+  let mean = 0;
+  for (const v of raw) mean += v;
+  mean /= N;
+  const cn = [], sn = [];
+  for (let n = 1; n <= harmonics; n++) {
+    let A = 0, B = 0;
+    for (let i = 0; i < N; i++) {
+      const th = TAU * n * i / N;
+      A += (raw[i] - mean) * Math.cos(th); B += (raw[i] - mean) * Math.sin(th);
+    }
+    const w = TAU * n / T;
+    cn.push(-(2 * A / N) / (w * w)); sn.push(-(2 * B / N) / (w * w));
+  }
+  const wave = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    let v = 0; const th = TAU * i / N;
+    for (let n = 0; n < harmonics; n++) v += cn[n] * Math.cos((n + 1) * th) + sn[n] * Math.sin((n + 1) * th);
+    wave[i] = v;
+  }
+  let mn = Infinity, mx = -Infinity;
+  for (const v of wave) { if (v < mn) mn = v; if (v > mx) mx = v; }
+  const mid = (mn + mx) / 2, half = Math.max(1e-9, (mx - mn) / 2);
+  return p => {                                   // cosine-interpolated: C1 and exactly periodic
+    const x = wrap01(p) * N;
+    const i = Math.floor(x) % N, j = (i + 1) % N, t = x - Math.floor(x);
+    return lerp((wave[i] - mid) / half, (wave[j] - mid) / half, smooth01(t));
+  };
+}
+function shapeBodies(g) {
+  const N = 192, a = mkAcc(), sv = new Array(N), mv = new Array(N);
+  for (let i = 0; i < N; i++) {
+    drivers(g, i / N, a);
+    sv[i] = a.support;
+    mv[i] = -a.foreHind;                           // nose-up is positive
+  }
+  g.wHeave = ballisticShape(sv, g.T);
+  g.wPitch = ballisticShape(mv, g.T);
+}
+
+/*
+ * The static envelope above cannot see the trunk: heave lifts the shoulder,
+ * pitch swings it fore-and-aft, so a stance that looks reachable on paper can
+ * still leave a hoof reaching past a locked joint. Rather than guess a margin,
+ * measure it — sweep the gait through the real rig, and shorten whatever stance
+ * slips. Trimming a stance only lengthens the flight phase, which is exactly
+ * what a real horse does as it runs out of limb.
+ */
+function tuneStanceToReach(h) {
+  const dg = { slip: 0, toeMin: 0, toeMax: 0, by: {} }, N = 72;
+  for (const gid of GAIT_IDS) {
+    const g = GAITS[gid];
+    if (g.rest) continue;
+    g.tuned = [];
+    for (let pass = 0; pass < 8; pass++) {
+      let worst = 0;
+      for (const id of LIMB_IDS) dg.by[id] = 0;
+      for (let i = 0; i < N; i++) {
+        const mp = i / N;
+        poseHorse(h, g, wrap01(mp * g.loop), mp, dg);
+      }
+      for (const id of LIMB_IDS) {
+        const s = dg.by[id] || 0;
+        worst = Math.max(worst, s);
+        if (s > 1.5e-3) {
+          g.slide[id] = Math.max(0.25, g.slide[id] - s * 1.7);
+          g.stance[id] = g.slide[id] / g.stride;
+          if (!g.tuned.includes(id)) g.tuned.push(id);
+        }
+      }
+      if (worst < 1.5e-3) break;
+    }
+  }
+}
+
+/* --------------------------------------------------------------- 6. solver */
+const loadFn = u => Math.pow(Math.sin(Math.PI * clamp01(u)), 1.22);   // vertical GRF proxy
+const arcFn = w => Math.sin(Math.PI * Math.pow(clamp01(w), 1.12)) ** 1.02;
+/** cubic bézier forward profile, dipping negative first: the foot trails */
+function swingProfile(w, trail) {
+  const c1 = -trail, c2 = 1 - 0.34 * trail, m = 1 - w;
+  return 3 * m * m * w * c1 + 3 * m * w * w * c2 + w * w * w;
+}
+const FP = { x: 0, y: 0, z: 0, q: 0, u: 0, w: 0, stance: false, load: 0 };
+/** Where a hoof is in the horse's own frame: x forward of the limb root,
+ *  y above the ground, z lateral. A pure function of phase → periodic.     */
+function footPath(g, def, p) {
+  const id = def.id, d = g.stance[id], slide = g.slide[id];
+  const q = wrap01(p - g.beats[id]);
+  FP.q = q;
+  if (q < d) {
+    const u = q / d;
+    FP.x = g.x0[id] + slide * (0.5 - u); FP.y = 0;
+    FP.stance = true; FP.u = u; FP.w = 0; FP.load = loadFn(u);
+  } else {
+    const w = (q - d) / (1 - d);
+    FP.x = g.x0[id] - slide * (0.5 - swingProfile(w, g.trail));
+    FP.y = g.lift * (def.kind === 'hind' ? 1.12 : 0.92) * arcFn(w);
+    FP.stance = false; FP.u = 0; FP.w = w; FP.load = 0;
+  }
+  const lift = FP.stance ? FP.load : 0.55 * arcFn(FP.w);
+  FP.z = def.side * P[def.kind].root[2] * (1 - g.amp.zconv * lift);
+  return FP;
+}
+/* Whole-body motion is not hand-keyed: it is read off what the four hooves
+   are doing. Support sum → heave; fore-vs-hind loading → pitch; the distance
+   between the fore and hind contacts → spinal flexion; which side is loaded →
+   roll and yaw. Same rules, four different gaits. */
+const AC = { hump: [0, 0, 0, 0], stance: [0, 0, 0, 0], support: 0, foreHind: 0, spread: 0, roll: 0, yaw: 0, nSt: 0, peak: 0 };
+function drivers(g, p, acc) {
+  acc.support = acc.foreHind = acc.spread = acc.roll = acc.yaw = acc.nSt = acc.peak = 0;
+  for (let i = 0; i < 4; i++) {
+    const def = LIMB_DEFS[i], id = def.id;
+    footPath(g, def, p);
+    const isF = def.kind === 'fore';
+    const hump = FP.stance ? loadFn(clamp01((FP.u - 0.07) / 0.93)) : 0;
+    acc.hump[i] = hump; acc.stance[i] = FP.stance ? 1 : 0;
+    acc.support += hump;
+    acc.foreHind += hump * (isF ? 1 : -1);
+    acc.spread += (isF ? 0.5 : -0.5) * FP.x;      // fore-to-hind contact spread
+    acc.roll += hump * def.side;
+    acc.yaw += hump * (isF ? 1 : -1) * def.side * 0.5;
+    if (FP.stance) acc.nSt++;
+    acc.peak = Math.max(acc.peak, hump);
+  }
+  return acc;
+}
+function mkAcc() { return { hump: [0, 0, 0, 0], stance: [0, 0, 0, 0], support: 0, foreHind: 0, spread: 0, roll: 0, yaw: 0, nSt: 0, peak: 0 }; }
+const ACC = mkAcc(), ACC2 = mkAcc();
+/** normalise a driver into −1…1 about its own range for this gait */
+function norm(v, n) { return clamp((v - n.mid) / n.half, -1.5, 1.5); }
+function calibrateGaits() {
+  const keys = ['support', 'foreHind', 'spread', 'roll', 'yaw'], N = 160;
+  const a = mkAcc();
+  for (const gid of GAIT_IDS) {
+    const g = GAITS[gid], st = {};
+    for (const k of keys) st[k] = { min: Infinity, max: -Infinity };
+    g.airMax = 0; g.stanceMax = 0;
+    for (let i = 0; i < N; i++) {
+      drivers(g, i / N, a);
+      g.airMax = Math.max(g.airMax, 4 - a.nSt);
+      g.stanceMax = Math.max(g.stanceMax, a.nSt);
+      for (const k of keys) { st[k].min = Math.min(st[k].min, a[k]); st[k].max = Math.max(st[k].max, a[k]); }
+    }
+    g.norm = {};
+    for (const k of keys) g.norm[k] = { mid: (st[k].min + st[k].max) / 2, half: Math.max(1e-4, (st[k].max - st[k].min) / 2) };
+    shapeBodies(g);
+  }
+}
+/* ---- the limb itself: analytic 4-link solve with an exact contact point --
+   The three distal links are folded by authored amounts and merged into one
+   virtual link, so a plain two-bar solve puts the *toe* exactly on the stride
+   path at every frame: the hooves cannot slip, whatever the gait.          */
+const _t = V3(), _p0 = V3(), _j1 = V3(), _j2 = V3(), _j3 = V3(), _ct = V3();
+const _dir = V3(), _wq = new THREE.Quaternion(), _iq = new THREE.Quaternion();
+const _planef = V3(), _planep = V3();
+function aimBone(bone, origin, target, parentWQ) {
+  _dir.copy(target).sub(origin);
+  if (_dir.lengthSq() < 1e-12) _dir.set(0, -1, 0);
+  _dir.normalize();
+  _wq.setFromUnitVectors(DOWN, _dir);
+  bone.userData.wq = bone.userData.wq || new THREE.Quaternion();
+  bone.userData.wq.copy(_wq);
+  _iq.copy(parentWQ).invert();
+  bone.quaternion.copy(_iq).multiply(_wq);
+}
+function solveLimb(h, g, limb, p, parentWQ, diag) {
+  const def = LIMB_DEF[limb.id], L = limb.L, fx = FLEX[def.kind];
+  footPath(g, def, p);
+  const o = FP;
+  // scapula / hip glide (a horse has no bony shoulder joint to the trunk)
+  const gs = g.glideScale;
+  const gl = g.pose ? 0 : gs * (o.stance ? fx.glide(o.u) : lerp(fx.glide(1), fx.glide(0), smooth01(o.w)));
+  const gly = g.pose ? 0 : gs * (o.stance ? fx.glideY(o.u) : lerp(fx.glideY(1), fx.glideY(0), smooth01(o.w)));
+  limb.j0.position.x = limb.bind.x + gl;
+  limb.j0.position.y = limb.bind.y + gly;
+
+  limb.j0.getWorldPosition(_p0);
+  _t.set(P[def.kind].root[0] + o.x, o.y, o.z).applyMatrix4(h.level.matrixWorld);
+  /* The limb swings in a near-sagittal plane that yaws toward the hoof's
+     lateral offset. Yaw is driven by |fore-aft|, never its sign, so the plane
+     cannot flip as the hoof passes under the body; whatever offset is left
+     over is shared out along the chain so the toe still lands exactly. */
+  const dx = _t.x - _p0.x, dz = _t.z - _p0.z, dy = _t.y - _p0.y;
+  const dlat = dx * h.lateral.x + dz * h.lateral.z;
+  const yaw = clamp(Math.atan2(dlat, 0.30 + Math.abs(dx * h.forward.x + dz * h.forward.z)), -0.30, 0.30);
+  const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  _planef.set(h.forward.x * cy + h.lateral.x * sy, 0, h.forward.z * cy + h.lateral.z * sy).normalize();
+  _planep.set(-_planef.z, 0, _planef.x);
+  let tx = dx * _planef.x + dz * _planef.z, ty = dy;
+  const tperp = dx * _planep.x + dz * _planep.z;
+  const total = L[0] + L[1] + L[2] + L[3];
+  const k4 = fx.sign.k4 * (g.pose ? g.pose.k4[def.kind] : (o.stance ? fx.k4st(o.u) : fx.k4sw(o.w)));
+  /* the three distal links, folded by k3, collapse into one virtual link */
+  const vlen = m => {
+    const c3 = fx.sign.k3 * m;
+    return Math.hypot(L[1] + L[2] * Math.cos(c3) + L[3] * Math.cos(c3 + k4),
+      L[2] * Math.sin(c3) + L[3] * Math.sin(c3 + k4));
+  };
+  const mMax = fx.mMax, hardR = L[0] + vlen(0);   // straightest the limb can get
+  const r = Math.hypot(tx, ty);
+  if (r > hardR) {                                 // beyond even a locked limb
+    const k = hardR / r;
+    if (diag) {
+      diag.slip = Math.max(diag.slip, r - hardR);
+      if (diag.by) diag.by[limb.id] = Math.max(diag.by[limb.id] || 0, r - hardR);
+    }
+    tx *= k; ty *= k;
+  }
+  const az = Math.atan2(ty, tx), d = Math.hypot(tx, ty);
+  /* A limb reaches by straightening, not by breaking its hoof through the
+     floor: if the authored fold cannot span the distance, open it out until it
+     can — and close it further if the target comes too near. Monotone in the
+     fold, so a short bisection nails it. */
+  let k3m = g.pose ? g.pose.k3[def.kind] : g.fold * (o.stance ? fx.k3st(o.u) : fx.k3sw(o.w));
+  const needFar = d - L[0];                       // v must be at least this to reach
+  const needNear = d + L[0];                      // v must be at most this to fit
+  if (vlen(k3m) < needFar) {                      // too folded → open out
+    let lo = 0, hi = k3m;
+    for (let it = 0; it < 16; it++) { const mid = (lo + hi) / 2; if (vlen(mid) >= needFar) lo = mid; else hi = mid; }
+    k3m = lo;
+  } else if (vlen(k3m) > needNear) {              // too straight → fold up
+    let lo = k3m, hi = mMax;
+    for (let it = 0; it < 16; it++) { const mid = (lo + hi) / 2; if (vlen(mid) <= needNear) hi = mid; else lo = mid; }
+    k3m = hi;
+  }
+  k3m = clamp(k3m, 0, mMax);
+  const k3 = fx.sign.k3 * k3m;
+  const vx = L[1] + L[2] * Math.cos(k3) + L[3] * Math.cos(k3 + k4);
+  const vy = L[2] * Math.sin(k3) + L[3] * Math.sin(k3 + k4);
+  const v = Math.hypot(vx, vy), beta = Math.atan2(vy, vx), l1 = L[0];
+  const psi = Math.acos(clamp((l1 * l1 + d * d - v * v) / (2 * l1 * Math.max(d, 1e-6)), -1, 1));
+  const th = Math.acos(clamp((l1 * l1 + v * v - d * d) / (2 * l1 * v), -1, 1));
+  const sg = fx.sign.k2;
+  const a1 = az + sg * psi, a2 = a1 - sg * (Math.PI - th) - beta, a3 = a2 + k3, a4 = a3 + k4;
+  const at = (ang, len, i, from, out) => {
+    const per = tperp * (L[i - 1] / total);        // increments: they sum to tperp
+    out.set(from.x + Math.cos(ang) * len * _planef.x + per * _planep.x,
+      from.y + Math.sin(ang) * len,
+      from.z + Math.cos(ang) * len * _planef.z + per * _planep.z);
+  };
+  at(a1, L[0], 1, _p0, _j1);
+  at(a2, L[1], 2, _j1, _j2);
+  at(a3, L[2], 3, _j2, _j3);
+  at(a4, L[3], 4, _j3, _ct);
+  if (diag && o.stance && o.load > 0.25) {      // weighted stance only: at breakover the toe pivots
+    diag.toeMin = Math.min(diag.toeMin, _ct.y); diag.toeMax = Math.max(diag.toeMax, _ct.y);
+    diag.slipLoad = Math.max(diag.slipLoad || 0, diag.by ? (diag.by[limb.id] || 0) : 0);
+  }
+  aimBone(limb.j0, _p0, _j1, parentWQ);
+  aimBone(limb.j1, _j1, _j2, limb.j0.userData.wq);
+  aimBone(limb.j2, _j2, _j3, limb.j1.userData.wq);
+  aimBone(limb.j3, _j3, _ct, limb.j2.userData.wq);
+  limb.contact = limb.contact || V3();
+  limb.contact.copy(_ct);
+  limb.plane = limb.plane || V3();
+  limb.plane.copy(_planef);
+  limb.onStance = o.stance; limb.u = o.u; limb.w = o.w; limb.load = o.load;
+  return limb;
+}
+
+/* ---- whole-body pose --------------------------------------------------- */
+const DIALS = { neck: 0, head: 0, tail: 0, bend: 0 };
+const CG = { x: -0.05, y: 1.18, z: 0 };   // trunk centre of mass, about at the heart
+const DEG = D2R;
+/**
+ * Set every bone of one horse for stride phase p (0…1) and master phase mp.
+ * Pure function of (gait, p, mp, dials) → the loop closes exactly.
+ */
+function poseHorse(h, g, p, mp, diag) {
+  const A = g.amp, B = h.bones;
+  drivers(g, p, ACC);
+  const n = g.norm;
+  const sup = g.wHeave ? g.wHeave(p) : 0;          // ballistic: net force, twice integrated
+  const fh = g.wPitch ? g.wPitch(p) : 0;
+  const spr = norm(ACC.spread, n.spread);          // + legs spread out, − gathered under
+  const rl = norm(ACC.roll, n.roll);
+  const yw = norm(ACC.yaw, n.yaw);
+  /* lagged copies: ligaments and nerves are not instant, and a lag of a
+     periodic function is itself periodic with the same period */
+  const fhL = g.wPitch ? g.wPitch(p - 0.085) : 0, supL = g.wHeave ? g.wHeave(p - 0.06) : 0;
+  /* slow modulations ride whole cycles of the master loop, so they close with it */
+  const bn = g.breathN || 1;
+  const slow = Math.sin(TAU * mp * bn), slow2 = Math.sin(TAU * 2 * mp * bn + 0.7);
+
+  /* torso */
+  let sumPitch = 0;
+  const pitch = -A.pitch * fh * DEG, roll = A.roll * rl * DEG;
+  h.body.rotation.set(roll, 0, pitch);
+  /* a trunk pitches about its centre of mass; undo the arc a ground-level
+     pivot would carve, so the shoulders surge only a little over pinned hooves */
+  const cp = Math.cos(pitch), sp = Math.sin(pitch), cr = Math.cos(roll), sr = Math.sin(roll);
+  h.body.position.set(
+    CG.x - (CG.x * cp - CG.y * sp) - CG.z * sr * 0,
+    A.heave * sup + 0.004 * slow + (CG.x * sp + CG.y * cp - CG.y),
+    CG.z - (CG.x * sr + CG.z * cr));
+  h.level.rotation.y = A.yaw * yw * DEG + DIALS.bend * 0.35 * DEG;
+  sumPitch += pitch;
+  const flex = -A.spine * spr * DEG;               // gather → loin rounds, croup rises
+  B.pelvis.rotation.set(A.roll * 0.30 * rl * DEG, 0, flex * 0.55);
+  B.barrel.rotation.set(0, 0, flex * 0.24);
+  B.withers.rotation.set(0, 0, flex * 0.14);
+  B.chest.rotation.set(0, 0, flex * 0.07 - 0.30 * DEG * sup);
+  sumPitch += flex * 0.55 + flex * 0.24 + flex * 0.14 + flex * 0.07 - 0.30 * DEG * sup;
+
+  /* neck + head: the crest braces against the pitch, the head holds its own level */
+  const neckA = (A.neck * fhL * DEG) + DIALS.neck * DEG;   // + = crest lowered
+  const nod = A.head * 0.5 * supL * DEG;
+  B.neckA.rotation.set(0.06 * rl * DEG * A.roll, 0, neckA * 0.46);
+  B.neckB.rotation.set(0, 0, neckA * 0.30);
+  B.neckC.rotation.set(0, 0, neckA * 0.20);
+  sumPitch += neckA * 0.96;
+  B.poll.rotation.set(0, 0, neckA * 0.06 + nod * 0.6);
+  sumPitch += neckA * 0.06 + nod * 0.6;
+  B.head.rotation.set(0, 0, -0.82 * sumPitch + nod + DIALS.head * DEG);
+  B.muzzle.rotation.set(0, 0, 0.05 * slow2);
+  /* ears: a couple of quick flicks per master loop, out of phase with each other */
+  for (let i = 0; i < 2; i++) {
+    const ear = h.rig[i ? 'earR' : 'earL'];
+    if (!ear) continue;
+    const tw = Math.pow(Math.max(0, Math.sin(TAU * (mp * 2 * bn + i * 0.42))), 16);
+    ear.rotation.z = (i ? -1 : 1) * (0.10 + 0.60 * tw) + 0.05 * slow;
+    ear.rotation.x = 0.45 * tw * (i ? 1 : -1);
+  }
+
+  /* mane: a travelling wave with the crest blown off the neck by speed */
+  const wind = A.mane;
+  for (let i = 0; i < B.maneBones.length; i++) {
+    const t = i / Math.max(1, B.maneBones.length - 1);
+    const b = B.maneBones[i];
+    const wave = Math.sin(TAU * (p - 0.055 * i) + 1.1);
+    b.rotation.z = -wind * DEG * (18 + 26 * t) * (0.55 + 0.45 * sup) - wind * 7 * DEG * wave * 0.5 - 0.10 * DEG * wind * wave;
+    b.rotation.x = wind * 5 * DEG * Math.sin(TAU * (p - 0.07 * i) + 2.4) + 0.10 * DEG * slow2;
+    b.rotation.y = 0;
+  }
+  B.forelock.rotation.z = -0.16 - 0.30 * wind * (0.6 + 0.4 * Math.sin(TAU * (p - 0.1) + 1.8));
+  B.forelock.rotation.x = 0.12 * Math.sin(TAU * (p - 0.13) + 0.6);
+
+  /* tail: lifted and streamed by the gait, with a wave running down it and a
+     slower swish folded in at the master-loop rate (so it still loops)      */
+  const liftT = -(g.tailBase + DIALS.tail) * DEG;      // + = carried out behind
+  for (let i = 0; i < B.tailBones.length; i++) {
+    const b = B.tailBones[i];
+    const t = i / (B.tailBones.length - 1);
+    const wv = Math.sin(TAU * (p - 0.062 * i) + 0.5), wv2 = Math.sin(TAU * (p - 0.062 * i) * 2 + 2.1);
+    b.rotation.z = (i === 0 ? liftT : liftT * (0.55 - 0.40 * t))
+      + A.tail * DEG * (0.55 + 0.9 * t) * wv * 0.6
+      + 2.4 * DEG * Math.sin(TAU * mp * 2 + 0.4) * (0.3 + t)   // swish, 2 cycles per loop
+      + 0.5 * DEG * A.tail * wv2 * t;
+    b.rotation.x = (0.5 * DEG * A.tail * Math.sin(TAU * (p - 0.05 * i) + 1.9))
+      + 3.0 * DEG * slow2 * t * (0.4 + 0.6 * wind)
+      + DIALS.bend * 0.25 * DEG * t;
+  }
+  /* Breathing and the load pulse go on the *flesh*. Scaling a bone would drag
+     the whole forelimb chain — and the solved toe — through the floor. */
+  const br = 1 + 0.016 * Math.sin(TAU * mp * bn), bs = 1 + 0.022 * Math.sin(TAU * mp * bn - 0.45);
+  for (const m of h.hulls.barrel) { const b0 = m.userData.baseScale; m.scale.set(b0.x * bs, b0.y * br, b0.z * br); }
+  const puff = 1 + 0.011 * Math.max(0, ACC.hump[2] + ACC.hump[3] - 0.6);
+  for (const m of h.hulls.chest) { const b0 = m.userData.baseScale; m.scale.set(b0.x * puff, b0.y * puff, b0.z * puff); }
+
+  /* legs last, once the torso has been placed */
+  h.root.updateMatrixWorld(true);
+  h.forward.copy(FORWARD).applyQuaternion(h.level.quaternion).setY(0).normalize();
+  h.lateral.set(-h.forward.z, 0, h.forward.x);
+  for (const id of LIMB_IDS) {
+    const limb = h.limbs[id];
+    limb.j0.parent.getWorldQuaternion(PARENTQ);
+    solveLimb(h, g, limb, p, PARENTQ, diag);
+  }
+  return ACC;
+}
+const FORWARD = V3(1, 0, 0);
+const PARENTQ = new THREE.Quaternion();
+/* --------------------------------------------------------------- 7. world */
+const canvas = document.getElementById('view');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+} catch (e) {
+  bootEl.classList.add('err');
+  document.getElementById('boot-t').textContent = 'WebGL is not available';
+  document.getElementById('boot-p').textContent = 'This scene needs hardware-accelerated WebGL: ' + e.message;
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.06;
+
+const scene = new THREE.Scene();
+const world = new THREE.Group(); scene.add(world);
+const camPersp = new THREE.PerspectiveCamera(32, 1, 0.1, 1200);
+const camPlate = new THREE.OrthographicCamera(-3, 3, 2, -2, -700, 700);
+let cam = camPersp;
+
+/* ---- tileable noise: everything the world is made of comes from here ---- */
+function lattice(a, b, per) {
+  a = ((a % per) + per) % per; b = ((b % per) + per) % per;
+  let h = (a * 374761393 + b * 668265263) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+}
+function vnoise(x, y, per) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  return lerp(lerp(lattice(xi, yi, per), lattice(xi + 1, yi, per), u),
+    lerp(lattice(xi, yi + 1, per), lattice(xi + 1, yi + 1, per), u), v);
+}
+function fbm(x, y, per, oct = 4) {
+  let s = 0, a = 0.5, f = 1, tot = 0;
+  for (let i = 0; i < oct; i++) { s += a * vnoise(x * f, y * f, per * f); tot += a; a *= 0.5; f *= 2; }
+  return s / tot;
+}
+const cvs = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+
+/* ---- the surface: colour + a normal map from the same height field ------ */
+function makeGround() {
+  const N = 512, c = cvs(N, N), ctx = c.getContext('2d');
+  const h = new Float32Array(N * N), img = ctx.createImageData(N, N);
+  const earth = [142, 120, 88], dry = [176, 156, 122], grass = [92, 106, 66], dark = [96, 80, 58];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x;
+    const base = fbm(x / N * 4, y / N * 4, 4, 4);        // paddock-scale patches
+    const mid = fbm(x / N * 12, y / N * 12, 12, 3);      // tufts and bare scuffs
+    const fine = fbm(x / N * 48, y / N * 48, 48, 2);     // grit
+    const drag = 0.5 + 0.5 * Math.sin((y / N * 4 * 6 + base * 2.2) * TAU);
+    const hgt = 0.5 * base + 0.3 * mid + 0.2 * fine + 0.035 * drag;
+    h[i] = hgt;
+    const turf = smooth01((mid - 0.46) * 3.4) * smooth01((base - 0.34) * 3.0);   // grass only in patches
+    const grit = smooth01((fine - 0.68) * 3.6);
+    const clod = smooth01((0.30 - base) * 4.2);
+    let r = lerp(earth[0], grass[0], turf), g = lerp(earth[1], grass[1], turf), b = lerp(earth[2], grass[2], turf);
+    r = lerp(r, dry[0], grit * .55); g = lerp(g, dry[1], grit * .55); b = lerp(b, dry[2], grit * .55);
+    r = lerp(r, dark[0], clod * .4); g = lerp(g, dark[1], clod * .4); b = lerp(b, dark[2], clod * .4);
+    const sh = 0.86 + 0.30 * hgt;
+    img.data[i * 4] = clamp(r * sh, 0, 255); img.data[i * 4 + 1] = clamp(g * sh, 0, 255);
+    img.data[i * 4 + 2] = clamp(b * sh, 0, 255); img.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const map = new THREE.CanvasTexture(c);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  const nc = cvs(N, N), nctx = nc.getContext('2d'), nimg = nctx.createImageData(N, N);
+  const at = (x, y) => h[(((y % N) + N) % N) * N + (((x % N) + N) % N)];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const dx = (at(x + 1, y) - at(x - 1, y)) * 1.5, dy = (at(x, y + 1) - at(x, y - 1)) * 1.5;
+    const l = Math.hypot(-dx, -dy, 1), i = (y * N + x) * 4;
+    nimg.data[i] = ((-dx / l) * .5 + .5) * 255; nimg.data[i + 1] = ((-dy / l) * .5 + .5) * 255;
+    nimg.data[i + 2] = ((1 / l) * .5 + .5) * 255; nimg.data[i + 3] = 255;
+  }
+  nctx.putImageData(nimg, 0, 0);
+  const normalMap = new THREE.CanvasTexture(nc);
+  normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+  return { map, normalMap };
+}
+function softDisc(size, inner, mid) {
+  const c = cvs(size, size), x = c.getContext('2d');
+  const g = x.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, inner); g.addColorStop(.45, mid); g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, size, size);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function makePrintTex() {                        // a hoof print: wall ring + frog
+  const N = 128, c = cvs(N, N), x = c.getContext('2d');
+  x.fillStyle = '#fff';
+  x.beginPath(); x.ellipse(N / 2, N * .52, N * .31, N * .35, 0, 0, TAU); x.fill();
+  x.globalCompositeOperation = 'destination-out';
+  x.beginPath(); x.ellipse(N / 2, N * .60, N * .19, N * .22, 0, 0, TAU); x.fill();
+  x.globalCompositeOperation = 'source-over';
+  x.globalAlpha = .5;
+  x.beginPath(); x.ellipse(N / 2, N * .27, N * .10, N * .085, 0, 0, TAU); x.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function skyTexture(l) {
+  const w = 8, h = 256, c = cvs(w, h), x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, h);
+  /* the sphere maps the top of this canvas to the zenith and its middle to the
+     horizon, so the warm band has to straddle 0.5 or a grey collar appears
+     above the skyline */
+  g.addColorStop(0, l.zenith); g.addColorStop(.26, l.skyMid); g.addColorStop(.455, l.horizon);
+  g.addColorStop(.52, l.haze); g.addColorStop(1, l.haze);
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const PRINT_TEX = makePrintTex();
+const DUST_TEX = softDisc(96, 'rgba(255,246,230,.95)', 'rgba(203,178,142,.40)');
+
+/* ---- light presets ------------------------------------------------------ */
+const LOOKS = {
+  dawn: {
+    name: 'Livery dawn', sun: [-.62, .18, .76], sunColor: 0xffb582, sunInt: 2.8, sky: 0x9fb6d4, skyInt: .9,
+    ground: 0x4a4230, zenith: '#1d2c4a', skyMid: '#4c6b90', horizon: '#c8a287', haze: '#e3c3a4',
+    groundTint: 0xa89377, fog: 0xc8a888, fogNear: 20, fogFar: 250, exposure: 1.05,
+  },
+  golden: {
+    name: 'Golden hour', sun: [-.74, .26, .62], sunColor: 0xffc07a, sunInt: 3.6, sky: 0x8fb4dc, skyInt: .8,
+    ground: 0x6b5a3c, zenith: '#182a4c', skyMid: '#47699a', horizon: '#dfae82', haze: '#eec494',
+    groundTint: 0xd2ab78, fog: 0xdfae82, fogNear: 24, fogFar: 265, exposure: 1.07,
+  },
+  noon: {
+    name: 'High noon', sun: [-.26, .94, .26], sunColor: 0xfff4e2, sunInt: 3.3, sky: 0xa9c8e8, skyInt: .95,
+    ground: 0x736c4c, zenith: '#163a64', skyMid: '#3f74ac', horizon: '#aec8dd', haze: '#d3e2ea',
+    groundTint: 0xefe6d2, fog: 0xaec8dd, fogNear: 40, fogFar: 330, exposure: 1.0,
+  },
+  dusk: {
+    name: 'Dusk track', sun: [.5, .10, -.86], sunColor: 0xff9a6a, sunInt: 1.9, sky: 0x7d8fb5, skyInt: .8,
+    ground: 0x33322e, zenith: '#0e1730', skyMid: '#28395a', horizon: '#8a5f63', haze: '#b3745c',
+    groundTint: 0x8d6f5e, fog: 0x8a5f63, fogNear: 14, fogFar: 210, exposure: 1.16,
+  },
+};
+let lookKey = 'golden';
+const keyLight = new THREE.DirectionalLight(0xffffff, 3);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+Object.assign(keyLight.shadow.camera, { near: 1, far: 34, left: -5, right: 5, top: 5, bottom: -5 });
+keyLight.shadow.bias = -0.0008; keyLight.shadow.normalBias = 0.022;
+
+scene.add(keyLight, keyLight.target);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1); scene.add(hemi);
+const rim = new THREE.DirectionalLight(0xffffff, .6); scene.add(rim);
+const amb = new THREE.AmbientLight(0xffffff, .13); scene.add(amb);
+const skyGroup = new THREE.Group(); scene.add(skyGroup);
+const sunDisc = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
+  new THREE.MeshBasicMaterial({ map: softDisc(160, 'rgba(255,255,255,.95)', 'rgba(255,236,200,.34)'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+skyGroup.add(sunDisc);
+const skyMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, fog: false, depthWrite: false });
+let skyMesh = null;
+
+/* ---- prop materials (so a coat change never restyles the landscape) ----- */
+function buildPropMaterials() {
+  const m = (color, rough = .95, side) => {
+    const o = { color, roughness: rough, metalness: 0, flatShading: true, vertexColors: true };
+    if (side !== undefined) o.side = side;
+    return new THREE.MeshStandardMaterial(o);
+  };
+  MAT.bark = m(0x53412e); MAT.leaf = m(0x59683a); MAT.leaf2 = m(0x6d7a41);
+  MAT.stone = m(0x7c776e, 1); MAT.grass = m(0x747843, 1, THREE.DoubleSide);
+  MAT.fence = m(0x8f7758);
+  MAT.cloud = new THREE.MeshStandardMaterial({ color: 0xfff0dd, roughness: 1, metalness: 0, flatShading: true, vertexColors: true, fog: false });
+  MAT.streak = new THREE.MeshBasicMaterial({ color: 0xe8d3ae, transparent: true, opacity: .16, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  MAT.print = new THREE.MeshBasicMaterial({ alphaMap: PRINT_TEX, transparent: true, color: 0x40361f, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, vertexColors: true });
+  /* Wind in the baked grass, displaced in the vertex shader and driven by the
+     master phase — a moving field that stays exactly periodic. */
+  MAT.grass.userData.uWind = { value: 0 };
+  MAT.grass.onBeforeCompile = sh => {
+    sh.uniforms.uWind = MAT.grass.userData.uWind;
+    sh.vertexShader = 'uniform float uWind;' + String.fromCharCode(10) + sh.vertexShader.replace('#include <begin_vertex>',
+      `#include <begin_vertex>
+       float wsp = transformed.x * 0.9 + transformed.z * 1.7;
+       float wh = max(0.0, transformed.y);
+       transformed.x += (sin(uWind * ${(TAU * 2).toFixed(3)} + wsp) * 0.5 + 0.32) * 0.075 * wh * wh;
+       transformed.z += sin(uWind * ${(TAU * 3).toFixed(3)} + wsp * 1.3) * 0.04 * wh * wh;`);
+  };
+  MAT.grass.customProgramCacheKey = () => 'grasswind';
+}
+
+buildMaterials();
+buildPropMaterials();
+
+/* ---- ground ------------------------------------------------------------- */
+const gTex = makeGround();
+const groundMat = new THREE.MeshStandardMaterial({ map: gTex.map, normalMap: gTex.normalMap, normalScale: new THREE.Vector2(.8, .8), roughness: .97, metalness: 0, dithering: true });
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(620, 620, 1, 1), groundMat);
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; world.add(ground);
+const hills = new THREE.Group(); world.add(hills);
+/** a low-poly ridge standing on the horizon, generated as an explicit grid */
+function ridge(len, wide, zBase, amp, seed, color, segs) {
+  const sign = Math.sign(zBase) || -1, r = mulberry32(seed);
+  const ph = [r() * 9, r() * 9, r() * 9];
+  const nx = segs, nz = 4, pos = [], idx = [];
+  for (let iz = 0; iz <= nz; iz++) for (let ix = 0; ix <= nx; ix++) {
+    const u = ix / nx, v = iz / nz, x = (u - .5) * len, z = zBase + sign * v * wide;
+    const shape = Math.max(0.06, 0.50 + .26 * Math.sin(x / len * TAU * 3 + ph[0])
+      + .20 * Math.sin(x / len * TAU * 7 + ph[1]) + .13 * Math.sin(x / len * TAU * 13 + ph[2])
+      + .08 * Math.sin(x / len * TAU * 23 + ph[0] * 2));
+    pos.push(x, amp * (0.05 + 0.95 * Math.pow(v, .8)) * shape - 0.7, z);
+  }
+  for (let iz = 0; iz < nz; iz++) for (let ix = 0; ix < nx; ix++) {
+    const a = iz * (nx + 1) + ix, b = a + 1, c = a + nx + 1, d = c + 1;
+    if (sign > 0) idx.push(a, c, d, a, d, b); else idx.push(a, d, c, a, b, d);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color, roughness: 1, metalness: 0, flatShading: true }));
+  m.castShadow = false; m.receiveShadow = false;
+  return m;
+}
+
+/* ---- props ------------------------------------------------------------- */
+function tree(seed) {
+  const g = new THREE.Group(), r = mulberry32(seed);
+  const h = 2.6 + r() * 2.8, rad = .9 + r() * .9;
+  const trunk = new THREE.Mesh(GEO.pris(.09, .18, h, 5, { grad: .2 }), MAT.bark);
+  trunk.position.y = h / 2; trunk.rotation.z = (r() - .5) * .12; trunk.castShadow = true; g.add(trunk);
+  const n = 2 + Math.floor(r() * 3);
+  for (let i = 0; i < n; i++) {
+    const c = new THREE.Mesh(GEO.ico(.5, 1, { grad: .26, jitter: .09 }), i % 2 ? MAT.leaf : MAT.leaf2);
+    c.position.set((r() - .5) * rad, h * (.7 + .34 * r()), (r() - .5) * rad);
+    c.scale.set(rad * (1.5 + r() * .8), rad * (1.1 + r() * .7), rad * (1.4 + r() * .8));
+    c.rotation.y = r() * 3; c.castShadow = true; g.add(c);
+  }
+  return g;
+}
+function bush(seed) {
+  const g = new THREE.Group(), r = mulberry32(seed);
+  const n = 2 + Math.floor(r() * 3);
+  for (let i = 0; i < n; i++) {
+    const c = new THREE.Mesh(GEO.ico(.42, 0, { grad: .22, jitter: .1 }), i % 2 ? MAT.leaf : MAT.leaf2);
+    c.position.set((r() - .5) * .8, .16 + r() * .22, (r() - .5) * .6);
+    c.scale.setScalar(.6 + r() * .9); c.castShadow = true; g.add(c);
+  }
+  return g;
+}
+function rock(seed) {
+  const r = mulberry32(seed);
+  const m = new THREE.Mesh(GEO.ico(.4, 0, { grad: .18, jitter: .13 }), MAT.stone);
+  m.scale.set(.5 + r() * 1.0, .3 + r() * .5, .5 + r() * .9);
+  m.position.y = .1; m.rotation.set(r(), r() * 3, r()); m.castShadow = true;
+  return m;
+}
+function tuft(seed) {
+  const r = mulberry32(seed), g = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const h = 0.14 + r() * 0.17;                         // the ribbon hangs from its top…
+    const b = new THREE.Mesh(GEO.quad(.055, h, { grad: .40, jitter: .22, taper: 0.06 }), MAT.grass);
+    b.rotation.y = r() * Math.PI; b.rotation.z = (r() - .5) * .7;
+    b.position.set((r() - .5) * .12, h + .005, (r() - .5) * .12);  // …so lift it by its own height
+    g.add(b);
+  }
+  return g;
+}
+
+/* ---- periodicity --------------------------------------------------------
+   The master loop moves the world MD metres. Every scroller uses a length
+   that is an exact multiple of MD, so horse, dust, prints, fence posts and
+   clouds all repeat together — the whole scene loops, not just the animal.
+   Props are then baked into per-layer strips, tiled with three copies, so a
+   200 m band of trees, rails and tufts costs a few draw calls instead of 900. */
+let MD = 1, TILEN = 0, tileWorld = 2.4;
+const LOOP_DISTANCE = 14.4;         // every gait covers this per master loop
+const layerPeriod = k => Math.max(0.6, k * LOOP_DISTANCE);
+const periodFor = layerPeriod;
+const wrapP = (x, per) => { if (!(per > 0)) return x; x = ((x % per) + per) % per; return x - per / 2; };
+const sc = { items: [], fence: [], tufts: [], clouds: [], streaks: [], layers: [] };
+
+/** concatenate geometries that share a material (position / normal / colour) */
+function mergeGeos(list) {
+  let nv = 0;
+  for (const g of list) nv += g.attributes.position.count;
+  const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), col = new Float32Array(nv * 3);
+  let o = 0;
+  for (const g of list) {
+    const p = g.attributes.position, n = g.attributes.normal, c = g.attributes.color, cnt = p.count;
+    for (let i = 0; i < cnt; i++) {
+      const k = (o + i) * 3;
+      pos[k] = p.getX(i); pos[k + 1] = p.getY(i); pos[k + 2] = p.getZ(i);
+      if (n) { nor[k] = n.getX(i); nor[k + 1] = n.getY(i); nor[k + 2] = n.getZ(i); }
+      if (c) { col[k] = c.getX(i); col[k + 1] = c.getY(i); col[k + 2] = c.getZ(i); }
+    }
+    o += cnt;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.computeBoundingSphere();
+  return g;
+}
+/** bake one layer's prop groups into a single geometry per material, tiled ×3 */
+function bakeLayer(items, opts = {}) {
+  const per = items.length ? items[0].per : 1;
+  const byMat = new Map(), M = new THREE.Matrix4();
+  for (const it of items) {
+    it.obj.updateMatrixWorld(true);
+    for (const ch of it.obj.children) {
+      if (!ch.isMesh) continue;
+      const g = ch.geometry.clone();
+      M.makeTranslation(it.bx, it.y ?? 0, it.bz).multiply(ch.matrixWorld);
+      g.applyMatrix4(M);
+      const key = ch.material.uuid;
+      if (!byMat.has(key)) byMat.set(key, { mat: ch.material, geos: [], cast: false });
+      const slot = byMat.get(key);
+      slot.geos.push(g);
+      slot.cast = slot.cast || (ch.castShadow && !!opts.shadow);
+    }
+    it.obj.parent && it.obj.parent.remove(it.obj);
+  }
+  const meshes = [];
+  for (const { mat, geos, cast } of byMat.values()) {
+    const geo = mergeGeos(geos);
+    for (const g of geos) g.dispose();
+    for (let j = 0; j < 3; j++) {                  // three tiles cover the band
+      const m = new THREE.Mesh(geo, mat);
+      m.castShadow = cast; m.receiveShadow = cast;
+      m.userData.triples = 3;                    // updateWorld lays each material out in triples
+      world.add(m); meshes.push(m);
+    }
+  }
+  items.length = 0;
+  sc.layers.push({ meshes, per, k: opts.k ?? 1 });
+}
+function bakeScenery() {
+  bakeLayer(sc.items, { shadow: true });
+  bakeLayer(sc.fence, { shadow: true });
+  bakeLayer(sc.tufts, {});
+  bakeLayer(sc.clouds, { k: .03 });
+  bakeLayer(sc.streaks, { k: 1.3 });
+}
+function buildScenery() {
+  const r = mulberry32(4242), B = periodFor(1);
+  /* six landmarks per band — tree, bush, rock, tree, bush, rock — staggered in
+     depth, so the 14.4 m repeat reads as open paddock instead of a pattern */
+  for (let i = 0; i < 6; i++) {
+    const side = (i % 2) ? 1 : -1, kind = i % 3;
+    const o = kind === 0 ? tree(100 + i) : kind === 1 ? bush(200 + i) : rock(300 + i);
+    o.scale.setScalar((kind === 0 ? .95 : .7) + r() * .8);
+    world.add(o);
+    sc.items.push({ obj: o, bx: (i / 6) * B + r() * .9, bz: side * (15 + i * 6 + r() * 24), per: B });
+  }
+  const fp = periodFor(1), sp2 = 2.4;              // six post spaces per band
+  for (let i = 0; i < Math.round(fp / sp2); i++) {
+    for (const [z, dir] of [[13.5, 1], [-10.5, -1]]) {
+      const g = new THREE.Group();
+      const post = new THREE.Mesh(GEO.pris(.055, .08, 1.18, 4, { grad: .16 }), MAT.fence);
+      post.position.y = .59; post.castShadow = true; g.add(post);
+      for (const hy of [1.0, .64]) {
+        const rail = new THREE.Mesh(GEO.box(sp2 * 1.01, .062, .055, { grad: .1 }), MAT.fence);
+        rail.position.set(sp2 / 2 * dir, hy, 0); rail.castShadow = true; g.add(rail);
+      }
+      world.add(g);
+      sc.fence.push({ obj: g, bx: i * sp2, bz: z, per: fp });
+    }
+  }
+  const tp = periodFor(1);
+  for (let i = 0; i < 30; i++) {
+    const o = tuft(400 + i);
+    const z = (r() < .5 ? 1 : -1) * (.9 + r() * 9.5);
+    world.add(o);
+    sc.tufts.push({ obj: o, bx: (i / 30) * tp + r() * .32, bz: z, per: tp, ph: r() * TAU });
+  }
+  const cp = 720;                                 // clouds stand still: k = 0
+  for (let i = 0; i < 10; i++) {
+    const g = new THREE.Group(), nb = 3 + Math.floor(r() * 3);
+    for (let b = 0; b < nb; b++) {
+      const m = new THREE.Mesh(GEO.ico(.5, 1, { grad: .08, jitter: .04 }), MAT.cloud);
+      m.position.set((r() - .5) * 11, (r() - .5) * 1.8, (r() - .5) * 7);
+      m.scale.set(3 + r() * 5, .9 + r() * 1.2, 2.4 + r() * 3);
+      g.add(m);
+    }
+    world.add(g);
+    sc.clouds.push({ obj: g, bx: (i / 10) * cp, bz: -120 - r() * 160, per: cp, k: 0, y: 34 + r() * 26 });
+  }
+  const sP = periodFor(1);
+  for (let i = 0; i < 8; i++) {
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(GEO.quad(1.6 + r() * 3.4, .022, { grad: .01, jitter: .01, taper: 0.1 }), MAT.streak);
+    m.rotation.x = -Math.PI / 2; m.position.y = .04 + r() * .6;
+    g.add(m); world.add(g);
+    sc.streaks.push({ obj: g, bx: (i / 8) * sP + r() * .7, bz: (r() - .5) * 18, per: sP, k: 1 });
+  }
+  hills.add(ridge(660, 130, -330, 34, 11, 0x63707f, 190));
+  hills.add(ridge(660, 96, -244, 22, 22, 0x66715f, 150));
+  hills.add(ridge(660, 58, -176, 11, 33, 0x6d6a4f, 110));
+  hills.add(ridge(660, 110, 250, 28, 44, 0x626d78, 160));
+  hills.add(ridge(660, 44, 168, 10, 55, 0x6a6c54, 110));
+  bakeScenery();
+}
+
+/* ---- dust, motes, prints: solved analytically from phase ---------------- */
+const DUST_N = 4 * 22, MOTE_N = 80, PRINT_N = 4 * 4;
+const dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(DUST_N * 3), 3));
+dustGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(DUST_N * 4), 4));
+const dustPts = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: DUST_TEX, size: .26, transparent: true, depthWrite: false, sizeAttenuation: true, vertexColors: true, opacity: .45 }));
+dustPts.frustumCulled = false; world.add(dustPts);
+const moteGeo = new THREE.BufferGeometry();
+moteGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MOTE_N * 3), 3));
+moteGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MOTE_N * 4), 4));
+const motePts = new THREE.Points(moteGeo, new THREE.PointsMaterial({ map: DUST_TEX, size: .06, transparent: true, depthWrite: false, sizeAttenuation: true, vertexColors: true, opacity: .8, blending: THREE.AdditiveBlending }));
+motePts.frustumCulled = false; world.add(motePts);
+const prints = [];
+{
+  const base = new THREE.PlaneGeometry(.23, .28); base.rotateX(-Math.PI / 2);
+  for (let i = 0; i < PRINT_N; i++) {
+    const g = base.clone();
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 4), 4));
+    const m = new THREE.Mesh(g, MAT.print); m.visible = false; m.renderOrder = 2;
+    world.add(m); prints.push(m);
+  }
+}
+const DUST_SEED = (() => { const r = mulberry32(7717); const a = []; for (let i = 0; i < DUST_N; i++) a.push([r(), r(), r(), r(), r()]); for (let i = 0; i < MOTE_N; i++) a.push([r(), r(), r(), r(), r()]); return a; })();
+
+function applyLook(key) {
+  lookKey = key;
+  const l = LOOKS[key];
+  keyLight.color.setHex(l.sunColor); keyLight.intensity = l.sunInt;
+  hemi.color.setHex(l.sky); hemi.groundColor.setHex(l.ground); hemi.intensity = l.skyInt;
+  rim.color.setHex(l.horizon); rim.intensity = 0.5;
+  rim.position.set(-l.sun[0] * 12, 4.5, -l.sun[2] * 12);
+  groundMat.color.setHex(l.groundTint);
+  scene.fog = new THREE.Fog(l.fog, l.fogNear, l.fogFar);
+  renderer.toneMappingExposure = l.exposure;
+  if (skyMesh) { skyGroup.remove(skyMesh); skyMesh.geometry.dispose(); skyMesh.material.map.dispose(); }
+  skyMesh = new THREE.Mesh(new THREE.SphereGeometry(560, 24, 16), skyMat);
+  skyMesh.material.map = skyTexture(l);
+  skyGroup.add(skyMesh);
+  const sd = V3(l.sun[0], l.sun[1], l.sun[2]).normalize();
+  keyLight.position.copy(sd).multiplyScalar(15);
+  keyLight.target.position.set(0, .85, 0);
+  keyLight.shadow.camera.updateProjectionMatrix();
+  sunDisc.position.copy(sd).multiplyScalar(520);
+  sunDisc.scale.setScalar(56);
+  sunDisc.lookAt(0, 0, 0);
+  sunDisc.material.color.setHex(l.sunColor);
+}
+/* ------------------------------------------------------------- 8. cameras */
+const CAMSPEC = {
+  side: { label: 'side track', yaw: 7, pitch: 6.5, dist: 7.2, tgt: [-0.38, 0.98, 0], fov: 30 },
+  hero: { label: 'hero three-quarter', yaw: 47, pitch: 8.5, dist: 5.9, tgt: [-0.20, 1.01, 0], fov: 34 },
+  low: { label: 'low, into the dust', yaw: -32, pitch: -2, dist: 4.8, tgt: [-0.10, 0.82, 0], fov: 46 },
+  front: { label: 'head-on', yaw: 74, pitch: 5, dist: 6.6, tgt: [-0.05, 1.03, 0], fov: 30 },
+  chase: { label: 'chase', yaw: -120, pitch: 12, dist: 7.0, tgt: [0.05, 1.03, 0], fov: 34 },
+  plate: { label: 'Muybridge plate', yaw: .0, pitch: .4, dist: 6, tgt: [-0.10, .95, 0], fov: 30, ortho: true, width: 3.15 },
+};
+const AUTO_ORDER = ['side', 'hero', 'low', 'front', 'chase', 'plate', 'side', 'low'];
+const camState = {
+  key: 'side', yaw: 6 * DEG, pitch: 7 * DEG, dist: 9, tgt: V3(.12, 1.02, 0), fov: 30, width: 2.55,
+  ortho: false, hold: 0, autoIdx: 0, blend: 1, free: false, shake: 0,
+};
+const _want = { yaw: 0, pitch: 0, dist: 9, tgt: V3(), fov: 30, width: 2.55, ortho: false };
+function setCam(key, instant) {
+  if (key === 'auto') { camState.key = 'auto'; camState.autoIdx = 0; camState.hold = 0; camState.free = false; }
+  else {
+    const s = CAMSPEC[key]; if (!s) return;
+    camState.key = key; camState.free = false;
+    _want.yaw = s.yaw * DEG; _want.pitch = s.pitch * DEG; _want.dist = s.dist;
+    _want.tgt.set(...s.tgt); _want.fov = s.fov; _want.width = s.width ?? 2.55; _want.ortho = !!s.ortho;
+    if (instant) { Object.assign(camState, { yaw: _want.yaw, pitch: _want.pitch, dist: _want.dist, fov: _want.fov, width: _want.width, ortho: _want.ortho }); camState.tgt.copy(_want.tgt); }
+  }
+  syncCamUI();
+}
+function nextCam() {
+  if (camState.key === 'auto' || camState.free) return setCam('side');
+  const i = Object.keys(CAMSPEC).indexOf(camState.key);
+  setCam(Object.keys(CAMSPEC)[(i + 1) % Object.keys(CAMSPEC).length]);
+}
+function syncCamUI() {
+  for (const b of document.querySelectorAll('#cams button'))
+    b.setAttribute('aria-pressed', String(b.dataset.cam === camState.key && !camState.free));
+  document.getElementById('camname').textContent = camState.free ? 'free orbit' : (camState.key === 'auto' ? 'auto cinema' : CAMSPEC[camState.key].label);
+}
+/* pointer orbit */
+{
+  let dragging = null;
+  const pointers = new Map();
+  canvas.addEventListener('pointerdown', e => {
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pointers.size === 1) dragging = { x: e.clientX, y: e.clientY, cam: camState.key === 'auto' ? snapshotCam() : camState };
+    if (pointers.size === 2) dragging = { pinch: pinchDist() };
+  });
+  const pinchDist = () => { const [a, b] = [...pointers.values()]; return Math.hypot(a[0] - b[0], a[1] - b[1]); };
+  function snapshotCam() { return { yaw: camState.yaw, pitch: camState.pitch, dist: camState.dist }; }
+  canvas.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId); pointers.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pointers.size >= 2) {
+      const d = pinchDist();
+      if (dragging && dragging.pinch) { camState.dist = clamp(camState.dist * dragging.pinch / d, 2.4, 34); dragging.pinch = d; }
+      camState.free = true; camState.key = 'free'; syncCamUI(); return;
+    }
+    if (!dragging) return;
+    const dx = e.clientX - prev[0], dy = e.clientY - prev[1];
+    camState.yaw -= dx * 0.0062; camState.pitch = clamp(camState.pitch + dy * 0.005, -0.22, 1.15);
+    camState.free = true; camState.key = 'free'; camState.ortho = false; syncCamUI();
+  });
+  const up = e => { pointers.delete(e.pointerId); if (pointers.size < 2 && dragging) dragging.pinch = null; if (!pointers.size) dragging = null; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (e.shiftKey) camState.tgt.y = clamp(camState.tgt.y - e.deltaY * 0.0016, 0.05, 2.4);
+    else if (camState.ortho) camState.width = clamp(camState.width * (1 + e.deltaY * 0.0011), 1.6, 22);
+    else camState.dist = clamp(camState.dist * (1 + e.deltaY * 0.0011), 2.4, 34);
+    camState.free = true; camState.key = 'free'; syncCamUI();
+  }, { passive: false });
+}
+function updateCamera(dt, g, p, mp) {
+  if (camState.key === 'auto' && !camState.free) {
+    camState.hold += dt;
+    const per = 6.4;
+    if (camState.hold > per) {
+      camState.hold = 0; camState.autoIdx = (camState.autoIdx + 1) % AUTO_ORDER.length;
+      const s = CAMSPEC[AUTO_ORDER[camState.autoIdx]];
+      _want.yaw = s.yaw * DEG; _want.pitch = s.pitch * DEG; _want.dist = s.dist;
+      _want.tgt.set(...s.tgt); _want.fov = s.fov; _want.width = s.width ?? 2.55; _want.ortho = !!s.ortho;
+    }
+  }
+  if ((camState.key === 'auto' || !camState.free) && !_want.ortho) { /* follow wants */ }
+  if (!camState.free) {
+    camState.yaw = damp(camState.yaw, _want.yaw + 0.05 * DEG * Math.sin(TAU * mp), 3.4, dt);
+    camState.pitch = damp(camState.pitch, _want.pitch + 0.02 * DEG * Math.sin(TAU * 2 * mp), 3.4, dt);
+    camState.dist = damp(camState.dist, _want.dist, 3.2, dt);
+    camState.width = damp(camState.width, _want.width, 3.2, dt);
+    camState.fov = damp(camState.fov, state.fovOverride ?? _want.fov, 4.5, dt);
+    camState.tgt.x = damp(camState.tgt.x, _want.tgt.x, 3.2, dt);
+    camState.tgt.y = damp(camState.tgt.y, _want.tgt.y + 0.022 * Math.sin(TAU * mp * g.loop), 3.2, dt);
+    camState.tgt.z = damp(camState.tgt.z, _want.tgt.z, 3.2, dt);
+    camState.ortho = _want.ortho;
+  } else if (state.fovOverride != null) {
+    camState.fov = damp(camState.fov, state.fovOverride, 4.5, dt);
+  }
+  const swing = 0.020 * g.speed / 7.6;
+  const sh = swing * 0.5;
+  camPersp.fov = camState.fov; camPersp.aspect = innerWidth / innerHeight;
+  const cy = Math.cos(camState.yaw), sy = Math.sin(camState.yaw), cp = Math.cos(camState.pitch), sp2 = Math.sin(camState.pitch);
+  tmpC.set(camState.tgt.x + camState.dist * sy * cp, camState.tgt.y + camState.dist * sp2, camState.tgt.z + camState.dist * cy * cp);
+  tmpC.x += sh * Math.sin(TAU * mp * g.loop + 1.1);
+  tmpC.y += sh * 0.7 * Math.sin(TAU * mp * g.loop * 2 + 2.2);
+  camPersp.position.copy(tmpC);
+  camPersp.lookAt(camState.tgt);
+  camPersp.updateProjectionMatrix();
+  if (camState.ortho) {
+    const a = innerWidth / innerHeight, w = camState.width;
+    camPlate.position.copy(tmpC); camPlate.lookAt(camState.tgt);
+    if (w !== camPlate.userData.w || a !== camPlate.userData.a) {
+      camPlate.userData.w = w; camPlate.userData.a = a;
+      camPlate.left = -w * a / 2; camPlate.right = w * a / 2; camPlate.top = w / 2; camPlate.bottom = -w / 2;
+      camPlate.updateProjectionMatrix();
+    }
+  }
+  cam = camState.ortho ? camPlate : camPersp;
+  skyGroup.position.copy(cam.position);
+  /* The Muybridge plate is a studio, not a landscape: the props drop out and
+     the backdrop goes flat, exactly as the zoetrope plates were. */
+  skyGroup.visible = true;
+  hills.position.set(0, 0, 0);
+}
+
+/* ------------------------------------------------------------- 9. the cast */
+calibrateGaits();
+const horse = buildHorse({ name: 'hero' });
+tuneStanceToReach(horse);            // then let the rig itself trim any slipping stance
+horse.root.position.set(0, 0, 0);
+world.add(horse.root);
+const ghosts = [];
+function makeGhosts(n) {
+  const sil = new THREE.MeshBasicMaterial({ color: 0x140f0c, transparent: true, opacity: .17, depthWrite: false, side: THREE.DoubleSide });
+  for (let i = 0; i < n; i++) {
+    const gh = buildHorse({ detail: false, name: 'g' + i });
+    for (const m of gh.meshes) { m.material = sil; m.castShadow = false; m.receiveShadow = false; }
+    gh.root.visible = false;
+    world.add(gh.root); ghosts.push(gh);
+  }
+}
+let wireOverlay = null;
+function makeWire() {
+  wireOverlay = new THREE.Group();
+  const wm = new THREE.MeshBasicMaterial({ color: 0x0b1220, wireframe: true, transparent: true, opacity: .6 });
+  for (const m of horse.meshes) {
+    const w = new THREE.Mesh(m.geometry, wm);
+    w.position.copy(m.position); w.rotation.copy(m.rotation); w.scale.copy(m.userData.baseScale || m.scale).multiplyScalar(1.012);
+    w.castShadow = false; m.parent.add(w); w.userData.wire = true; wireOverlay.add(w);
+  }
+}
+/* debug rig: bones as lines (world frame), stride paths (horse frame) */
+const rigViz = new THREE.Group(); rigViz.visible = false; scene.add(rigViz);
+const rigVizBody = new THREE.Group(); rigViz.add(rigVizBody);
+const boneLines = new THREE.LineSegments(new THREE.BufferGeometry(),
+  new THREE.LineBasicMaterial({ color: 0x8fe8c9, transparent: true, opacity: .95, depthTest: false }));
+boneLines.frustumCulled = false; boneLines.renderOrder = 7; rigViz.add(boneLines);
+const contactDots = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0xffd27a, size: 6, sizeAttenuation: false, depthTest: false }));
+contactDots.frustumCulled = false; contactDots.renderOrder = 8; rigViz.add(contactDots);
+let pathLines = [];
+function buildStridePaths(g) {
+  for (const l of pathLines) { l.parent && l.parent.remove(l); l.geometry.dispose(); }
+  pathLines = [];
+  rigVizBody.parent === null && horse.level.add(rigVizBody);
+  const N = 96;
+  for (const def of LIMB_DEFS) {
+    const pos = new Float32Array(N * 2 * 3), col = new Float32Array(N * 2 * 3);
+    const a = { x: 0, y: 0, z: 0, stance: false }, b = { x: 0, y: 0, z: 0, stance: false };
+    for (let i = 0; i < N; i++) {
+      for (const [t, o] of [[i / N, a], [(i + 1) / N, b]]) {
+        footPath(g, def, t);
+        o.x = P[def.kind].root[0] + FP.x; o.y = FP.y + .015; o.z = FP.z; o.stance = FP.stance;
+      }
+      for (let k = 0; k < 2; k++) {
+        const o = k ? b : a, p3 = (i * 2 + k) * 3;
+        pos[p3] = o.x; pos[p3 + 1] = o.y; pos[p3 + 2] = o.z;
+        const c = o.stance ? [.96, .72, .32] : [.36, .60, .86];
+        col[p3] = c[0]; col[p3 + 1] = c[1]; col[p3 + 2] = c[2];
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const line = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .8, depthTest: false }));
+    line.renderOrder = 6; line.frustumCulled = false;
+    rigVizBody.add(line); pathLines.push(line);
+  }
+}
+function updateRigViz() {
+  const pts = [], dots = [];
+  const v = V3(), w = o => { o.getWorldPosition(v); return [v.x, v.y, v.z]; };
+  const add = (a, b) => pts.push(a[0], a[1], a[2], b[0], b[1], b[2]);
+  const B = horse.bones;
+  const chain = [B.pelvis, B.barrel, B.withers, B.chest, B.neckA, B.neckB, B.neckC, B.poll, B.head, B.muzzle];
+  for (let i = 0; i < chain.length - 1; i++) add(w(chain[i]), w(chain[i + 1]));
+  for (let i = 0; i < B.tailBones.length - 1; i++) add(w(B.tailBones[i]), w(B.tailBones[i + 1]));
+  add(w(B.pelvis), w(B.tailBones[0]));
+  for (let i = 0; i < B.maneBones.length - 1; i++) add(w(B.maneBones[i]), w(B.maneBones[i + 1]));
+  for (const id of LIMB_IDS) {
+    const L = horse.limbs[id], ks = [L.j0, L.j1, L.j2, L.j3];
+    const ws = ks.map(w);
+    for (const q of ws) dots.push(q[0], q[1], q[2]);
+    for (let i = 0; i < 3; i++) add(ws[i], ws[i + 1]);
+    add(ws[3], [L.contact.x, L.contact.y, L.contact.z]);
+    dots.push(L.contact.x, L.contact.y, L.contact.z);
+  }
+  boneLines.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
+  boneLines.geometry.computeBoundingSphere();
+  contactDots.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(dots), 3));
+}
+
+/* --------------------------------------------------------- 10. world clock */
+function setGait(id, keepPhase = true) {
+  if (!GAITS[id]) return;
+  state.gait = id;
+  const g = GAITS[id];
+  const p0 = state.p;
+  MD = g.MD;
+  TILEN = MD > 0.05 ? Math.max(1, Math.round(MD / 2.4)) : 0;
+  tileWorld = TILEN ? MD / TILEN : 2.4;
+  applyTile();
+  land = landSpots(g);
+  state.mstr = (Math.floor(state.mstr * g.loop) + p0) / g.loop % 1;   // hold the stride position
+  for (const b of document.querySelectorAll('#gaitbtns button')) b.setAttribute('aria-pressed', String(b.dataset.gait === id));
+  buildStridePaths(g);
+  document.getElementById('st').textContent = g.stride.toFixed(2);
+  document.getElementById('spd').textContent = g.speed.toFixed(1);
+  lanes.redraw = true;
+}
+function applyTile() {          // ground tile snapped to a whole number per loop
+  const t = 620 / tileWorld;
+  gTex.map.repeat.set(t, t); gTex.normalMap.repeat.set(t, t);
+}
+const state = {
+  gait: 'gallop', playing: true, rate: 0.72, mstr: 0, p: 0, travel: 0,
+  dust: true, prints: true, scenery: true, shadow: true,
+  ghostsOn: false, wire: false, rig: false, audio: false,
+  fovOverride: null, fps: 60, flash: 0, startedAt: performance.now(),
+};
+Object.defineProperty(state, 'g', { get() { return GAITS[this.gait]; } });
+
+/* ground scroll, dust, prints — all pure functions of the master phase */
+function setSceneryVisible(v) {
+  hills.visible = v;
+  for (const l of sc.layers) for (const m of l.meshes) m.visible = v;
+}
+function updateWorld(g, p, mp, dt) {
+  const travel = MD * mp;
+  state.travel = travel;
+  const off = travel / tileWorld;
+  gTex.map.offset.x = -off; gTex.normalMap.offset.x = -off;
+  if (state.scenery) {
+    /* three tiles per layer, wrapped by a period that is a whole multiple of
+       this gait's travel per master loop → the world closes on itself */
+    for (const l of sc.layers) {
+      const off = wrapP(-travel * l.k, l.per);
+      for (let m = 0; m < l.meshes.length; m += 3)
+        for (let i = 0; i < 3; i++) l.meshes[m + i].position.x = off + (i - 1) * l.per;
+    }
+    MAT.grass.userData.uWind.value = mp;
+    MAT.streak.opacity = 0.015 + 0.075 * clamp01((g.speed - 1.4) / 6.6);
+  }
+  dustPts.visible = state.dust && !g.rest && g.speed > 2.2;
+  motePts.visible = state.dust && !g.rest;
+  setSceneryVisible(state.scenery && !(camState.ortho && !camState.free));   // the plate shoots against a plain backdrop
+  for (const m of prints) if (!state.dust || g.rest) m.visible = false;
+  if (dustPts.visible) updateDust(g, p, mp, travel);
+  if (g.rest || !state.prints) { for (const m of prints) m.visible = false; } else updatePrints(g, p, mp);
+}
+const _land = {};
+function landSpots(g) {                     // where each hoof first touches, in the horse's frame
+  for (const def of LIMB_DEFS) {
+    footPath(g, def, g.beats[def.id]);
+    _land[def.id] = { x: P[def.kind].root[0] + FP.x, z: FP.z };
+  }
+  return _land;
+}
+function updateDust(g, p, mp, travel) {
+  const pa = dustGeo.attributes.position.array, ca = dustGeo.attributes.color.array;
+  const spacing = 1 / g.loop, per = g.loop * g.T;      // seconds between strikes of one hoof
+  let n = 0;
+  for (let li = 0; li < 4; li++) {
+    const def = LIMB_DEFS[li], ld = land[def.id];
+    for (let k = 0; k < 22; k++, n++) {
+      const s = DUST_SEED[n], i3 = n * 3, i4 = n * 4;
+      const life = per * (0.38 + 0.52 * s[0]);
+      const age = ((mp - (g.beats[def.id] + 0.004 + 0.07 * s[1]) * spacing) % spacing + spacing) % spacing * per;
+      const t = age / life;
+      if (t >= 1) { ca[i4 + 3] = 0; continue; }
+      const grow = 0.06 + 0.46 * t * (0.45 + s[2]);
+      const rise = (0.02 + 0.34 * s[3]) * Math.pow(t, 0.62) * (0.4 + 0.7 * g.speed / 7.6);
+      const back = -(0.06 + grow * 1.5) * (0.3 + 0.8 * s[0]) * (0.4 + 0.6 * g.speed / 7.6);
+      pa[i3] = ld.x + back - (age / per) * g.stride;
+      pa[i3 + 1] = rise + 0.02;
+      pa[i3 + 2] = ld.z + (s[4] - .5) * (0.10 + grow);
+      const fade = Math.pow(1 - t, 2.0) * (0.06 + 0.18 * s[2]) * clamp01((g.speed - 1.2) / 3.4);
+      ca[i4] = 1; ca[i4 + 1] = .93; ca[i4 + 2] = .8; ca[i4 + 3] = fade;
+    }
+  }
+  dustGeo.attributes.position.needsUpdate = true; dustGeo.attributes.color.needsUpdate = true;
+  const ma = moteGeo.attributes.position.array, mca = moteGeo.attributes.color.array;
+  for (let i = 0; i < MOTE_N; i++) {
+    const s = DUST_SEED[DUST_N + i], i3 = i * 3, i4 = i * 4;
+    const k = [0.5, 1, 2][i % 3];                       // integer-friendly parallax → wraps cleanly
+    const ph = TAU * (s[0] + s[1] * 3) + TAU * mp * (1 + (i % 2));
+    ma[i3] = wrapP((s[2] - .5) * 30 - travel * k, layerPeriod(k));
+    ma[i3 + 1] = 0.15 + s[1] * 2.6 + 0.25 * Math.sin(ph);
+    ma[i3 + 2] = (s[0] - .5) * 15 + 0.6 * Math.sin(2 * ph + 0.7);
+    mca[i4] = 1; mca[i4 + 1] = .95; mca[i4 + 2] = .82;
+    mca[i4 + 3] = (0.06 + 0.26 * s[3]) * (0.35 + 0.65 * Math.cos(ph) ** 2) * clamp01((g.speed - 1) / 3);
+  }
+  moteGeo.attributes.position.needsUpdate = true; moteGeo.attributes.color.needsUpdate = true;
+}
+let land = {};
+function updatePrints(g, p, mp) {
+  const life = g.loop;
+  for (let li = 0; li < 4; li++) {
+    const def = LIMB_DEFS[li], ld = land[def.id];
+    for (let c = 0; c < life; c++) {
+      const m = prints[li * life + c];
+      if (!m) continue;
+      if (!state.dust || !state.scenery) { m.visible = false; continue; }
+      const age = wrap01(p - g.beats[def.id]) + (life - 1 - c);   // strides since that landing
+      const t = age / life;
+      m.visible = t < 0.995;
+      m.position.set(ld.x - g.stride * age, 0.007 + 0.0012 * (li * life + c), ld.z);
+      m.rotation.y = 0.06 * def.side;
+      const fade = Math.pow(1 - t, 1.6) * 0.62;
+      const col = m.geometry.attributes.color.array;
+      for (let v = 0; v < m.geometry.attributes.color.count; v++) {
+        col[v * 4] = 1; col[v * 4 + 1] = 1; col[v * 4 + 2] = 1; col[v * 4 + 3] = fade;
+      }
+      m.geometry.attributes.color.needsUpdate = true;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------- 11. ui */
+const $ = s => document.querySelector(s);
+const el = { readout: $('#readout'), lanes: $('#lanes'), play: $('#play'), icon: $('#playicon') };
+for (const id of GAIT_IDS) {
+  const b = document.createElement('button');
+  b.dataset.gait = id; b.textContent = GAITS[id].label;
+  b.setAttribute('aria-pressed', String(id === 'gallop'));
+  b.onclick = () => { setGait(id); flash(GAITS[id].label + ' · ' + GAITS[id].speed.toFixed(1) + ' m/s'); };
+  $('#gaitbtns').appendChild(b);
+}
+const coatSel = $('#coat');
+for (const k in COATS) { const o = document.createElement('option'); o.value = k; o.textContent = COATS[k].name; coatSel.appendChild(o); }
+coatSel.value = 'bay';
+coatSel.onchange = () => {
+  coatKey = coatSel.value;
+  const keep = [];
+  buildMaterials();
+  for (const h of [horse, ...ghosts]) for (const m of h.meshes) if (!m.userData.wire && m.material.type === 'MeshStandardMaterial') m.material = MAT[m.userData.mat] || m.material;
+  flash('coat · ' + COATS[coatKey].name);
+};
+/* remember which material slot each mesh uses so coats can be swapped live */
+for (const m of horse.meshes) for (const k in MAT) if (m.material === MAT[k]) m.userData.mat = k;
+const lookSel = (() => {
+  const sel = $('#look');
+  for (const k in LOOKS) {
+    const o = document.createElement('option'); o.value = k; o.textContent = LOOKS[k].name;
+    sel.appendChild(o);
+  }
+  sel.value = lookKey;
+  sel.onchange = () => { applyLook(sel.value); flash(LOOKS[sel.value].name); };
+  return sel;
+})();
+$('#cams').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { state.fovOverride = null; setCam(b.dataset.cam); $('#fov').value = Math.round(camState.fov); } });
+const bindToggle = (id, key, on) => {
+  const c = $(id); c.checked = state[key];
+  c.onchange = () => {
+    state[key] = c.checked;
+    if (key === 'ghostOn' || key === 'ghostsOn') {
+      if (!ghosts.length) { makeGhosts(6); flash('casting ghosts…'); }
+      for (const gh of ghosts) gh.root.visible = c.checked;
+      if (c.checked && !camState.ortho && !camState.free) setCam('plate');
+    }
+    if (key === 'wire') { if (!wireOverlay) makeWire(); for (const w of wireOverlay.children) w.visible = c.checked; }
+    if (key === 'rig') { rigViz.visible = c.checked; if (c.checked) buildStridePaths(state.g); }
+    if (key === 'shadow' && renderer.shadowMap.enabled !== c.checked) {
+      renderer.shadowMap.enabled = c.checked;
+      scene.traverse(o => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+    }
+    if (key === 'audio') audio.enable(c.checked);
+    flash();
+  };
+};
+bindToggle('#t-scenery', 'scenery'); bindToggle('#t-dust', 'dust'); bindToggle('#t-prints', 'prints'); bindToggle('#t-shadow', 'shadow');
+bindToggle('#t-ghost', 'ghostsOn'); bindToggle('#t-wire', 'wire'); bindToggle('#t-rig', 'rig'); bindToggle('#t-audio', 'audio');
+const dialMap = [['#neckpitch', 'neck', '°'], ['#headtilt', 'head', '°'], ['#taillift', 'tail', '°'], ['#bend', 'bend', '°']];
+for (const [sel, key] of dialMap) {
+  const inp = $(sel);
+  inp.oninput = () => { DIALS[key] = +inp.value; $(sel + '-v').textContent = inp.value + '°'; };
+  inp.oninput();
+}
+$('#fov').oninput = e => { state.fovOverride = +e.target.value; $('#fov-v').textContent = e.target.value + '°'; };
+$('#rate').oninput = e => {
+  state.rate = +e.target.value / 100;
+  $('#rate-v').textContent = state.rate.toFixed(2) + '×';
+  e.target.style.setProperty('--p', ((+e.target.value - 5) / 155 * 100) + '%');
+};
+$('#rate').dispatchEvent(new Event('input'));
+$('#play').onclick = () => togglePlay();
+function togglePlay(v) {
+  state.playing = v === undefined ? !state.playing : v;
+  el.icon.setAttribute('d', state.playing ? 'M3 2.5h3.2v11H3zM9.8 2.5H13v11H9.8z' : 'M4 2.2l9.4 5.8L4 13.8z');
+}
+let flashMsg = '', flashT = 0;
+function flash(m) { if (m) flashMsg = m, flashT = 1.7; }
+/* help + hide */
+$('#help').addEventListener('click', e => { if (e.target.id === 'help') $('#help').classList.remove('on'); });
+$('#helpx').onclick = () => $('#help').classList.remove('on');
+addEventListener('keydown', e => {
+  const src = e.target;
+  if (src && src.matches && src.matches('input,select,textarea')) return;
+  const k = String(e.key || '').toLowerCase();
+  if (k === ' ' || k === 'spacebar') { togglePlay(); e.preventDefault(); flash(state.playing ? 'play' : 'pause'); }
+  else if (k === 'arrowright' || k === 'arrowleft') { stepPhase(e.shiftKey ? 1 : (k === 'arrowright' ? 1 : -1) / 120); e.preventDefault(); }
+  else if (k === 'g') { $('#t-ghost').click(); flash('chronophotography ' + ($('#t-ghost').checked ? 'on' : 'off')); }
+  else if (k === 'c') { nextCam(); flash('camera · ' + (camState.free ? 'free orbit' : CAMSPEC[camState.key].label)); }
+  else if (k === 'w') { $('#t-wire').click(); }
+  else if (k === 'r') { $('#t-rig').click(); }
+  else if (k === 'd') { $('#t-dust').click(); }
+  else if (k === 't') { $('#t-scenery').click(); }
+  else if (k === 's') { $('#t-audio').click(); }
+  else if (k === 'f') { document.body.classList.toggle('cinema'); if (document.body.classList.contains('cinema')) setCam('auto'); flash(document.body.classList.contains('cinema') ? 'cinema' : 'windowed'); }
+  else if (k === 'x') { document.body.classList.toggle('bare'); }
+  else if (k === 'p') { shoot(); }
+  else if (k === '?' || (k === '/' && e.shiftKey)) { $('#help').classList.toggle('on'); }
+  else if (k === 'escape') { $('#help').classList.remove('on'); }
+  else if (k === 'h') { $('#help').classList.toggle('on'); }
+  else if ('12345'.includes(k)) { const id = GAIT_IDS[+k - 1]; if (id) { setGait(id); flash(GAITS[id].label + ' · ' + GAITS[id].speed.toFixed(1) + ' m/s'); } }
+  else if (k === '0') { resetDials(); flash('reset'); }
+  else if (k === '[' || k === ']') { const r = $('#rate'); r.value = clamp(+r.value + (k === ']' ? 8 : -8), 5, 160); r.dispatchEvent(new Event('input')); }
+});
+function resetDials() {
+  for (const [sel] of dialMap) { const i = $(sel); i.value = 0; i.oninput(); }
+  state.fovOverride = null; $('#fov').value = Math.round(_want.fov); $('#fov-v').textContent = $('#fov').value + '°';
+  const r = $('#rate'); r.value = 72; r.oninput({ target: r });
+}
+function stepPhase(dp) {
+  const g = state.g;
+  state.mstr = wrap01(state.mstr + dp / g.loop);
+  togglePlay(false);
+}
+function shoot() {
+  renderer.render(scene, cam);
+  const a = document.createElement('a');
+  a.download = 'equus-' + state.gait + '-' + (state.p * 100).toFixed(0) + '.png';
+  a.href = renderer.domElement.toDataURL('image/png');
+  a.click(); flash('saved ' + a.download);
+}
+/* ---- footfall timeline -------------------------------------------------- */
+const lanes = (() => {
+  const c = $('#lanes'), x = c.getContext('2d');
+  let redraw = true, calls = 0;
+  const rowH = () => c.height / 4;
+  function draw(g, p, mp, acc) {
+    const W = c.width, H = c.height, loop = g.loop;
+    calls++;
+    x.clearRect(0, 0, W, H);
+    // flight-phase shading: where no hoof is down, the horse is airborne
+    x.fillStyle = 'rgba(255,255,255,.03)';
+    for (let s = 0; s < 100; s++) {
+      const pp = s / 100; drivers(g, wrap01(pp * g.loop), ACC_DBG);
+      if (ACC_DBG.nSt === 0) x.fillRect(W * pp, 0, W / 100 + 1, H);
+    }
+    for (let i = 0; i < 4; i++) {
+      const def = LIMB_DEFS[i], y0 = i * rowH();
+      x.fillStyle = 'rgba(255,255,255,.04)'; x.fillRect(0, y0, W, 1);
+      const beat = g.beats[def.id], st = g.stance[def.id];
+      for (let cyc = 0; cyc < loop; cyc++) bar((beat + cyc) / loop, (beat + st + cyc) / loop, y0, def.kind === 'fore' ? '#e0954a' : '#d4a94f');
+      x.font = '600 15px ui-monospace,monospace'; x.fillStyle = 'rgba(233,228,214,.5)';
+      x.fillText(def.id, 8, y0 + rowH() * .62);
+    }
+    function bar(a, b, y0, color) {
+      const grd = x.createLinearGradient(0, y0, 0, y0 + rowH());
+      grd.addColorStop(0, color); grd.addColorStop(1, 'rgba(0,0,0,0)');
+      x.globalAlpha = .5; x.fillStyle = grd;
+      const px = a * W;
+      x.fillRect(px, y0 + 3, (b - a) * W, rowH() - 6);
+      x.globalAlpha = 1;
+      x.fillStyle = color; x.fillRect(px - 1.5, y0 + 2, 3, rowH() - 4);
+    }
+    // stride ticks
+    x.fillStyle = 'rgba(233,228,214,.28)';
+    for (let i = 0; i <= loop; i++) x.fillRect(W * i / loop - 1, 0, 2, H);
+    // playhead
+    const hx = W * mp;
+    x.fillStyle = '#fff'; x.globalAlpha = .9; x.fillRect(hx - 1, 0, 2, H); x.globalAlpha = 1;
+    x.fillStyle = 'rgba(255,255,255,.14)'; x.fillRect(hx - 22, 0, 44, H);
+    for (let i = 0; i < 4; i++) {
+      const L = horse.limbs[LIMB_IDS[i]];
+      if (L && L.onStance) { x.fillStyle = '#ffd27a'; x.beginPath(); x.arc(W * ((g.beats[L.id] + g.stance[L.id] * L.u) / loop), i * rowH() + rowH() - 5, 3, 0, TAU); x.fill(); }
+    }
+  }
+  const ACC_DBG = mkAcc();
+  c.addEventListener('pointerdown', e => { scrubTo(e); c.setPointerCapture(e.pointerId);
+    const mv = ev => scrubTo(ev); const up2 = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up2); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up2); });
+  function scrubTo(e) {
+    const r = c.getBoundingClientRect();
+    const g = state.g;
+    state.p = wrap01((e.clientX - r.left) / r.width);
+    state.mstr = wrap01((Math.floor(wrap01(state.mstr) * g.loop) + state.p) / g.loop);
+    togglePlay(false);
+  }
+  return { draw, calls: () => calls, get redraw() { return redraw; }, set redraw(v) { redraw = v; } };
+})();
+
+/* ---- audio: struck hooves and a wind bed, all synthesised --------------- */
+const audio = (() => {
+  let ac = null, master = null, wind = null, buf = null, on = false;
+  function ensure() {
+    if (ac) return true;
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
+      const n = ac.sampleRate * 2 | 0; buf = ac.createBuffer(1, n, ac.sampleRate);
+      const d = buf.getChannelData(0); const r = mulberry32(9);
+      for (let i = 0; i < n; i++) d[i] = (r() * 2 - 1) * (1 - i / n * .12);
+      const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 700; bp.Q.value = .5;
+      wind = ac.createGain(); wind.gain.value = 0;
+      src.connect(bp); bp.connect(wind); wind.connect(master); src.start();
+      return true;
+    } catch (e) { return false; }
+  }
+  function clop(power, side) {
+    if (!on || !ac) return;
+    const t = ac.currentTime;
+    const s = ac.createBufferSource(); s.buffer = buf; s.playbackRate.value = 1.4 + Math.random() * .5;
+    const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500 + power * 900; f.Q.value = 1.6;
+    const gn = ac.createGain(); gn.gain.setValueAtTime(0, t);
+    gn.gain.linearRampToValueAtTime(0.5 * power, t + .004); gn.gain.exponentialRampToValueAtTime(.0008, t + .11);
+    const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(90 + power * 40, t);
+    o.frequency.exponentialRampToValueAtTime(48, t + .09);
+    const og = ac.createGain(); og.gain.setValueAtTime(.4 * power, t); og.gain.exponentialRampToValueAtTime(.001, t + .12);
+    const pan = ac.createStereoPanner ? ac.createStereoPanner() : null;
+    if (pan) pan.pan.value = side * .55;
+    s.connect(f); f.connect(gn); o.connect(og);
+    const out = pan || master; if (pan) pan.connect(master);
+    gn.connect(out); og.connect(out);
+    s.start(t); s.stop(t + .16); o.start(t); o.stop(t + .14);
+  }
+  return {
+    enable(v) { if (v && !ensure()) { flash('audio unavailable'); $('#t-audio').checked = false; state.audio = false; return; }
+      on = v; state.audio = v; if (v) { ac.resume(); } if (wind) wind.gain.value = 0; },
+    tick(g, spd) { if (!on || !ac) return; wind.gain.value = clamp(0.006 + 0.030 * (spd / 8) * state.rate, 0, .07); },
+    strike(power, side) { clop(power, side); },
+  };
+})();
+
+/* ---- loop seam measurement ---------------------------------------------
+   The pose is described by world positions only (joint origin + a twist
+   marker off each bone's local X): angles wrap at ±π, positions never do,
+   so this is an honest continuity test of the whole rig.                    */
+const _sv = mkAcc();
+const _vp = V3(), _vx = V3();
+function stateVector(mp, g, out) {
+  const p = wrap01(mp * g.loop);
+  let k = 0;
+  poseHorse(horse, g, p, mp, null);
+  horse.root.updateMatrixWorld(true);
+  const push = o => {
+    o.getWorldPosition(_vp); out[k++] = _vp.x; out[k++] = _vp.y; out[k++] = _vp.z;
+    _axis.copy(twistAxisOf(o.name)).multiplyScalar(0.19);
+    _wq2.copy(o.getWorldQuaternion(_qq));
+    _vx.copy(_axis).applyQuaternion(_wq2).add(_vp);
+    out[k++] = _vx.x; out[k++] = _vx.y; out[k++] = _vx.z;
+    if (NAMES) { NAMES.push(o.name + '.p', o.name + '.p', o.name + '.p', o.name + '.t', o.name + '.t', o.name + '.t'); }
+  };
+  push(horse.body);
+  for (const o of horse.rig.__all) push(o);
+  for (const id of LIMB_IDS) {
+    const c = horse.limbs[id].contact; out[k++] = c.x; out[k++] = c.y; out[k++] = c.z;
+    if (NAMES) NAMES.push(id + '.toe', id + '.toe', id + '.toe');
+  }
+  RIGLEN = k;                                   // everything above is the animal
+  const off = mp * TILEN;                        // whole tiles per loop → closes exactly
+  out[k++] = Math.sin(off * TAU); out[k++] = Math.cos(off * TAU);
+  if (NAMES) NAMES.push('tile.sin', 'tile.cos');
+  return k;
+}
+let RIGLEN = 0;
+const _wq2 = new THREE.Quaternion(), _qq = new THREE.Quaternion(), _axis = V3();
+const _mkx = V3(1, 0, 0), _mky = V3(0, 1, 0), _mkz = V3(0, 0, 1);
+function twistAxisOf(n) { return /^sh/.test(n) ? _mky : _mkz; }   // ⊥ to every limb segment
+let NAMES = null;
+function maxDelta(a, b, len) { let m = 0; for (let i = 0; i < len; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; }
+function seamReport(g) {
+  g = g || state.g;
+  const N = 240;
+  const a = new Float64Array(8192), b = new Float64Array(8192);
+  const DELTA = 1 / 24000;                       // how near the wrap we dare sample
+  NAMES = [];
+  const len = stateVector(0, g, a); const names = NAMES.slice(); NAMES = null;
+  stateVector(1 - DELTA, g, b);
+  let seam = 0, seamAt = 0, seamA = 0, seamB = 0, worldSeam = 0;
+  const dims = [];
+  for (let j = 0; j < len; j++) {
+    const d = Math.abs(a[j] - b[j]);
+    if (j >= RIGLEN) { worldSeam = Math.max(worldSeam, d); continue; }
+    dims.push([d, names[j]]);
+    if (d > seam) { seam = d; seamAt = j; seamA = a[j]; seamB = b[j]; }
+  }
+  dims.sort((x, y) => y[0] - x[0]);
+  stateVector(1 / N, g, b);
+  const step = maxDelta(a, b, len);
+  const expect = step * DELTA * N;               // the drift a merely-continuous loop shows
+  /* worst consecutive change anywhere in the loop, plus the hooves' behaviour
+     across the whole loop — a single frame cannot certify "no slip" */
+  let worst = 0, worstAt = 0, worstDim = '';
+  const dg = { slip: 0, toeMin: 9, toeMax: -9 };
+  for (let i = 0; i < N; i++) {
+    poseHorse(horse, g, wrap01((i + 0.5) / N * g.loop), (i + 0.5) / N, dg);
+    stateVector(i / N, g, a); stateVector((i + 1) / N, g, b);
+    for (let j = 0; j < len; j++) {
+      const d = Math.abs(a[j] - b[j]);
+      if (d > worst) { worst = d; worstAt = i / N; worstDim = names[j]; }
+    }
+  }
+  return {
+    seam, worldSeam, expect, step, worst, worstAt, worstDim, len,
+    seamDim: (names[seamAt] || seamAt) + ' [' + seamA.toFixed(4) + '→' + seamB.toFixed(4) + ']',
+    top: dims.slice(0, 5).map(d => d[1] + ':' + d[0].toFixed(4)).join(' '),
+    slip: dg.slip, toeMin: dg.toeMin, toeMax: dg.toeMax,
+  };
+}
+
+/* ------------------------------------------------------------ 12. the loop */
+let last = performance.now(), fpsAvg = 60, uiT = 0, tickN = 0, uiN = 0, lastErr = '';
+let prevStance = [0, 0, 0, 0], strideCount = 0, lastMP = 0;
+let seam = null;                        // declared early: the shadow toggle reads it
+const diag = { slip: 0, toeMin: 9, toeMax: -9 };
+const ACC_DBG2 = mkAcc();
+addEventListener('error', ev => { lastErr = (lastErr ? lastErr + ' | ' : '') + (ev.message || '') + '@' + (ev.lineno || 0); });
+function frame(now) {
+  tickN++;
+  const dtRaw = Math.min(0.05, (now - last) / 1000); last = now;
+  fpsAvg = fpsAvg * 0.92 + (1 / Math.max(1e-4, dtRaw)) * 0.08;
+  const g = state.g;
+  if (state.playing) state.mstr = wrap01((state.mstr + dtRaw * state.rate / (g.T * g.loop)) % 1);
+  if (state.mstr < lastMP) strideCount += g.loop;
+  lastMP = state.mstr;
+  const mp = state.mstr, p = wrap01(mp * g.loop);
+  state.p = p;
+  /* pose the hero */
+  diag.slip = 0; diag.toeMin = 9; diag.toeMax = -9;
+  poseHorse(horse, g, p, mp, diag);
+  horse.root.updateMatrixWorld(true);
+  /* ghosts: same rig, phases evenly spread over one stride */
+  if (state.ghostsOn) for (let i = 0; i < ghosts.length; i++) {
+    poseHorse(ghosts[i], g, wrap01(p + (i + 1) / (ghosts.length + 1)), mp, null);
+    ghosts[i].root.updateMatrixWorld(true);
+  }
+  /* hoof audio on strikes */
+  drivers(g, p, _sv);
+  if (state.playing && state.audio) for (let i = 0; i < 4; i++) {
+    if (_sv.stance[i] && !prevStance[i]) audio.strike(0.45 + _sv.hump[i] * 0.5, LIMB_DEFS[i].side);
+    prevStance[i] = _sv.stance[i];
+  } else for (let i = 0; i < 4; i++) prevStance[i] = _sv.stance[i];
+  audio.tick(g, g.speed);
+  updateWorld(g, p, mp, dtRaw);
+  updateCamera(dtRaw, g, p, mp);
+  if (rigViz.visible) updateRigViz();
+  keyLight.target.position.set(0, .85, 0);
+  renderer.render(scene, cam);
+  /* ---- ui ---- */
+  uiT += dtRaw;
+  if (uiT > 0.12 || lanes.redraw) {
+    uiT = 0; uiN++;
+    lanes.draw(g, p, mp, ACC_DBG2); lanes.redraw = false;
+    $('#phaselab').textContent = 'stride ' + (1 + Math.floor(mp * g.loop)) + '/' + g.loop + ' · ' + (p * 100).toFixed(0) + '%';
+    $('#m-fps').textContent = fpsAvg.toFixed(0);
+    if (flashT > 0) flashT -= 0.12;
+    const air = Math.round(100 * airFraction(g));
+    const duty = Math.min(...LIMB_IDS.map(k => g.slide[k]));
+    const closed = seam.seam <= seam.step * 1.35;
+    $('#readout').innerHTML = seam
+      ? `<b>${g.label.toLowerCase()}</b> ${g.speed.toFixed(1)} m/s · stride ${g.stride.toFixed(2)} m · cycle ${g.T.toFixed(2)} s
+${g.rest ? 'all four feet planted' : 'airborne ' + air + '%'} · loop ${g.loop} strides = ${g.MD.toFixed(2)} m · hoof grips ${duty.toFixed(2)} m
+seam <span class="${closed ? 'ok' : 'warn'}">${seam.seam.toExponential(1)}</span> m over ${seam.len} dims (a frame moves ${seam.step.toExponential(1)} m)
+slip <span class="${seam.slip > 5e-3 ? 'warn' : 'ok'}">${seam.slip.toFixed(4)}</span> m · sole <span class="${seam.toeMin < -2e-2 ? 'warn' : 'ok'}">${(Math.abs(seam.toeMin) < 5e-4 ? 0 : seam.toeMin).toFixed(4)}</span> m · trimmed ${(g.tuned || []).join(' ') || 'nothing'}
+${flashT > 0 ? '<span class="ok">' + flashMsg + '</span>' : ''}`
+      : 'measuring the loop…';
+  }
+  requestAnimationFrame(frame);
+}
+function airFraction(g) {
+  let air = 0; const a = mkAcc();
+  for (let i = 0; i < 120; i++) { drivers(g, i / 120, a); if (a.nSt === 0) air++; }
+  return air / 120;
+}
+
+/* ------------------------------------------------------------- 13. launch */
+/* deep links:  #gait=canter&cam=hero&p=42&look=dusk&ghost=1&ui=0&json=1
+   (this is also what the headless test harness drives)                    */
+const Q = new URLSearchParams(location.hash.slice(1));
+const qp = (k, dflt = null) => (Q.has(k) ? Q.get(k) : dflt);
+addEventListener('error', ev => { window.__bootError = (ev.message || '') + ' @' + (ev.lineno || 0); });
+const qpIn = (table, key, dflt) => (table[qp(key, dflt)] ? qp(key, dflt) : dflt);
+let actLog = null;
+addEventListener('resize', () => {
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.setSize(innerWidth, innerHeight, false);
+  camPersp.aspect = innerWidth / innerHeight; camPersp.updateProjectionMatrix();
+  const c = $('#lanes'), r = c.getBoundingClientRect();
+  c.width = Math.max(600, Math.round(r.width * 2)); c.height = Math.max(80, Math.round(r.height * 2));
+  lanes.draw(state.g, state.p, state.mstr, ACC_DBG2);   // re-sizing a canvas clears it
+});
+dispatchEvent(new Event('resize'));
+applyLook(qpIn(LOOKS, 'look', 'golden'));
+buildScenery();
+setGait(qpIn(GAITS, 'gait', 'gallop'), false);
+if (qp('rate')) { const r = $('#rate'); r.value = clamp(+qp('rate'), 5, 160); r.oninput({ target: r }); }
+setCam(qpIn(CAMSPEC, 'cam', 'side'), true);
+for (const [sel, key] of dialMap) if (qp(key) !== null) { const i = $(sel); i.value = clamp(+qp(key), -45, 45); i.oninput(); }
+if (qp('ui') === '0') document.body.classList.add('bare');
+if (qp('coat') && COATS[qp('coat')]) { coatSel.value = qp('coat'); coatSel.onchange(); }
+const freezeP = qp('p');
+if (freezeP !== null) { state.p = clamp01(+freezeP / 100); state.mstr = wrap01(state.p / state.g.loop); togglePlay(false); }
+if (qp('ghost') === '1') $('#t-ghost').click();
+if (qp('rig') === '1') $('#t-rig').click();
+/* #hide=items,fence,tufts,clouds,streaks,dust,motes,prints,hills,sky,sun
+   switches scenery layers off — used for sculpt review and by the harness.   */
+if (qp('hide')) for (const k of qp('hide').split(',')) {
+  const want = { items: 0, fence: 1, tufts: 2, clouds: 3, streaks: 4 }[k];
+  if (want !== undefined) for (const m of sc.layers[want].meshes) m.visible = false;
+  if (k === 'dust') dustPts.visible = false;
+  if (k === 'motes') motePts.visible = false;
+  if (k === 'prints') for (const m of prints) m.visible = false;
+  if (k === 'hills') hills.visible = false;
+  if (k === 'sky' && skyMesh) skyMesh.visible = false;
+  if (k === 'sun') sunDisc.visible = false;
+  if (k === 'ui') document.body.classList.add('bare');
+}
+renderer.compile(scene, camPersp);
+poseHorse(horse, state.g, state.p, state.mstr, diag);
+horse.root.updateMatrixWorld(true);
+renderer.render(scene, cam);
+lanes.draw(state.g, state.p, state.mstr, ACC_DBG2); lanes.redraw = false;   // paint the timeline at once
+document.getElementById('m-rev').textContent = 'r' + THREE.REVISION;
+document.getElementById('m-bones').textContent = horse.rig.__all.length;
+document.getElementById('m-tri').textContent = (renderer.info.render.triangles / 1000).toFixed(1) + 'k';
+seam = seamReport();
+poseHorse(horse, state.g, state.p, state.mstr, diag);   // seamReport leaves the rig mid-sweep
+horse.root.updateMatrixWorld(true);
+/* ?act= gives the interface a headless test driver:
+   #act=click:%23t-ghost|gait:trot|cam:hero|set:%23rate=120  */
+function runActions(spec) {
+  const log = [];
+  for (const step of spec.split('|')) {
+    const ix = step.indexOf(':');
+    const verb = ix < 0 ? step : step.slice(0, ix);
+    let arg = ix < 0 ? '' : step.slice(ix + 1);
+    try {
+      if (verb === 'click') { const e = document.querySelector(decodeURIComponent(arg)); if (!e) throw new Error('no element'); e.click(); }
+      else if (verb === 'set') {
+        const [sel, val] = arg.split('=');
+        const e = document.querySelector(decodeURIComponent(sel)); if (!e) throw new Error('no input');
+        e.value = decodeURIComponent(val ?? '');
+        e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      else if (verb === 'gait') setGait(arg, false);
+      else if (verb === 'cam') setCam(arg, true);
+      else if (verb === 'p') { state.p = clamp01(+arg / 100); state.mstr = wrap01(state.p / state.g.loop); togglePlay(false); }
+      else if (verb === 'key') dispatchEvent(new KeyboardEvent('keydown', { key: decodeURIComponent(arg), bubbles: true }));
+      else throw new Error('unknown verb ' + verb);
+      log.push('ok ' + step);
+    } catch (err) { log.push('ERR ' + step + ' — ' + err.message); }
+  }
+  return log;
+}
+if (qp('act')) actLog = runActions(qp('act'));
+if (qp('quiet')) bootEl.remove();
+function report() {
+  const g = state.g, out = {
+    gait: state.gait, rev: THREE.REVISION, bonesN: horse.rig.__all.length,
+    tris: renderer.info.render.triangles, calls: renderer.info.render.calls,
+    seam: +seam.seam.toExponential(3), step: +seam.step.toExponential(3),
+    worst: +seam.worst.toExponential(3), worstAt: +seam.worstAt.toFixed(3), worstDim: seam.worstDim, seamDim: seam.seamDim, seamTop: seam.top, worldSeam: +seam.worldSeam.toExponential(3), lanesPix: (() => { try { const cc = document.getElementById('lanes'); const d2 = cc.getContext('2d').getImageData(0, 0, cc.width, cc.height).data; let s = 0; for (let i = 3; i < d2.length; i += 4) s += d2[i]; return [cc.width, cc.height, Math.round(s / (d2.length / 4))]; } catch (err) { return 'ERR ' + err.message; } })(), expect: +seam.expect.toExponential(3), probe: qp('probe') === 'seam' ? probeSeam(state.g) : null, dims: seam.len, ghosts: ghosts.length, meshes: horse.meshes.length, gmeshes: ghosts.length ? ghosts[0].meshes.length : 0,
+    slip: +seam.slip.toExponential(3), slipFrame: +diag.slip.toExponential(3),
+    toeMin: +seam.toeMin.toFixed(5), toeMax: +seam.toeMax.toFixed(5),
+    lanesPix: (() => { try { const cc = document.getElementById('lanes'); const d2 = cc.getContext('2d').getImageData(0, 0, cc.width, cc.height).data; let s = 0, n = 0; for (let i = 3; i < d2.length; i += 4) { s += d2[i]; n++; } return [cc.width, cc.height, Math.round(s / n)]; } catch (e) { return 'ERR ' + e.message; } })(), lanesCalls: lanes.calls(), ticks: [tickN, uiN], lastErr,
+    tuned: GAIT_IDS.filter(k => (GAITS[k].tuned || []).length).map(k => k + ':' + GAITS[k].tuned.join('+')),
+    airPct: +(100 * airFraction(g)).toFixed(1), stride: g.stride, speed: g.speed, T: +g.T.toFixed(4), loop: g.loop,
+    slide: Object.fromEntries(LIMB_IDS.map(i => [i, +g.slide[i].toFixed(3)])),
+    md: +MD.toFixed(4), tile: +tileWorld.toFixed(4), tilen: TILEN, layers: sc.layers.map(l => l.meshes.length + '@' + l.per.toFixed(1)),
+    feet: Object.fromEntries(LIMB_IDS.map(i => [i, {
+      x: +horse.limbs[i].contact.x.toFixed(3), y: +horse.limbs[i].contact.y.toFixed(4),
+      z: +horse.limbs[i].contact.z.toFixed(3), stance: !!horse.limbs[i].onStance,
+    }])),
+    bootError: window.__bootError || null,
+    layout: (() => { const q = sel => { const r = document.querySelector(sel); if (!r) return null; const b = r.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]; }; return { rail: q('#rail'), transport: q('#transport'), card: q('#card'), lanes: q('#lanes') }; })(),
+    bon: Object.fromEntries(horse.rig.__all.filter(o => o.name).map(o => [o.name,
+      o.getWorldPosition(new THREE.Vector3()).toArray().map(q => +q.toFixed(2))])),
+  };
+  return out;
+}
+/* ?probe=seam — is the wrap difference a real step, or just the sampling
+   interval? Sweep δ: a continuous loop shrinks in proportion, a seam plateaus. */
+function probeSeam(g) {
+  const a = new Float64Array(8192), b = new Float64Array(8192);
+  NAMES = []; const len = stateVector(0, g, a); NAMES = null;
+  const out = [];
+  for (const dl of [1e-2, 1e-3, 1e-4, 1e-5, 1e-6]) {
+    stateVector(1 - dl, g, b);
+    let m = 0;
+    for (let j = 0; j < len; j++) m = Math.max(m, Math.abs(a[j] - b[j]));
+    out.push([dl, +m.toExponential(2)]);
+  }
+  return out;
+}
+if (qp('json')) setTimeout(() => {
+  const pre = document.createElement('pre');
+  pre.id = 'diagjson';
+  pre.style.cssText = 'position:fixed;left:0;top:0;margin:0;font:10px monospace;opacity:0;pointer-events:none;white-space:pre';
+  document.body.appendChild(pre);
+  pre.textContent = JSON.stringify(Object.assign(report(), { act: actLog }));
+}, 7500);                          // after many ticks, so live UI state is measurable
+console.info('%cEQUUS', 'font:700 20px serif;color:#d4a94f',
+  `\nloop seam at the wrap:  ${seam.seam.toExponential(2)} across ${seam.len} state dimensions` +
+  `\nordinary frame step:  ${seam.step.toExponential(2)}` +
+  `\nworst jump in loop:   ${seam.worst.toExponential(2)} at ${Math.round(seam.worstAt * 100)}% stride (a hoof landing)` +
+  `\n→ the loop is ${seam.seam <= seam.step * 1.35 ? 'continuous' : 'SEAMED'}` +
+  '\ntip: window.__equus = {seamReport, report, GAITS, poseHorse, horse, state}');
+window.__equus = { THREE, seamReport, report: () => report(), runActions, pose: p => { state.p = p; state.mstr = wrap01(p / state.g.loop); togglePlay(false); },
+  gait: k => setGait(k), cam: k => setCam(k, true), dial: (k, v) => { DIALS[k] = v; }, GAITS, CAMSPEC, poseHorse, horse, ghosts, state, setGait, setCam, buildHorse, DIALS };
+setTimeout(() => {
+  bootEl.classList.add('gone');
+  setTimeout(() => bootEl.remove(), 800);
+  setTimeout(() => $('#card').classList.add('dim'), 4200);
+}, 60);
+/* #strip=12 renders a contact sheet of the master loop — a digital Muybridge
+   plate: the same horse, solved at evenly spaced phases, tiled into one image */
+function contactSheet(n, camKey) {
+  n = clamp(n | 0, 3, 24);
+  const g = state.g;
+  const W = renderer.domElement.width, H = renderer.domElement.height;
+  const cols = Math.max(1, Math.round(Math.sqrt(n * (W / H)))), rows = Math.ceil(n / cols);
+  const cw = Math.floor(W / cols), ch = Math.floor(H / rows), cellAspect = cw / ch;
+  const sheet = document.createElement('canvas');
+  sheet.width = W; sheet.height = H; sheet.id = 'sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;z-index:30;background:#0b1020';
+  const ctx = sheet.getContext('2d');
+  ctx.fillStyle = '#0b1020'; ctx.fillRect(0, 0, W, H);
+  setCam(camKey || 'plate', true);
+  const isOrtho = !!CAMSPEC[camKey || 'plate'].ortho;
+  if (isOrtho) { setSceneryVisible(false); hills.visible = false; }
+  camState.ortho = isOrtho;
+  const camNow = isOrtho ? camPlate : camPersp;
+  /* One sheet = one stride: sampling the master loop instead would alias, since
+     the stride phase repeats `loop` times inside it. */
+  for (let i = 0; i < n; i++) {
+    const p = i / n, mp = p / g.loop;
+    poseHorse(horse, g, p, mp, null);
+    horse.root.updateMatrixWorld(true);
+    MD = g.MD; updateWorld(g, p, mp, 0);
+    /* frame each cell for its own aspect; drawImage squashes it back into
+       place, which cancels out and keeps the horse undistorted */
+    if (isOrtho) {
+      const wv = CAMSPEC.plate.width;
+      camPlate.left = -wv * cellAspect / 2; camPlate.right = wv * cellAspect / 2;
+      camPlate.top = wv / 2; camPlate.bottom = -wv / 2;
+      camPlate.position.set(0.1, 0.95, 6); camPlate.lookAt(0.1, 0.95, 0);
+    } else {
+      camPersp.aspect = cellAspect;
+      camPersp.position.set(0.1 + 6.6 * Math.sin(camState.yaw), 1.0 + 6.6 * Math.sin(camState.pitch), 6.6 * Math.cos(camState.yaw) * Math.cos(camState.pitch));
+      camPersp.lookAt(0.12, 1.0, 0);
+    }
+    camPlate.updateProjectionMatrix(); camPersp.updateProjectionMatrix();
+    skyGroup.position.copy(camNow.position);
+    renderer.render(scene, camNow);
+    const cx = (i % cols) * cw, cy = Math.floor(i / cols) * ch;
+    ctx.drawImage(renderer.domElement, 0, 0, W, H, cx + 1, cy + 1, cw - 2, ch - 2);
+    ctx.strokeStyle = 'rgba(212,169,79,.45)'; ctx.lineWidth = 2;
+    ctx.strokeRect(cx + 2, cy + 2, cw - 4, ch - 4);
+    ctx.fillStyle = 'rgba(233,228,214,.8)';
+    ctx.font = '600 ' + Math.max(11, Math.round(ch * 0.07)) + 'px ui-monospace,monospace';
+    ctx.fillText((p * 100).toFixed(0) + '% of stride · ' + g.label.toLowerCase(), cx + 12, cy + ch - 12);
+  }
+  document.body.appendChild(sheet);
+  const ui = document.getElementById('ui'); if (ui) ui.style.display = 'none';
+  return { cells: n, grid: cols + 'x' + rows, calls: renderer.info.render.calls };
+}
+if (qp('strip')) {
+  state.mstr = +qp('p', 0) / 100;
+  togglePlay(false);
+  requestAnimationFrame(() => {
+    const info = contactSheet(+qp('strip', 12), qp('cam', 'plate'));
+    if (qp('json')) {
+      const pre = document.createElement('pre'); pre.id = 'diagjson';
+      pre.style.cssText = 'position:fixed;left:0;top:0;opacity:0';
+      pre.textContent = JSON.stringify(Object.assign(report(), { sheet: info, act: actLog }));
+      document.body.appendChild(pre);
+    }
+  });
+} else {
+  requestAnimationFrame(frame);
+}
+
+</script>
+</body>
+</html>

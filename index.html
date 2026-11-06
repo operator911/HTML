@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HTML Playground — Interactive Experiments</title>
-<meta name="description" content="A small shelf of interactive web experiments: a GPU fractal odyssey (five mathematical universes), the East Asian Language Atlas (thirteen language-family atlases), 3D airport sims, a cloth simulation.">
+<meta name="description" content="A small shelf of interactive web experiments: a GPU fractal odyssey (five mathematical universes), the East Asian Language Atlas (thirteen language-family atlases), 3D airport sims, a procedural galloping horse, a cloth simulation.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
@@ -93,6 +93,16 @@ footer .zh{font-family:var(--cjk);color:var(--gold)}
     <h3>3D Plane</h3>
     <p>A paper plane adrift between floating islands — golden-hour light, waterfalls, drifting mist, storms and fourteen rings to thread. Change the hour, the weather and the graphics from the demo screen.</p>
     <span class="size">134 KB</span>
+  </a>
+</div>
+
+<h2>Kinematics</h2>
+<div class="grid">
+  <a class="card" style="--c:#d9834f" href="horse-q3.8FN.html">
+    <span class="dot"></span><span class="sub">Qwen3.8-Flash-Next · Three.js · procedural</span>
+    <h3>Equus — a procedural gallop</h3>
+    <p>A low-poly horse with no model file and no animation clip: barrel, neck, head, crest and tail are lofts of superellipse rings, the four legs are prisms, and every frame is solved from a single cycle parameter. Hooves are planted on a stride path locked to ground speed and reached with an analytic four-link solve, so they cannot slip; the torso&apos;s rise, fall and rocking are twice-integrated ground reaction, which makes the horse genuinely ballistic in suspension. Five gaits (rest, walk, trot, canter, gallop) carry measured footfall timing and duty factors, the scenery band is exactly one loop of ground, and a self-test measures the seam at the wrap &mdash; six tenths of a millimetre at the gallop against the fifteen centimetres a single frame moves, so the join is invisible rather than merely small. Drag to orbit, <kbd>g</kbd> for a Muybridge ghost star, <kbd>v</kbd> for a contact sheet of the whole loop.</p>
+    <span class="size">142 KB · one file · CDN three.js</span>
   </a>
 </div>
 
